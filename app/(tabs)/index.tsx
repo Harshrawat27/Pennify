@@ -5,20 +5,56 @@ import { Feather } from '@expo/vector-icons';
 type Transaction = {
   id: string;
   title: string;
-  category: string;
+  subtitle: string;
   amount: number;
-  date: string;
+  balance?: number;
   icon: React.ComponentProps<typeof Feather>['name'];
+  tags?: { label: string; icon: React.ComponentProps<typeof Feather>['name'] }[];
 };
 
 const TRANSACTIONS: Transaction[] = [
-  { id: '1', title: 'Groceries', category: 'Food', amount: -450, date: 'Today', icon: 'shopping-cart' },
-  { id: '2', title: 'Coffee', category: 'Food', amount: -150, date: 'Today', icon: 'coffee' },
-  { id: '3', title: 'Freelance Payment', category: 'Income', amount: 5000, date: 'Yesterday', icon: 'briefcase' },
-  { id: '4', title: 'Uber Ride', category: 'Transport', amount: -250, date: 'Yesterday', icon: 'navigation' },
-  { id: '5', title: 'Netflix', category: 'Entertainment', amount: -199, date: 'Feb 8', icon: 'play-circle' },
-  { id: '6', title: 'Electricity Bill', category: 'Bills', amount: -1200, date: 'Feb 7', icon: 'zap' },
-  { id: '7', title: 'Salary', category: 'Income', amount: 30000, date: 'Feb 1', icon: 'dollar-sign' },
+  {
+    id: '1',
+    title: 'Cash, EUR',
+    subtitle: 'Red Card',
+    amount: -354.25,
+    balance: 4245.21,
+    icon: 'credit-card',
+  },
+  {
+    id: '2',
+    title: 'Cafes',
+    subtitle: '',
+    amount: -12.49,
+    icon: 'coffee',
+    tags: [
+      { label: 'Vacation', icon: 'tag' },
+      { label: 'Holdings', icon: 'users' },
+    ],
+  },
+  {
+    id: '3',
+    title: 'Freelance Pay',
+    subtitle: 'Bank Transfer',
+    amount: 5000,
+    balance: 29500,
+    icon: 'briefcase',
+  },
+  {
+    id: '4',
+    title: 'Uber Ride',
+    subtitle: 'Transport',
+    amount: -250,
+    icon: 'navigation',
+    tags: [{ label: 'Commute', icon: 'map-pin' }],
+  },
+  {
+    id: '5',
+    title: 'Netflix',
+    subtitle: 'Entertainment',
+    amount: -199,
+    icon: 'play-circle',
+  },
 ];
 
 export default function HomeScreen() {
@@ -26,130 +62,225 @@ export default function HomeScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-white"
-      contentContainerStyle={{ paddingTop: insets.top }}
+      className="flex-1 bg-black"
       showsVerticalScrollIndicator={false}
+      bounces={false}
     >
-      {/* Header */}
-      <View className="px-6 pt-4 pb-2 flex-row justify-between items-center">
-        <View>
-          <Text className="text-2xl font-bold text-black tracking-tight">Pennify</Text>
-          <Text className="text-sm text-gray-400 mt-0.5">February 2026</Text>
-        </View>
-        <Pressable className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center">
-          <Feather name="bell" size={18} color="#000" />
-        </Pressable>
-      </View>
-
-      {/* Balance Card */}
-      <View className="mx-6 mt-4 bg-black rounded-2xl p-6">
-        <Text className="text-gray-400 text-sm">Total Balance</Text>
-        <Text className="text-white text-4xl font-bold mt-1 tracking-tight">
-          ₹24,500
-        </Text>
-
-        <View className="flex-row mt-5 gap-3">
-          <View className="flex-1 bg-white/10 rounded-xl p-3">
-            <View className="flex-row items-center gap-1.5">
-              <View className="w-5 h-5 rounded-full bg-emerald-500/20 items-center justify-center">
-                <Feather name="arrow-up-right" size={12} color="#22C55E" />
-              </View>
-              <Text className="text-gray-400 text-xs">Income</Text>
-            </View>
-            <Text className="text-white font-bold text-lg mt-2">₹35,000</Text>
+      {/* ===== BLACK HERO AREA ===== */}
+      <View style={{ paddingTop: insets.top }}>
+        {/* Header */}
+        <View className="px-6 pt-4 flex-row justify-between items-center">
+          <View className="w-12 h-12 rounded-full bg-white/15 items-center justify-center">
+            <Feather name="user" size={20} color="#fff" />
           </View>
 
-          <View className="flex-1 bg-white/10 rounded-xl p-3">
-            <View className="flex-row items-center gap-1.5">
-              <View className="w-5 h-5 rounded-full bg-red-500/20 items-center justify-center">
-                <Feather name="arrow-down-right" size={12} color="#EF4444" />
-              </View>
-              <Text className="text-gray-400 text-xs">Expenses</Text>
-            </View>
-            <Text className="text-white font-bold text-lg mt-2">₹10,500</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Quick Actions */}
-      <View className="flex-row mx-6 mt-6 gap-3">
-        <Pressable className="flex-1 flex-row items-center justify-center gap-2 border border-gray-200 rounded-xl py-3.5">
-          <Feather name="minus" size={16} color="#000" />
-          <Text className="text-black font-semibold text-sm">Expense</Text>
-        </Pressable>
-        <Pressable className="flex-1 flex-row items-center justify-center gap-2 bg-black rounded-xl py-3.5">
-          <Feather name="plus" size={16} color="#fff" />
-          <Text className="text-white font-semibold text-sm">Income</Text>
-        </Pressable>
-      </View>
-
-      {/* Spending Overview */}
-      <View className="mx-6 mt-8">
-        <Text className="text-lg font-bold text-black">This Month</Text>
-        <View className="flex-row mt-3 gap-3">
-          <SpendCategory label="Food" amount={600} icon="shopping-bag" />
-          <SpendCategory label="Transport" amount={250} icon="navigation" />
-          <SpendCategory label="Bills" amount={1200} icon="zap" />
-          <SpendCategory label="Fun" amount={199} icon="smile" />
-        </View>
-      </View>
-
-      {/* Recent Transactions */}
-      <View className="mt-8 px-6">
-        <View className="flex-row justify-between items-center mb-1">
-          <Text className="text-lg font-bold text-black">Recent Transactions</Text>
-          <Pressable>
-            <Text className="text-sm text-gray-400">See all</Text>
+          <Pressable className="flex-row items-center bg-white/15 rounded-full px-5 py-2.5">
+            <Text className="text-[13px] font-semibold text-white">
+              February 2026
+            </Text>
+            <Feather
+              name="chevron-down"
+              size={14}
+              color="#fff"
+              style={{ marginLeft: 6 }}
+            />
           </Pressable>
+
+          <View className="relative">
+            <Pressable className="w-12 h-12 rounded-full bg-white/15 items-center justify-center">
+              <Feather name="bell" size={20} color="#fff" />
+            </Pressable>
+            <View className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-black" />
+          </View>
         </View>
 
-        {TRANSACTIONS.map((tx) => (
-          <View
-            key={tx.id}
-            className="flex-row items-center py-3.5 border-b border-gray-100"
-          >
-            <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center">
-              <Feather name={tx.icon} size={16} color="#000" />
-            </View>
-            <View className="flex-1 ml-3">
-              <Text className="text-black font-medium text-sm">{tx.title}</Text>
-              <Text className="text-gray-400 text-xs mt-0.5">{tx.category}</Text>
-            </View>
-            <View className="items-end">
-              <Text
-                className={`font-semibold text-sm ${
-                  tx.amount > 0 ? 'text-emerald-600' : 'text-black'
-                }`}
-              >
-                {tx.amount > 0 ? '+' : '-'}₹{Math.abs(tx.amount).toLocaleString()}
+        {/* Balance */}
+        <View className="items-center pt-10 pb-16">
+          <Text className="text-neutral-500 text-[14px] tracking-widest uppercase">
+            Current Balance
+          </Text>
+          <Text className="text-white text-[48px] font-bold mt-2 tracking-tight leading-none">
+            ₹87,457
+            <Text className="text-neutral-600 text-[34px]">.85</Text>
+          </Text>
+          <View className="mt-4 bg-white/10 rounded-full px-5 py-2">
+            <Text className="text-neutral-400 text-[12px] tracking-wide">
+              +₹784 than last week
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* ===== WHITE CONTENT AREA (overlaps hero) ===== */}
+      <View className="bg-neutral-50 rounded-t-[32px] -mt-4">
+        {/* ── Your Money ── */}
+        <View className="px-6 pt-7">
+          <View className="flex-row justify-between items-center">
+            <View className="flex-row items-center gap-2">
+              <Text className="text-[18px] font-bold text-black">
+                Your Money
               </Text>
-              <Text className="text-gray-400 text-xs mt-0.5">{tx.date}</Text>
+              <Feather name="info" size={15} color="#D4D4D4" />
+            </View>
+            <Pressable className="flex-row items-center gap-1">
+              <Text className="text-[13px] text-neutral-400 font-medium">
+                Details
+              </Text>
+              <Feather name="chevron-right" size={15} color="#A3A3A3" />
+            </Pressable>
+          </View>
+
+          <View className="flex-row gap-3 mt-5">
+            {/* Income Card */}
+            <View className="flex-1 bg-white rounded-2xl p-5 pb-5">
+              <View className="w-11 h-11 rounded-2xl bg-neutral-100 items-center justify-center">
+                <Feather name="arrow-up-right" size={20} color="#000" />
+              </View>
+              <View className="mt-8">
+                <View className="flex-row items-center gap-1.5 mb-1">
+                  <Text className="text-neutral-400 text-[13px]">Income</Text>
+                  <Feather name="info" size={11} color="#D4D4D4" />
+                </View>
+                <Text className="text-black text-[22px] font-bold tracking-tight">
+                  ₹4,875.12
+                </Text>
+              </View>
+            </View>
+
+            {/* Expenses Card */}
+            <View className="flex-1 bg-white rounded-2xl p-5 pb-5">
+              <View className="w-11 h-11 rounded-2xl bg-neutral-100 items-center justify-center">
+                <Feather name="arrow-down-right" size={20} color="#000" />
+              </View>
+              <View className="mt-8">
+                <View className="flex-row items-center gap-1.5 mb-1">
+                  <Text className="text-neutral-400 text-[13px]">Expenses</Text>
+                  <Feather name="info" size={11} color="#D4D4D4" />
+                </View>
+                <Text className="text-black text-[22px] font-bold tracking-tight">
+                  ₹8,145.78
+                </Text>
+              </View>
             </View>
           </View>
-        ))}
-      </View>
+        </View>
 
-      <View className="h-8" />
+        {/* ── Insight Banner ── */}
+        <View className="mx-6 mt-6">
+          <View className="bg-black rounded-2xl px-5 py-4 flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2.5">
+              <Text className="text-[14px]">✨</Text>
+              <Text className="text-white font-semibold text-[13px]">
+                Your insight is ready
+              </Text>
+            </View>
+            <Pressable className="flex-row items-center gap-1">
+              <Text className="text-neutral-500 text-[13px] font-semibold">
+                View
+              </Text>
+              <Feather name="chevron-right" size={14} color="#737373" />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* ── Transactions ── */}
+        <View className="px-6 mt-8">
+          {/* Section header */}
+          <View className="flex-row justify-between items-center">
+            <Text className="text-[18px] font-bold text-black">
+              Transactions
+            </Text>
+            <View className="flex-row items-center gap-4">
+              <Pressable>
+                <Feather name="bookmark" size={18} color="#A3A3A3" />
+              </Pressable>
+              <Pressable>
+                <Feather name="clock" size={18} color="#A3A3A3" />
+              </Pressable>
+              <Pressable className="border border-neutral-300 rounded-full px-3.5 py-1.5">
+                <Text className="text-[11px] text-neutral-500 font-medium">
+                  For the Period
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Date row */}
+          <View className="flex-row justify-between items-center mt-5 mb-4">
+            <Text className="text-[13px] text-neutral-400">
+              Monday, 11 February, 2026
+            </Text>
+            <Text className="text-[13px] text-black font-bold">
+              Total{' '}
+              <Text className="text-[14px]">₹2,95,776</Text>
+            </Text>
+          </View>
+
+          {/* Transaction cards */}
+          {TRANSACTIONS.map((tx) => (
+            <View key={tx.id} className="bg-white rounded-2xl p-4 mb-3">
+              <View className="flex-row items-center">
+                {/* Icon */}
+                <View className="w-12 h-12 rounded-2xl bg-neutral-100 items-center justify-center">
+                  <Feather name={tx.icon} size={19} color="#000" />
+                </View>
+
+                {/* Title + subtitle */}
+                <View className="flex-1 ml-3.5">
+                  <Text className="text-black font-bold text-[15px]">
+                    {tx.title}
+                  </Text>
+                  <View className="flex-row items-center mt-1.5 gap-2.5">
+                    {tx.subtitle ? (
+                      <View className="flex-row items-center gap-1">
+                        <Feather
+                          name="corner-down-right"
+                          size={10}
+                          color="#A3A3A3"
+                        />
+                        <Text className="text-neutral-400 text-[11px]">
+                          {tx.subtitle}
+                        </Text>
+                      </View>
+                    ) : null}
+                    {tx.tags?.map((tag) => (
+                      <View
+                        key={tag.label}
+                        className="flex-row items-center gap-1"
+                      >
+                        <Feather name={tag.icon} size={10} color="#A3A3A3" />
+                        <Text className="text-neutral-400 text-[11px]">
+                          {tag.label}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Amount */}
+                <View className="items-end ml-2">
+                  <Text
+                    className={`font-bold text-[15px] ${
+                      tx.amount > 0 ? 'text-emerald-600' : 'text-black'
+                    }`}
+                  >
+                    {tx.amount > 0 ? '+' : '-'}₹
+                    {Math.abs(tx.amount).toLocaleString()}
+                  </Text>
+                  {tx.balance !== undefined && (
+                    <Text className="text-neutral-400 text-[11px] mt-1">
+                      ₹{tx.balance.toLocaleString()}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* Bottom spacer for tab bar */}
+        <View className="h-32" />
+      </View>
     </ScrollView>
-  );
-}
-
-function SpendCategory({
-  label,
-  amount,
-  icon,
-}: {
-  label: string;
-  amount: number;
-  icon: React.ComponentProps<typeof Feather>['name'];
-}) {
-  return (
-    <View className="flex-1 bg-gray-50 rounded-xl p-3 items-center">
-      <View className="w-9 h-9 rounded-full bg-white items-center justify-center mb-2">
-        <Feather name={icon} size={16} color="#000" />
-      </View>
-      <Text className="text-gray-500 text-[10px]">{label}</Text>
-      <Text className="text-black font-semibold text-xs mt-0.5">₹{amount.toLocaleString()}</Text>
-    </View>
   );
 }
