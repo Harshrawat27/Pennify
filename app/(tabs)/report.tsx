@@ -2,43 +2,41 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
+import { useTransactionStore } from '@/lib/stores/useTransactionStore';
+import { getCategoryBreakdown, getDailySpending } from '@/lib/dal';
+import { useSettingsStore } from '@/lib/stores/useSettingsStore';
+import { formatCurrency, getCurrencySymbol } from '@/lib/utils/currency';
 
 const PERIOD_TABS = ['Week', 'Month', 'Year'];
-
-type Category = {
-  name: string;
-  amount: number;
-  icon: React.ComponentProps<typeof Feather>['name'];
-  percent: number;
-};
-
-const CATEGORIES: Category[] = [
-  { name: 'Food & Dining', amount: 3200, icon: 'shopping-bag', percent: 38 },
-  { name: 'Transport', amount: 1800, icon: 'navigation', percent: 21 },
-  { name: 'Bills & Utilities', amount: 1500, icon: 'zap', percent: 18 },
-  { name: 'Entertainment', amount: 1000, icon: 'play-circle', percent: 12 },
-  { name: 'Shopping', amount: 645, icon: 'shopping-cart', percent: 8 },
-  { name: 'Other', amount: 300, icon: 'more-horizontal', percent: 3 },
-];
-
-const WEEKLY_DATA = [
-  { day: 'Mon', amount: 450, maxH: 28 },
-  { day: 'Tue', amount: 1200, maxH: 75 },
-  { day: 'Wed', amount: 300, maxH: 19 },
-  { day: 'Thu', amount: 800, maxH: 50 },
-  { day: 'Fri', amount: 1600, maxH: 100 },
-  { day: 'Sat', amount: 950, maxH: 59 },
-  { day: 'Sun', amount: 200, maxH: 13 },
-];
 
 const RING_SIZE = 160;
 const RING_STROKE = 14;
 const RING_R = (RING_SIZE - RING_STROKE) / 2;
 const RING_CIRC = 2 * Math.PI * RING_R;
-const SPENT_PERCENT = 62;
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
+  const currency = useSettingsStore((s) => s.currency);
+  const income = useTransactionStore((s) => s.income);
+  const expenses = useTransactionStore((s) => s.expenses);
+  const currentMonth = useTransactionStore((s) => s.currentMonth);
+
+  const categories = getCategoryBreakdown(currentMonth);
+  const dailyRaw = getDailySpending(currentMonth);
+
+  // Build weekly spending data from daily data
+  const dailyData = dailyRaw.map((d) => ({
+    day: DAY_NAMES[new Date(d.day + 'T00:00:00').getDay()],
+    amount: d.amount,
+  }));
+
+  const maxDailyAmount = dailyData.reduce((max, d) => Math.max(max, d.amount), 0);
+
+  const totalBudget = income > 0 ? income : 1; // avoid division by zero
+  const spentPercent = income > 0 ? Math.round((expenses / income) * 100) : 0;
+  const leftAmount = Math.max(income - expenses, 0);
 
   return (
     <ScrollView
@@ -76,7 +74,7 @@ export default function ReportScreen() {
         ))}
       </View>
 
-      {/* Donut Ring — Spent vs Budget */}
+      {/* Donut Ring — Spent vs Income */}
       <View className="items-center mt-8">
         <View style={{ width: RING_SIZE, height: RING_SIZE }}>
           <Svg width={RING_SIZE} height={RING_SIZE}>
@@ -97,7 +95,7 @@ export default function ReportScreen() {
               stroke="#000000"
               strokeWidth={RING_STROKE}
               fill="none"
-              strokeDasharray={`${RING_CIRC * (SPENT_PERCENT / 100)} ${RING_CIRC}`}
+              strokeDasharray={`${RING_CIRC * (Math.min(spentPercent, 100) / 100)} ${RING_CIRC}`}
               strokeLinecap="round"
               rotation="-90"
               origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}
@@ -105,44 +103,48 @@ export default function ReportScreen() {
           </Svg>
           {/* Center text */}
           <View className="absolute inset-0 items-center justify-center">
-            <Text className="text-[28px] font-bold text-black">{SPENT_PERCENT}%</Text>
-            <Text className="text-[11px] text-neutral-400">of budget</Text>
+            <Text className="text-[28px] font-bold text-black">{spentPercent}%</Text>
+            <Text className="text-[11px] text-neutral-400">of income</Text>
           </View>
         </View>
         <View className="flex-row gap-6 mt-5">
           <View className="flex-row items-center gap-2">
             <View className="w-3 h-3 rounded-full bg-black" />
-            <Text className="text-[12px] text-neutral-500">Spent ₹8,445</Text>
+            <Text className="text-[12px] text-neutral-500">Spent {formatCurrency(expenses, currency)}</Text>
           </View>
           <View className="flex-row items-center gap-2">
             <View className="w-3 h-3 rounded-full bg-neutral-200" />
-            <Text className="text-[12px] text-neutral-500">Left ₹5,155</Text>
+            <Text className="text-[12px] text-neutral-500">Left {formatCurrency(leftAmount, currency)}</Text>
           </View>
         </View>
       </View>
 
-      {/* Weekly Bar Chart */}
-      <View className="mx-6 mt-8 bg-white rounded-2xl p-5">
-        <Text className="text-[15px] font-bold text-black mb-5">
-          Daily Spending
-        </Text>
-        <View className="flex-row items-end justify-between" style={{ height: 110 }}>
-          {WEEKLY_DATA.map((d) => (
-            <View key={d.day} className="items-center flex-1">
-              <Text className="text-[10px] text-neutral-400 mb-2">
-                ₹{d.amount >= 1000 ? `${(d.amount / 1000).toFixed(1)}k` : d.amount}
-              </Text>
-              <View
-                className={`w-6 rounded-full ${
-                  d.day === 'Fri' ? 'bg-black' : 'bg-neutral-200'
-                }`}
-                style={{ height: d.maxH }}
-              />
-              <Text className="text-[10px] text-neutral-400 mt-2">{d.day}</Text>
-            </View>
-          ))}
+      {/* Daily Spending Bar Chart */}
+      {dailyData.length > 0 && (
+        <View className="mx-6 mt-8 bg-white rounded-2xl p-5">
+          <Text className="text-[15px] font-bold text-black mb-5">
+            Daily Spending
+          </Text>
+          <View className="flex-row items-end justify-between" style={{ height: 110 }}>
+            {dailyData.map((d, i) => {
+              const barH = maxDailyAmount > 0 ? Math.max((d.amount / maxDailyAmount) * 100, 4) : 4;
+              const isMax = d.amount === maxDailyAmount && maxDailyAmount > 0;
+              return (
+                <View key={`${d.day}-${i}`} className="items-center flex-1">
+                  <Text className="text-[10px] text-neutral-400 mb-2">
+                    {d.amount >= 1000 ? `${getCurrencySymbol(currency)}${(d.amount / 1000).toFixed(1)}k` : `${getCurrencySymbol(currency)}${d.amount}`}
+                  </Text>
+                  <View
+                    className={`w-6 rounded-full ${isMax ? 'bg-black' : 'bg-neutral-200'}`}
+                    style={{ height: barH }}
+                  />
+                  <Text className="text-[10px] text-neutral-400 mt-2">{d.day}</Text>
+                </View>
+              );
+            })}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Income vs Expense */}
       <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
@@ -155,7 +157,7 @@ export default function ReportScreen() {
               <View className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
               <Text className="text-[12px] text-neutral-400">Income</Text>
             </View>
-            <Text className="text-[20px] font-bold text-black">₹35,000</Text>
+            <Text className="text-[20px] font-bold text-black">{formatCurrency(income, currency)}</Text>
             <View className="h-1.5 bg-neutral-100 rounded-full mt-2">
               <View className="h-1.5 bg-emerald-500 rounded-full" style={{ width: '100%' }} />
             </View>
@@ -165,9 +167,12 @@ export default function ReportScreen() {
               <View className="w-2.5 h-2.5 rounded-full bg-black" />
               <Text className="text-[12px] text-neutral-400">Expenses</Text>
             </View>
-            <Text className="text-[20px] font-bold text-black">₹8,445</Text>
+            <Text className="text-[20px] font-bold text-black">{formatCurrency(expenses, currency)}</Text>
             <View className="h-1.5 bg-neutral-100 rounded-full mt-2">
-              <View className="h-1.5 bg-black rounded-full" style={{ width: '24%' }} />
+              <View
+                className="h-1.5 bg-black rounded-full"
+                style={{ width: `${income > 0 ? Math.min(Math.round((expenses / income) * 100), 100) : 0}%` }}
+              />
             </View>
           </View>
         </View>
@@ -184,29 +189,35 @@ export default function ReportScreen() {
           </Pressable>
         </View>
 
-        {CATEGORIES.map((cat, i) => (
-          <View key={cat.name} className={i > 0 ? 'mt-4' : ''}>
-            <View className="flex-row items-center justify-between mb-2">
-              <View className="flex-row items-center gap-3">
-                <View className="w-9 h-9 rounded-xl bg-neutral-100 items-center justify-center">
-                  <Feather name={cat.icon} size={16} color="#000" />
+        {categories.length === 0 ? (
+          <View className="py-4 items-center">
+            <Text className="text-neutral-400 text-[13px]">No spending data yet</Text>
+          </View>
+        ) : (
+          categories.map((cat, i) => (
+            <View key={cat.name} className={i > 0 ? 'mt-4' : ''}>
+              <View className="flex-row items-center justify-between mb-2">
+                <View className="flex-row items-center gap-3">
+                  <View className="w-9 h-9 rounded-xl bg-neutral-100 items-center justify-center">
+                    <Feather name={cat.icon} size={16} color="#000" />
+                  </View>
+                  <Text className="text-[14px] font-medium text-black">
+                    {cat.name}
+                  </Text>
                 </View>
-                <Text className="text-[14px] font-medium text-black">
-                  {cat.name}
+                <Text className="text-[14px] font-bold text-black">
+                  {formatCurrency(cat.amount, currency)}
                 </Text>
               </View>
-              <Text className="text-[14px] font-bold text-black">
-                ₹{cat.amount.toLocaleString()}
-              </Text>
+              <View className="h-1.5 bg-neutral-100 rounded-full">
+                <View
+                  className="h-1.5 bg-black rounded-full"
+                  style={{ width: `${cat.percent}%` }}
+                />
+              </View>
             </View>
-            <View className="h-1.5 bg-neutral-100 rounded-full">
-              <View
-                className="h-1.5 bg-black rounded-full"
-                style={{ width: `${cat.percent}%` }}
-              />
-            </View>
-          </View>
-        ))}
+          ))
+        )}
       </View>
 
       <View className="h-32" />

@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { Dimensions, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -109,7 +109,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       >
         <Pressable
           onPress={() => {
-            // TODO: Open add expense screen
+            router.push('/add-transaction');
           }}
         >
           <View
@@ -167,6 +167,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: { position: 'absolute', backgroundColor: 'transparent' },
       }}
+      // @ts-expect-error sceneContainerStyle exists at runtime but not in Expo Router types
       sceneContainerStyle={{ backgroundColor: 'transparent' }}
     >
       <Tabs.Screen name="index" />

@@ -2,16 +2,19 @@ import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useSettingsStore } from '@/lib/stores/useSettingsStore';
+import { CURRENCIES } from '@/lib/utils/currency';
 
 type SettingRow = {
   icon: React.ComponentProps<typeof Feather>['name'];
   label: string;
   value?: string;
   toggle?: boolean;
+  onPress?: () => void;
 };
 
-const GENERAL_SETTINGS: SettingRow[] = [
-  { icon: 'dollar-sign', label: 'Currency', value: 'INR (₹)' },
+const STATIC_GENERAL_SETTINGS: SettingRow[] = [
   { icon: 'globe', label: 'Language', value: 'English' },
   { icon: 'bell', label: 'Notifications', toggle: true },
   { icon: 'lock', label: 'Passcode Lock', toggle: true },
@@ -34,6 +37,7 @@ function SettingItem({ item, isLast }: { item: SettingRow; isLast: boolean }) {
 
   return (
     <Pressable
+      onPress={item.onPress}
       className={`flex-row items-center py-3.5 ${
         !isLast ? 'border-b border-neutral-100' : ''
       }`}
@@ -90,6 +94,19 @@ function SettingGroup({
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const currency = useSettingsStore((s) => s.currency);
+  const currencyInfo = CURRENCIES[currency];
+  const currencyLabel = currencyInfo ? `${currencyInfo.code} (${currencyInfo.symbol})` : currency;
+
+  const generalSettings: SettingRow[] = [
+    {
+      icon: 'dollar-sign',
+      label: 'Currency',
+      value: currencyLabel,
+      onPress: () => router.push('/currency-picker'),
+    },
+    ...STATIC_GENERAL_SETTINGS,
+  ];
 
   return (
     <ScrollView
@@ -140,7 +157,7 @@ export default function SettingsScreen() {
         </Pressable>
       </View>
 
-      <SettingGroup title='General' items={GENERAL_SETTINGS} />
+      <SettingGroup title='General' items={generalSettings} />
       <SettingGroup title='Data' items={DATA_SETTINGS} />
       <SettingGroup title='About' items={ABOUT_SETTINGS} />
 
