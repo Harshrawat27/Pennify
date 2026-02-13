@@ -11,9 +11,11 @@ export function getSetting(key: string): string | null {
 
 export function setSetting(key: string, value: string): void {
   const db = getDatabase();
+  const now = new Date().toISOString();
   db.runSync(
-    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    'INSERT OR REPLACE INTO settings (key, value, synced, updated_at) VALUES (?, ?, 0, ?)',
     key,
-    value
+    value,
+    now
   );
 }

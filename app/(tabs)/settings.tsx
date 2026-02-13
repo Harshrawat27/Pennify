@@ -1,10 +1,11 @@
+import { authClient } from '@/lib/auth-client';
+import { useSettingsStore } from '@/lib/stores/useSettingsStore';
+import { CURRENCIES } from '@/lib/utils/currency';
 import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { useSettingsStore } from '@/lib/stores/useSettingsStore';
-import { CURRENCIES } from '@/lib/utils/currency';
 
 type SettingRow = {
   icon: React.ComponentProps<typeof Feather>['name'];
@@ -94,9 +95,15 @@ function SettingGroup({
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { data: session } = authClient.useSession();
   const currency = useSettingsStore((s) => s.currency);
   const currencyInfo = CURRENCIES[currency];
-  const currencyLabel = currencyInfo ? `${currencyInfo.code} (${currencyInfo.symbol})` : currency;
+  const currencyLabel = currencyInfo
+    ? `${currencyInfo.code} (${currencyInfo.symbol})`
+    : currency;
+
+  const userName = session?.user?.name ?? 'Pennify User';
+  const userEmail = session?.user?.email ?? 'Synced to cloud';
 
   const generalSettings: SettingRow[] = [
     {
@@ -107,6 +114,10 @@ export default function SettingsScreen() {
     },
     ...STATIC_GENERAL_SETTINGS,
   ];
+
+  const handleLogout = () => {
+    void authClient.signOut();
+  };
 
   return (
     <ScrollView
@@ -127,9 +138,9 @@ export default function SettingsScreen() {
           <Feather name='user' size={22} color='#fff' />
         </View>
         <View className='flex-1 ml-4'>
-          <Text className='text-[16px] font-bold text-black'>Harsh Rawat</Text>
+          <Text className='text-[16px] font-bold text-black'>{userName}</Text>
           <Text className='text-[13px] text-neutral-400 mt-0.5'>
-            harsh@example.com
+            {userEmail}
           </Text>
         </View>
         <Pressable>
@@ -163,7 +174,10 @@ export default function SettingsScreen() {
 
       {/* Logout */}
       <View className='mx-6 mt-6'>
-        <Pressable className='bg-white rounded-2xl py-4 items-center'>
+        <Pressable
+          onPress={handleLogout}
+          className='bg-white rounded-2xl py-4 items-center'
+        >
           <Text className='text-red-500 font-semibold text-[14px]'>
             Log Out
           </Text>

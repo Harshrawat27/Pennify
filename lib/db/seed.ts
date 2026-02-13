@@ -6,7 +6,7 @@ export function seedDatabase(): void {
 
   // Seed default settings (idempotent — INSERT OR IGNORE)
   db.runSync(
-    "INSERT OR IGNORE INTO settings (key, value) VALUES ('currency', 'INR')"
+    "INSERT OR IGNORE INTO settings (key, value, synced, updated_at) VALUES ('currency', 'INR', 0, datetime('now'))"
   );
 
   // Only seed if no categories exist
@@ -31,7 +31,7 @@ export function seedDatabase(): void {
 
   for (const cat of categories) {
     db.runSync(
-      'INSERT INTO categories (id, name, icon, type, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO categories (id, name, icon, type, color, created_at, updated_at, synced, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)',
       cat.id, cat.name, cat.icon, cat.type, cat.color, now, now
     );
   }
@@ -39,7 +39,7 @@ export function seedDatabase(): void {
   // Seed default Cash account
   const cashAccountId = generateId();
   db.runSync(
-    'INSERT INTO accounts (id, name, type, balance, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO accounts (id, name, type, balance, icon, created_at, updated_at, synced, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)',
     cashAccountId, 'Cash', 'cash', 87457.85, 'credit-card', now, now
   );
 
@@ -56,7 +56,7 @@ export function seedDatabase(): void {
 
   for (const tx of transactions) {
     db.runSync(
-      'INSERT INTO transactions (id, title, amount, note, date, category_id, account_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO transactions (id, title, amount, note, date, category_id, account_id, created_at, updated_at, synced, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)',
       generateId(), tx.title, tx.amount, tx.note, today, catMap[tx.category], cashAccountId, now, now
     );
   }
@@ -72,7 +72,7 @@ export function seedDatabase(): void {
 
   for (const b of budgets) {
     db.runSync(
-      'INSERT INTO budgets (id, category_id, limit_amount, month, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO budgets (id, category_id, limit_amount, month, created_at, updated_at, synced, deleted) VALUES (?, ?, ?, ?, ?, ?, 0, 0)',
       generateId(), catMap[b.category], b.limit, currentMonth, now, now
     );
   }
@@ -86,7 +86,7 @@ export function seedDatabase(): void {
 
   for (const g of goals) {
     db.runSync(
-      'INSERT INTO goals (id, name, icon, target, saved, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO goals (id, name, icon, target, saved, color, created_at, updated_at, synced, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)',
       generateId(), g.name, g.icon, g.target, g.saved, g.color, now, now
     );
   }

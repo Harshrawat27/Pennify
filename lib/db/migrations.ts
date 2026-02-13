@@ -74,6 +74,26 @@ const migrations: Migration[] = [
       )`,
     ],
   },
+  {
+    version: 3,
+    up: [
+      // Sync + soft-delete columns for all data tables
+      `ALTER TABLE accounts ADD COLUMN synced INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE accounts ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE categories ADD COLUMN synced INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE categories ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE transactions ADD COLUMN synced INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE transactions ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE budgets ADD COLUMN synced INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE budgets ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE goals ADD COLUMN synced INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE goals ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0`,
+      // Settings only needs synced (no soft-delete for key-value settings)
+      `ALTER TABLE settings ADD COLUMN synced INTEGER NOT NULL DEFAULT 0`,
+      // Settings needs updated_at for sync conflict resolution
+      `ALTER TABLE settings ADD COLUMN updated_at TEXT NOT NULL DEFAULT (datetime('now'))`,
+    ],
+  },
 ];
 
 export function runMigrations(): void {

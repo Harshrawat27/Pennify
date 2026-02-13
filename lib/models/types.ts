@@ -10,6 +10,8 @@ export interface Account {
   icon: FeatherIcon;
   created_at: string;
   updated_at: string;
+  synced?: number;
+  deleted?: number;
 }
 
 export interface Category {
@@ -20,6 +22,8 @@ export interface Category {
   color: string;
   created_at: string;
   updated_at: string;
+  synced?: number;
+  deleted?: number;
 }
 
 export interface Transaction {
@@ -32,6 +36,8 @@ export interface Transaction {
   account_id: string;
   created_at: string;
   updated_at: string;
+  synced?: number;
+  deleted?: number;
 }
 
 export interface TransactionWithCategory extends Transaction {
@@ -46,6 +52,8 @@ export interface Budget {
   month: string; // YYYY-MM
   created_at: string;
   updated_at: string;
+  synced?: number;
+  deleted?: number;
 }
 
 export interface BudgetWithCategory extends Budget {
@@ -63,6 +71,8 @@ export interface Goal {
   color: string;
   created_at: string;
   updated_at: string;
+  synced?: number;
+  deleted?: number;
 }
 
 export interface CategoryBreakdown {

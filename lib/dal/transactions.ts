@@ -8,7 +8,7 @@ export function getTransactionsByMonth(month: string): TransactionWithCategory[]
     `SELECT t.*, c.name as category_name, c.icon as category_icon
      FROM transactions t
      JOIN categories c ON t.category_id = c.id
-     WHERE t.date LIKE ? || '%'
+     WHERE t.date LIKE ? || '%' AND t.deleted = 0
      ORDER BY t.date DESC, t.created_at DESC`,
     month
   );
@@ -20,7 +20,7 @@ export function getTransactionsByDate(date: string): TransactionWithCategory[] {
     `SELECT t.*, c.name as category_name, c.icon as category_icon
      FROM transactions t
      JOIN categories c ON t.category_id = c.id
-     WHERE t.date = ?
+     WHERE t.date = ? AND t.deleted = 0
      ORDER BY t.created_at DESC`,
     date
   );
@@ -31,7 +31,7 @@ export function createTransaction(data: Pick<Transaction, 'title' | 'amount' | '
   const id = generateId();
   const now = new Date().toISOString();
   db.runSync(
-    'INSERT INTO transactions (id, title, amount, note, date, category_id, account_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO transactions (id, title, amount, note, date, category_id, account_id, created_at, updated_at, synced, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)',
     id, data.title, data.amount, data.note || '', data.date, data.category_id, data.account_id, now, now
   );
   return db.getFirstSync<Transaction>('SELECT * FROM transactions WHERE id = ?', id)!;
@@ -40,14 +40,13 @@ export function createTransaction(data: Pick<Transaction, 'title' | 'amount' | '
 export function deleteTransaction(id: string): void {
   const db = getDatabase();
   const now = new Date().toISOString();
-  db.runSync('UPDATE transactions SET updated_at = ? WHERE id = ?', now, id);
-  db.runSync('DELETE FROM transactions WHERE id = ?', id);
+  db.runSync('UPDATE transactions SET deleted = 1, synced = 0, updated_at = ? WHERE id = ?', now, id);
 }
 
 export function getMonthlyIncome(month: string): number {
   const db = getDatabase();
   const result = db.getFirstSync<{ total: number | null }>(
-    `SELECT SUM(amount) as total FROM transactions WHERE amount > 0 AND date LIKE ? || '%'`,
+    `SELECT SUM(amount) as total FROM transactions WHERE amount > 0 AND deleted = 0 AND date LIKE ? || '%'`,
     month
   );
   return result?.total ?? 0;
@@ -56,7 +55,7 @@ export function getMonthlyIncome(month: string): number {
 export function getMonthlyExpenses(month: string): number {
   const db = getDatabase();
   const result = db.getFirstSync<{ total: number | null }>(
-    `SELECT SUM(ABS(amount)) as total FROM transactions WHERE amount < 0 AND date LIKE ? || '%'`,
+    `SELECT SUM(ABS(amount)) as total FROM transactions WHERE amount < 0 AND deleted = 0 AND date LIKE ? || '%'`,
     month
   );
   return result?.total ?? 0;
@@ -68,7 +67,7 @@ export function getCategoryBreakdown(month: string): CategoryBreakdown[] {
     `SELECT c.name, c.icon, SUM(ABS(t.amount)) as amount
      FROM transactions t
      JOIN categories c ON t.category_id = c.id
-     WHERE t.amount < 0 AND t.date LIKE ? || '%'
+     WHERE t.amount < 0 AND t.deleted = 0 AND t.date LIKE ? || '%'
      GROUP BY c.id
      ORDER BY amount DESC`,
     month
@@ -88,7 +87,7 @@ export function getDailySpending(month: string): DailySpending[] {
   return db.getAllSync<DailySpending>(
     `SELECT date as day, SUM(ABS(amount)) as amount
      FROM transactions
-     WHERE amount < 0 AND date LIKE ? || '%'
+     WHERE amount < 0 AND deleted = 0 AND date LIKE ? || '%'
      GROUP BY date
      ORDER BY date`,
     month
@@ -98,7 +97,7 @@ export function getDailySpending(month: string): DailySpending[] {
 export function getSpentByCategory(categoryId: string, month: string): number {
   const db = getDatabase();
   const result = db.getFirstSync<{ total: number | null }>(
-    `SELECT SUM(ABS(amount)) as total FROM transactions WHERE amount < 0 AND category_id = ? AND date LIKE ? || '%'`,
+    `SELECT SUM(ABS(amount)) as total FROM transactions WHERE amount < 0 AND deleted = 0 AND category_id = ? AND date LIKE ? || '%'`,
     categoryId, month
   );
   return result?.total ?? 0;
