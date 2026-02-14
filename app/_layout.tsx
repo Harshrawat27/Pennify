@@ -5,6 +5,7 @@ import { ConvexAuthSetup } from "@/lib/auth/ConvexAuthSetup";
 import { authClient } from "@/lib/auth-client";
 import { useDatabase } from "@/lib/hooks/useDatabase";
 import { useSyncEngine } from "@/lib/sync/useSyncEngine";
+import { useSettingsStore } from "@/lib/stores/useSettingsStore";
 import "../global.css";
 
 function SyncWrapper({ children }: { children: React.ReactNode }) {
@@ -13,12 +14,8 @@ function SyncWrapper({ children }: { children: React.ReactNode }) {
 }
 
 function RootLayoutNav() {
-  const { data: session, isPending, error } = authClient.useSession();
-
-  console.log("[Layout] session state:", { isPending, hasSession: !!session, error: error?.message ?? null });
-  if (session) {
-    console.log("[Layout] user:", session.user?.email);
-  }
+  const { data: session, isPending } = authClient.useSession();
+  const hasOnboarded = useSettingsStore((s) => s.hasOnboarded);
 
   if (isPending) {
     return (
@@ -28,6 +25,47 @@ function RootLayoutNav() {
     );
   }
 
+  // Fresh install — no onboarding done
+  if (!hasOnboarded) {
+    return (
+      <>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="sign-in" />
+        </Stack>
+        <Redirect href="/onboarding" />
+        <StatusBar style="light" />
+      </>
+    );
+  }
+
+  // Onboarding done, waiting for auth
+  if (hasOnboarded === 'pending_auth' && !session) {
+    return (
+      <>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="sign-in" />
+        </Stack>
+        <Redirect href="/sign-in?fromOnboarding=true" />
+        <StatusBar style="light" />
+      </>
+    );
+  }
+
+  // Onboarding done, just signed in — show post-auth setup
+  if (hasOnboarded === 'pending_auth' && session) {
+    return (
+      <SyncWrapper>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="post-auth-setup" />
+        </Stack>
+        <Redirect href="/post-auth-setup" />
+        <StatusBar style="dark" />
+      </SyncWrapper>
+    );
+  }
+
+  // Not signed in but already onboarded
   if (!session) {
     return (
       <>
@@ -40,6 +78,7 @@ function RootLayoutNav() {
     );
   }
 
+  // Fully onboarded + signed in
   return (
     <SyncWrapper>
       <Stack screenOptions={{ headerShown: false }}>

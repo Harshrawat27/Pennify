@@ -1,6 +1,6 @@
 import { authClient } from "@/lib/auth-client";
 import { Feather } from "@expo/vector-icons";
-import * as WebBrowser from "expo-web-browser";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -15,11 +15,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
+  const { fromOnboarding } = useLocalSearchParams<{ fromOnboarding?: string }>();
+  const isFromOnboarding = fromOnboarding === 'true';
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(isFromOnboarding);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState("");
@@ -37,26 +39,21 @@ export default function SignInScreen() {
     setError("");
     setIsLoading(true);
     try {
-      console.log("[Auth] baseURL:", process.env.EXPO_PUBLIC_AUTH_URL);
       if (isSignUp) {
-        console.log("[Auth] Signing up with email:", email.trim());
         const result = await authClient.signUp.email({
           email: email.trim(),
           password,
           name: name.trim(),
         });
-        console.log("[Auth] SignUp result:", JSON.stringify(result, null, 2));
         if (result.error) {
           setError(result.error.message ?? "Could not create account");
           return;
         }
       } else {
-        console.log("[Auth] Signing in with email:", email.trim());
         const result = await authClient.signIn.email({
           email: email.trim(),
           password,
         });
-        console.log("[Auth] SignIn result:", JSON.stringify(result, null, 2));
         if (result.error) {
           setError(result.error.message ?? "Invalid email or password");
           return;
@@ -64,7 +61,6 @@ export default function SignInScreen() {
       }
     } catch (e: unknown) {
       console.error("[Auth] Error:", e);
-      console.error("[Auth] Error details:", JSON.stringify(e, Object.getOwnPropertyNames(e as object)));
       setError(isSignUp ? "Could not create account" : "Invalid email or password");
     } finally {
       setIsLoading(false);
@@ -75,16 +71,12 @@ export default function SignInScreen() {
     setError("");
     setIsGoogleLoading(true);
     try {
-      console.log("[Auth] Starting Google sign-in...");
-      console.log("[Auth] baseURL:", process.env.EXPO_PUBLIC_AUTH_URL);
-      const result = await authClient.signIn.social({
+      await authClient.signIn.social({
         provider: "google",
         callbackURL: "/",
       });
-      console.log("[Auth] Google result:", JSON.stringify(result, null, 2));
     } catch (e: unknown) {
       console.error("[Auth] Google error:", e);
-      console.error("[Auth] Google error details:", JSON.stringify(e, Object.getOwnPropertyNames(e as object)));
       setError("Google sign-in failed");
     } finally {
       setIsGoogleLoading(false);
@@ -108,10 +100,12 @@ export default function SignInScreen() {
             <Feather name="dollar-sign" size={36} color="#000" />
           </View>
           <Text className="text-white text-[32px] font-bold tracking-tight">
-            Pennify
+            {isFromOnboarding ? 'Save Your Progress' : 'Pennify'}
           </Text>
           <Text className="text-neutral-500 text-[16px] mt-2 text-center leading-6">
-            Track your money.{"\n"}Build your future.
+            {isFromOnboarding
+              ? 'Create an account to sync your\ndata across devices.'
+              : 'Track your money.\nBuild your future.'}
           </Text>
         </View>
 
