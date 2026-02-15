@@ -35,9 +35,12 @@ export function RecurringPayments({ onNext, onBack }: RecurringPaymentsProps) {
     setShowAdd(false);
   };
 
-  const addQuickPayment = (name: string) => {
+  const openFormWithName = (name: string) => {
     if (payments.find((p) => p.name === name)) return;
-    setPayments([...payments, { name, amount: '', frequency: 'monthly' }]);
+    setNewName(name);
+    setNewAmount('');
+    setNewFreq('monthly');
+    setShowAdd(true);
   };
 
   const removePayment = (index: number) => {
@@ -65,7 +68,7 @@ export function RecurringPayments({ onNext, onBack }: RecurringPaymentsProps) {
           {COMMON_PAYMENTS.filter((p) => !payments.find((x) => x.name === p)).map((name) => (
             <Pressable
               key={name}
-              onPress={() => addQuickPayment(name)}
+              onPress={() => openFormWithName(name)}
               className="flex-row items-center gap-1.5 px-3 py-2 rounded-xl bg-white"
             >
               <Feather name="plus" size={12} color="#A3A3A3" />
