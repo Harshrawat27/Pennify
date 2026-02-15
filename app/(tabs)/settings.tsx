@@ -1,10 +1,12 @@
 import { authClient } from '@/lib/auth-client';
 import { useSettingsStore } from '@/lib/stores/useSettingsStore';
 import { CURRENCIES } from '@/lib/utils/currency';
+import { ConfirmationDialog } from '@/components/ConfirmationDialog';
+import { deleteAccount } from '@/lib/account/deleteAccount';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type SettingRow = {
@@ -115,8 +117,26 @@ export default function SettingsScreen() {
     ...STATIC_GENERAL_SETTINGS,
   ];
 
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const handleLogout = () => {
     void authClient.signOut();
+  };
+
+  const handleDeleteAccount = async () => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteAccount(userId);
+    } catch (e) {
+      console.error('[Settings] Delete account failed:', e);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
   };
 
   return (
@@ -183,6 +203,33 @@ export default function SettingsScreen() {
           </Text>
         </Pressable>
       </View>
+
+      {/* Delete Account */}
+      <View className='mx-6 mt-3'>
+        <Pressable
+          onPress={() => setShowDeleteDialog(true)}
+          disabled={isDeleting}
+          className='bg-white rounded-2xl py-4 items-center flex-row justify-center gap-2'
+        >
+          {isDeleting ? (
+            <ActivityIndicator size="small" color="#EF4444" />
+          ) : null}
+          <Text className='text-red-500 font-semibold text-[14px]'>
+            {isDeleting ? 'Deleting...' : 'Delete Account'}
+          </Text>
+        </Pressable>
+      </View>
+
+      <ConfirmationDialog
+        visible={showDeleteDialog}
+        title="Delete Account"
+        message="This will permanently delete your account and all your data. This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Keep Account"
+        destructive
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setShowDeleteDialog(false)}
+      />
 
       <View className='h-32' />
     </ScrollView>
