@@ -26,6 +26,12 @@ export declare const api: {
       { userId: string },
       any
     >;
+    deleteUserData: FunctionReference<
+      "mutation",
+      "public",
+      { userId: string },
+      any
+    >;
   };
 };
 
