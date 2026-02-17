@@ -1,4 +1,3 @@
-import { getAllAccounts } from '@/lib/dal';
 import { useSettingsStore } from '@/lib/stores/useSettingsStore';
 import { useTransactionStore } from '@/lib/stores/useTransactionStore';
 import { formatCurrency } from '@/lib/utils/currency';
@@ -13,8 +12,8 @@ export default function HomeScreen() {
   const expenses = useTransactionStore((s) => s.expenses);
 
   const currency = useSettingsStore((s) => s.currency);
-  const accounts = getAllAccounts();
-  const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+  const overallBalance = useSettingsStore((s) => s.overallBalance);
+  const totalBalance = parseFloat(overallBalance) || 0;
 
   // Format current month/year for display
   const now = new Date();

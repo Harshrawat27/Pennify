@@ -122,6 +122,7 @@ export default function SettingsScreen() {
 
   const handleLogout = () => {
     void authClient.signOut();
+    router.replace('/sign-in');
   };
 
   const handleDeleteAccount = async () => {
@@ -131,6 +132,7 @@ export default function SettingsScreen() {
     setIsDeleting(true);
     try {
       await deleteAccount(userId);
+      router.replace('/onboarding');
     } catch (e) {
       console.error('[Settings] Delete account failed:', e);
     } finally {

@@ -34,9 +34,9 @@ export default function ReportScreen() {
 
   const maxDailyAmount = dailyData.reduce((max, d) => Math.max(max, d.amount), 0);
 
-  const totalBudget = income > 0 ? income : 1; // avoid division by zero
-  const spentPercent = income > 0 ? Math.round((expenses / income) * 100) : 0;
-  const leftAmount = Math.max(income - expenses, 0);
+  const monthlyBudget = useSettingsStore((s) => s.monthlyBudget);
+  const spentPercent = monthlyBudget > 0 ? Math.round((expenses / monthlyBudget) * 100) : 0;
+  const leftAmount = Math.max(monthlyBudget - expenses, 0);
 
   return (
     <ScrollView
@@ -104,7 +104,7 @@ export default function ReportScreen() {
           {/* Center text */}
           <View className="absolute inset-0 items-center justify-center">
             <Text className="text-[28px] font-bold text-black">{spentPercent}%</Text>
-            <Text className="text-[11px] text-neutral-400">of income</Text>
+            <Text className="text-[11px] text-neutral-400">of budget</Text>
           </View>
         </View>
         <View className="flex-row gap-6 mt-5">
@@ -171,7 +171,7 @@ export default function ReportScreen() {
             <View className="h-1.5 bg-neutral-100 rounded-full mt-2">
               <View
                 className="h-1.5 bg-black rounded-full"
-                style={{ width: `${income > 0 ? Math.min(Math.round((expenses / income) * 100), 100) : 0}%` }}
+                style={{ width: `${monthlyBudget > 0 ? Math.min(Math.round((expenses / monthlyBudget) * 100), 100) : 0}%` }}
               />
             </View>
           </View>

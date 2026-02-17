@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { TransactionWithCategory } from '../models/types';
 import * as dal from '../dal';
+import { triggerSync } from '../sync/engine';
+import { useSettingsStore } from './useSettingsStore';
 
 interface TransactionState {
   transactions: TransactionWithCategory[];
@@ -33,11 +35,37 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
   addTransaction: (data) => {
     dal.createTransaction(data);
+
+    // Update account balance in accounts table
+    const account = dal.getAccountById(data.account_id);
+    if (account) {
+      dal.updateAccountBalance(data.account_id, account.balance + data.amount);
+    }
+
+    // Update overallBalance setting — exact same method as currency
+    // dal.setSetting writes to SQLite with synced=0 → push syncs to Convex
+    const total = dal.getAllAccounts().reduce((sum, a) => sum + a.balance, 0);
+    useSettingsStore.getState().setOverallBalance(String(total));
+
     get().load();
+    triggerSync();
   },
 
   removeTransaction: (id) => {
+    const tx = dal.getTransactionById(id);
+    if (tx) {
+      const account = dal.getAccountById(tx.account_id);
+      if (account) {
+        dal.updateAccountBalance(tx.account_id, account.balance - tx.amount);
+      }
+    }
     dal.deleteTransaction(id);
+
+    // Update overallBalance setting — exact same method as currency
+    const total = dal.getAllAccounts().reduce((sum, a) => sum + a.balance, 0);
+    useSettingsStore.getState().setOverallBalance(String(total));
+
     get().load();
+    triggerSync();
   },
 }));

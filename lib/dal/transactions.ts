@@ -34,6 +34,7 @@ export function createTransaction(data: Pick<Transaction, 'title' | 'amount' | '
     'INSERT INTO transactions (id, title, amount, note, date, category_id, account_id, created_at, updated_at, synced, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)',
     id, data.title, data.amount, data.note || '', data.date, data.category_id, data.account_id, now, now
   );
+
   return db.getFirstSync<Transaction>('SELECT * FROM transactions WHERE id = ?', id)!;
 }
 
@@ -41,6 +42,12 @@ export function deleteTransaction(id: string): void {
   const db = getDatabase();
   const now = new Date().toISOString();
   db.runSync('UPDATE transactions SET deleted = 1, synced = 0, updated_at = ? WHERE id = ?', now, id);
+}
+
+/** Read a transaction before deleting (for balance reversal) */
+export function getTransactionById(id: string): Transaction | null {
+  const db = getDatabase();
+  return db.getFirstSync<Transaction>('SELECT * FROM transactions WHERE id = ?', id);
 }
 
 export function getMonthlyIncome(month: string): number {

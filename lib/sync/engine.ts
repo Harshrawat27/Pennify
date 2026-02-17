@@ -11,6 +11,14 @@ type UnsyncedRow = Record<string, unknown> & {
   deleted?: number;
 };
 
+// Module-level ref so triggerSync() can be called from stores
+let _activeEngine: SyncEngine | null = null;
+
+/** Trigger an immediate push to Convex (call after local writes) */
+export function triggerSync() {
+  _activeEngine?.syncNow();
+}
+
 export class SyncEngine {
   private client: ConvexReactClient;
   private userId: string;
@@ -22,6 +30,7 @@ export class SyncEngine {
   constructor(client: ConvexReactClient, userId: string) {
     this.client = client;
     this.userId = userId;
+    _activeEngine = this;
   }
 
   start() {
@@ -59,6 +68,7 @@ export class SyncEngine {
       this.unsubscribeNetInfo();
       this.unsubscribeNetInfo = null;
     }
+    if (_activeEngine === this) _activeEngine = null;
   }
 
   async syncNow() {
@@ -108,6 +118,12 @@ export class SyncEngine {
 
     if (hasUnsynced === 0) return;
 
+    // Helper: build record, only include `deleted: true` when actually deleted
+    // (never send `deleted: undefined` to Convex — it can break patches)
+    function mapDeleted(r: UnsyncedRow) {
+      return (r.deleted as number) === 1 ? { deleted: true as const } : {};
+    }
+
     await this.client.mutation(api.sync.pushBatch, {
       userId: this.userId,
       accounts: unsyncedAccounts.map((r) => ({
@@ -117,7 +133,7 @@ export class SyncEngine {
         balance: r.balance as number,
         icon: r.icon as string,
         updatedAt: r.updated_at,
-        deleted: (r.deleted as number) === 1 ? true : undefined,
+        ...mapDeleted(r),
       })),
       categories: unsyncedCategories.map((r) => ({
         localId: r.id as string,
@@ -126,7 +142,7 @@ export class SyncEngine {
         type: r.type as string,
         color: r.color as string,
         updatedAt: r.updated_at,
-        deleted: (r.deleted as number) === 1 ? true : undefined,
+        ...mapDeleted(r),
       })),
       transactions: unsyncedTransactions.map((r) => ({
         localId: r.id as string,
@@ -137,7 +153,7 @@ export class SyncEngine {
         categoryLocalId: r.category_id as string,
         accountLocalId: r.account_id as string,
         updatedAt: r.updated_at,
-        deleted: (r.deleted as number) === 1 ? true : undefined,
+        ...mapDeleted(r),
       })),
       budgets: unsyncedBudgets.map((r) => ({
         localId: r.id as string,
@@ -145,7 +161,7 @@ export class SyncEngine {
         limitAmount: r.limit_amount as number,
         month: r.month as string,
         updatedAt: r.updated_at,
-        deleted: (r.deleted as number) === 1 ? true : undefined,
+        ...mapDeleted(r),
       })),
       goals: unsyncedGoals.map((r) => ({
         localId: r.id as string,
@@ -155,7 +171,7 @@ export class SyncEngine {
         saved: r.saved as number,
         color: r.color as string,
         updatedAt: r.updated_at,
-        deleted: (r.deleted as number) === 1 ? true : undefined,
+        ...mapDeleted(r),
       })),
       settings: unsyncedSettings.map((r) => ({
         key: r.key,
@@ -164,13 +180,20 @@ export class SyncEngine {
       })),
     });
 
-    // Mark all as synced
-    db.execSync('UPDATE accounts SET synced = 1 WHERE synced = 0');
-    db.execSync('UPDATE categories SET synced = 1 WHERE synced = 0');
-    db.execSync('UPDATE transactions SET synced = 1 WHERE synced = 0');
-    db.execSync('UPDATE budgets SET synced = 1 WHERE synced = 0');
-    db.execSync('UPDATE goals SET synced = 1 WHERE synced = 0');
-    db.execSync('UPDATE settings SET synced = 1 WHERE synced = 0');
+    // Mark only the exact rows we pushed as synced (avoids race with
+    // concurrent local writes that changed data after we queried)
+    for (const r of unsyncedAccounts)
+      db.runSync('UPDATE accounts SET synced = 1 WHERE id = ? AND updated_at = ?', r.id, r.updated_at);
+    for (const r of unsyncedCategories)
+      db.runSync('UPDATE categories SET synced = 1 WHERE id = ? AND updated_at = ?', r.id, r.updated_at);
+    for (const r of unsyncedTransactions)
+      db.runSync('UPDATE transactions SET synced = 1 WHERE id = ? AND updated_at = ?', r.id, r.updated_at);
+    for (const r of unsyncedBudgets)
+      db.runSync('UPDATE budgets SET synced = 1 WHERE id = ? AND updated_at = ?', r.id, r.updated_at);
+    for (const r of unsyncedGoals)
+      db.runSync('UPDATE goals SET synced = 1 WHERE id = ? AND updated_at = ?', r.id, r.updated_at);
+    for (const r of unsyncedSettings)
+      db.runSync('UPDATE settings SET synced = 1 WHERE key = ? AND updated_at = ?', r.key, r.updated_at);
 
     // Purge soft-deleted rows that have been synced
     db.execSync('DELETE FROM accounts WHERE deleted = 1 AND synced = 1');
@@ -180,7 +203,7 @@ export class SyncEngine {
     db.execSync('DELETE FROM goals WHERE deleted = 1 AND synced = 1');
   }
 
-  async pullFromCloud(): Promise<boolean> {
+  async pullFromCloud(replaceLocal = false): Promise<boolean> {
     try {
       const data = await this.client.query(api.sync.pullAll, { userId: this.userId });
       if (!data) return false;
@@ -201,6 +224,17 @@ export class SyncEngine {
 
       db.execSync('BEGIN');
       try {
+        // If this is a fresh sign-in after onboarding and cloud already has
+        // data, wipe local onboarding data so cloud becomes source of truth
+        if (replaceLocal) {
+          db.execSync('DELETE FROM transactions');
+          db.execSync('DELETE FROM budgets');
+          db.execSync('DELETE FROM goals');
+          db.execSync('DELETE FROM accounts');
+          db.execSync('DELETE FROM categories');
+          db.execSync('DELETE FROM settings');
+        }
+
         for (const a of accounts) {
           if (a.deleted) continue;
           const exists = db.getFirstSync<{ id: string }>(

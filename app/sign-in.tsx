@@ -1,6 +1,8 @@
 import { authClient } from "@/lib/auth-client";
+import { useSettingsStore } from "@/lib/stores/useSettingsStore";
 import { Feather } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect } from "react";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -15,8 +17,22 @@ export default function SignInScreen() {
   const { fromOnboarding } = useLocalSearchParams<{ fromOnboarding?: string }>();
   const isFromOnboarding = fromOnboarding === 'true';
 
+  const { data: session } = authClient.useSession();
+  const hasOnboarded = useSettingsStore((s) => s.hasOnboarded);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Navigate away once session appears (sign-in succeeded)
+  useEffect(() => {
+    if (!session) return;
+
+    if (hasOnboarded === 'pending_auth') {
+      router.replace('/post-auth-setup');
+    } else {
+      router.replace('/(tabs)');
+    }
+  }, [session, hasOnboarded]);
 
   const handleGoogleSignIn = async () => {
     setError("");
