@@ -6,6 +6,7 @@ interface SettingsState {
   hasOnboarded: string | null; // null | 'pending_auth' | 'true'
   monthlyBudget: number;
   overallBalance: string;
+  monthlyBudgetLeft: number;
   trackIncome: boolean;
 
   load: () => void;
@@ -13,6 +14,7 @@ interface SettingsState {
   setHasOnboarded: (value: string) => void;
   setMonthlyBudget: (amount: number) => void;
   setOverallBalance: (balance: string) => void;
+  setMonthlyBudgetLeft: (amount: number) => void;
   setTrackIncome: (track: boolean) => void;
 }
 
@@ -21,6 +23,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   hasOnboarded: null,
   monthlyBudget: 0,
   overallBalance: '',
+  monthlyBudgetLeft: 0,
   trackIncome: true,
 
   load: () => {
@@ -28,8 +31,9 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     const hasOnboarded = dal.getSetting('hasOnboarded');
     const monthlyBudget = Number(dal.getSetting('monthlyBudget') ?? '0');
     const overallBalance = dal.getSetting('overallBalance') ?? '';
+    const monthlyBudgetLeft = Number(dal.getSetting('monthlyBudgetLeft') ?? '0');
     const trackIncome = dal.getSetting('trackIncome') !== 'false';
-    set({ currency, hasOnboarded, monthlyBudget, overallBalance, trackIncome });
+    set({ currency, hasOnboarded, monthlyBudget, overallBalance, monthlyBudgetLeft, trackIncome });
   },
 
   setCurrency: (code) => {
@@ -50,6 +54,11 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setOverallBalance: (balance) => {
     dal.setSetting('overallBalance', balance);
     set({ overallBalance: balance });
+  },
+
+  setMonthlyBudgetLeft: (amount) => {
+    dal.setSetting('monthlyBudgetLeft', String(amount));
+    set({ monthlyBudgetLeft: amount });
   },
 
   setTrackIncome: (track) => {

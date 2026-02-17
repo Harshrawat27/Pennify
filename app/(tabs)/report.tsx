@@ -35,8 +35,9 @@ export default function ReportScreen() {
   const maxDailyAmount = dailyData.reduce((max, d) => Math.max(max, d.amount), 0);
 
   const monthlyBudget = useSettingsStore((s) => s.monthlyBudget);
+  const monthlyBudgetLeft = useSettingsStore((s) => s.monthlyBudgetLeft);
   const spentPercent = monthlyBudget > 0 ? Math.round((expenses / monthlyBudget) * 100) : 0;
-  const leftAmount = Math.max(monthlyBudget - expenses, 0);
+  const leftAmount = monthlyBudgetLeft;
 
   return (
     <ScrollView

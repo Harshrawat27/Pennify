@@ -338,6 +338,13 @@ export class SyncEngine {
         }
 
         for (const s of settings) {
+          // Skip if local has unsynced changes (local wins over stale cloud)
+          const local = db.getFirstSync<{ synced: number }>(
+            'SELECT synced FROM settings WHERE key = ?',
+            s.key
+          );
+          if (local && local.synced === 0) continue;
+
           db.runSync(
             'INSERT OR REPLACE INTO settings (key, value, synced, updated_at) VALUES (?, ?, 1, ?)',
             s.key,

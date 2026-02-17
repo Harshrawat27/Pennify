@@ -48,6 +48,12 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     useSettingsStore.getState().setOverallBalance(String(total));
 
     get().load();
+
+    // Update monthlyBudgetLeft — same approach as overallBalance
+    const settings = useSettingsStore.getState();
+    const monthExpenses = dal.getMonthlyExpenses(get().currentMonth);
+    settings.setMonthlyBudgetLeft(Math.max(settings.monthlyBudget - monthExpenses, 0));
+
     triggerSync();
   },
 
@@ -66,6 +72,12 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     useSettingsStore.getState().setOverallBalance(String(total));
 
     get().load();
+
+    // Update monthlyBudgetLeft — same approach as overallBalance
+    const settings = useSettingsStore.getState();
+    const monthExpenses = dal.getMonthlyExpenses(get().currentMonth);
+    settings.setMonthlyBudgetLeft(Math.max(settings.monthlyBudget - monthExpenses, 0));
+
     triggerSync();
   },
 }));

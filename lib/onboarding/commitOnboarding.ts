@@ -13,6 +13,7 @@ export function commitOnboarding(): void {
 
   // Monthly budget
   dal.setSetting('monthlyBudget', String(state.monthlyBudget));
+  dal.setSetting('monthlyBudgetLeft', String(state.monthlyBudget));
 
   // Overall balance (optional)
   if (state.overallBalance.trim()) {
