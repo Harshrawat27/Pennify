@@ -1,5 +1,6 @@
 import * as dal from '../dal';
 import { useOnboardingStore } from '../stores/useOnboardingStore';
+import { scheduleDailyReminder, scheduleWeeklyReport, cancelAllNotifications } from '../utils/notifications';
 
 /**
  * Writes onboarding store state → SQLite via DAL.
@@ -112,4 +113,12 @@ export function commitOnboarding(): void {
 
   // Selected categories list (for reference, legacy settings)
   dal.setSetting('selectedCategories', JSON.stringify(state.selectedCategories));
+
+  // Schedule notifications based on user preferences
+  if (state.notificationsEnabled) {
+    void scheduleDailyReminder(state.dailyReminder);
+    void scheduleWeeklyReport(state.weeklyReport);
+  } else {
+    void cancelAllNotifications();
+  }
 }

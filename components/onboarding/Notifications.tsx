@@ -1,6 +1,7 @@
-import { Pressable, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, Switch, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useOnboardingStore } from '@/lib/stores/useOnboardingStore';
+import { requestNotificationPermission } from '@/lib/utils/notifications';
 
 interface NotificationsProps {
   onNext: () => void;
@@ -14,6 +15,27 @@ export function Notifications({ onNext, onBack }: NotificationsProps) {
   const setDailyReminder = useOnboardingStore((s) => s.setDailyReminder);
   const weeklyReport = useOnboardingStore((s) => s.weeklyReport);
   const setWeeklyReport = useOnboardingStore((s) => s.setWeeklyReport);
+
+  const handleToggleNotifications = async (value: boolean) => {
+    if (value) {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        setNotificationsEnabled(true);
+      } else {
+        // Permission denied — guide user to settings
+        Alert.alert(
+          'Notifications Blocked',
+          'Please enable notifications for Pennify in your device settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+      }
+    } else {
+      setNotificationsEnabled(false);
+    }
+  };
 
   return (
     <View className="flex-1 justify-between">
@@ -46,7 +68,7 @@ export function Notifications({ onNext, onBack }: NotificationsProps) {
             </View>
             <Switch
               value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
+              onValueChange={handleToggleNotifications}
               trackColor={{ false: '#E5E5E5', true: '#000' }}
               thumbColor="#fff"
             />

@@ -3,10 +3,12 @@ import { useSettingsStore } from '@/lib/stores/useSettingsStore';
 import { CURRENCIES } from '@/lib/utils/currency';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 import { deleteAccount } from '@/lib/account/deleteAccount';
+import { requestNotificationPermission, scheduleDailyReminder, cancelAllNotifications } from '@/lib/utils/notifications';
+import * as dal from '@/lib/dal';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type SettingRow = {
@@ -21,7 +23,6 @@ type SettingRow = {
 
 const STATIC_GENERAL_SETTINGS: SettingRow[] = [
   { icon: 'globe', label: 'Language', value: 'English' },
-  { icon: 'bell', label: 'Notifications', toggle: true },
   { icon: 'lock', label: 'Passcode Lock', toggle: true },
 ];
 
@@ -115,6 +116,36 @@ export default function SettingsScreen() {
   const trackIncome = useSettingsStore((s) => s.trackIncome);
   const setTrackIncome = useSettingsStore((s) => s.setTrackIncome);
 
+  // Read notification preference from DB
+  const pref = dal.getUserPreferences();
+  const [notificationsOn, setNotificationsOn] = useState(pref?.notifications_enabled === 1);
+
+  const handleToggleNotifications = async (value: boolean) => {
+    if (value) {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        dal.updatePreference('notifications_enabled', 1);
+        setNotificationsOn(true);
+        // Re-schedule based on saved daily/weekly preferences
+        const p = dal.getUserPreferences();
+        void scheduleDailyReminder(p?.daily_reminder === 1);
+      } else {
+        Alert.alert(
+          'Notifications Blocked',
+          'Please enable notifications for Pennify in your device settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+      }
+    } else {
+      dal.updatePreference('notifications_enabled', 0);
+      setNotificationsOn(false);
+      void cancelAllNotifications();
+    }
+  };
+
   const userName = session?.user?.name ?? 'Pennify User';
   const userEmail = session?.user?.email ?? 'Synced to cloud';
 
@@ -131,6 +162,13 @@ export default function SettingsScreen() {
       toggle: true,
       toggleValue: trackIncome,
       onToggle: setTrackIncome,
+    },
+    {
+      icon: 'bell',
+      label: 'Notifications',
+      toggle: true,
+      toggleValue: notificationsOn,
+      onToggle: handleToggleNotifications,
     },
     ...STATIC_GENERAL_SETTINGS,
   ];
