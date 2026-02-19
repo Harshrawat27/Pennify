@@ -75,6 +75,32 @@ export interface Goal {
   deleted?: number;
 }
 
+export interface UserPreferences {
+  id: string;
+  email: string;
+  currency: string;
+  overall_balance: number;
+  track_income: number; // 0/1 in SQLite
+  notifications_enabled: number;
+  daily_reminder: number;
+  weekly_report: number;
+  sync_enabled: number;
+  has_onboarded: string | null;
+  created_at: string;
+  updated_at: string;
+  synced?: number;
+}
+
+export interface MonthlyBudget {
+  id: string;
+  month: string; // YYYY-MM
+  budget: number;
+  created_at: string;
+  updated_at: string;
+  synced?: number;
+  deleted?: number;
+}
+
 export interface CategoryBreakdown {
   name: string;
   icon: FeatherIcon;

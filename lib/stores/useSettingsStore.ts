@@ -4,65 +4,64 @@ import * as dal from '../dal';
 interface SettingsState {
   currency: string;
   hasOnboarded: string | null; // null | 'pending_auth' | 'true'
-  monthlyBudget: number;
-  overallBalance: string;
-  monthlyBudgetLeft: number;
+  monthlyBudget: number; // current month's budget (from monthly_budgets table)
+  overallBalance: number;
   trackIncome: boolean;
 
   load: () => void;
   setCurrency: (code: string) => void;
   setHasOnboarded: (value: string) => void;
   setMonthlyBudget: (amount: number) => void;
-  setOverallBalance: (balance: string) => void;
-  setMonthlyBudgetLeft: (amount: number) => void;
+  setOverallBalance: (balance: number) => void;
   setTrackIncome: (track: boolean) => void;
+}
+
+function getCurrentMonth(): string {
+  return new Date().toISOString().slice(0, 7);
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   currency: 'INR',
   hasOnboarded: null,
   monthlyBudget: 0,
-  overallBalance: '',
-  monthlyBudgetLeft: 0,
+  overallBalance: 0,
   trackIncome: true,
 
   load: () => {
-    const currency = dal.getSetting('currency') ?? 'INR';
-    const hasOnboarded = dal.getSetting('hasOnboarded');
-    const monthlyBudget = Number(dal.getSetting('monthlyBudget') ?? '0');
-    const overallBalance = dal.getSetting('overallBalance') ?? '';
-    const monthlyBudgetLeft = Number(dal.getSetting('monthlyBudgetLeft') ?? '0');
-    const trackIncome = dal.getSetting('trackIncome') !== 'false';
-    set({ currency, hasOnboarded, monthlyBudget, overallBalance, monthlyBudgetLeft, trackIncome });
+    const pref = dal.getUserPreferences();
+    const mb = dal.getBudgetForMonth(getCurrentMonth());
+
+    set({
+      currency: pref?.currency ?? 'INR',
+      hasOnboarded: pref?.has_onboarded ?? null,
+      overallBalance: pref?.overall_balance ?? 0,
+      trackIncome: pref?.track_income !== 0,
+      monthlyBudget: mb?.budget ?? 0,
+    });
   },
 
   setCurrency: (code) => {
-    dal.setSetting('currency', code);
+    dal.updatePreference('currency', code);
     set({ currency: code });
   },
 
   setHasOnboarded: (value) => {
-    dal.setSetting('hasOnboarded', value);
+    dal.updatePreference('has_onboarded', value);
     set({ hasOnboarded: value });
   },
 
   setMonthlyBudget: (amount) => {
-    dal.setSetting('monthlyBudget', String(amount));
+    dal.setMonthlyBudget(getCurrentMonth(), amount);
     set({ monthlyBudget: amount });
   },
 
   setOverallBalance: (balance) => {
-    dal.setSetting('overallBalance', balance);
+    dal.updatePreference('overall_balance', balance);
     set({ overallBalance: balance });
   },
 
-  setMonthlyBudgetLeft: (amount) => {
-    dal.setSetting('monthlyBudgetLeft', String(amount));
-    set({ monthlyBudgetLeft: amount });
-  },
-
   setTrackIncome: (track) => {
-    dal.setSetting('trackIncome', String(track));
+    dal.updatePreference('track_income', track ? 1 : 0);
     set({ trackIncome: track });
   },
 }));

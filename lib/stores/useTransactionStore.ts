@@ -42,18 +42,11 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       dal.updateAccountBalance(data.account_id, account.balance + data.amount);
     }
 
-    // Update overallBalance setting — exact same method as currency
-    // dal.setSetting writes to SQLite with synced=0 → push syncs to Convex
+    // Update overallBalance in user_preferences
     const total = dal.getAllAccounts().reduce((sum, a) => sum + a.balance, 0);
-    useSettingsStore.getState().setOverallBalance(String(total));
+    useSettingsStore.getState().setOverallBalance(total);
 
     get().load();
-
-    // Update monthlyBudgetLeft — same approach as overallBalance
-    const settings = useSettingsStore.getState();
-    const monthExpenses = dal.getMonthlyExpenses(get().currentMonth);
-    settings.setMonthlyBudgetLeft(Math.max(settings.monthlyBudget - monthExpenses, 0));
-
     triggerSync();
   },
 
@@ -67,17 +60,11 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     }
     dal.deleteTransaction(id);
 
-    // Update overallBalance setting — exact same method as currency
+    // Update overallBalance in user_preferences
     const total = dal.getAllAccounts().reduce((sum, a) => sum + a.balance, 0);
-    useSettingsStore.getState().setOverallBalance(String(total));
+    useSettingsStore.getState().setOverallBalance(total);
 
     get().load();
-
-    // Update monthlyBudgetLeft — same approach as overallBalance
-    const settings = useSettingsStore.getState();
-    const monthExpenses = dal.getMonthlyExpenses(get().currentMonth);
-    settings.setMonthlyBudgetLeft(Math.max(settings.monthlyBudget - monthExpenses, 0));
-
     triggerSync();
   },
 }));

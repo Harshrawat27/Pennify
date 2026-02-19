@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { authClient } from "../auth-client";
 import { convex } from "../convex";
+import * as dal from "../dal";
 import { useTransactionStore } from "../stores/useTransactionStore";
 import { useBudgetStore } from "../stores/useBudgetStore";
 import { useGoalStore } from "../stores/useGoalStore";
@@ -19,19 +20,29 @@ export function useSyncEngine({ enabled = true }: { enabled?: boolean } = {}) {
       return;
     }
 
+    // Save email to user_preferences for reference
+    const email = session?.user?.email;
+    if (email) {
+      dal.updatePreference('email', email);
+    }
+
     const engine = new SyncEngine(convex, userId);
     engineRef.current = engine;
 
     (async () => {
       try {
-        // If user just finished onboarding and is signing in, cloud data
-        // should replace local onboarding data (existing account wins)
         const hasOnboarded = useSettingsStore.getState().hasOnboarded;
-        const replaceLocal = hasOnboarded === 'pending_auth';
-        await engine.pullFromCloud(replaceLocal);
-        // Always reload stores — after onboarding, SQLite has data
-        // that Zustand doesn't know about yet (commitOnboarding wrote
-        // directly via DAL, bypassing store setters)
+        const isNewSignIn = hasOnboarded === 'pending_auth';
+        const cloudHasData = await engine.pullFromCloud(isNewSignIn);
+
+        if (isNewSignIn && !cloudHasData) {
+          // Cloud is empty — fresh/deleted account.
+          // Wipe old local data, keep only fresh onboarding data,
+          // and mark everything synced=0 so it pushes to cloud.
+          engine.resetLocalForFreshAccount();
+        }
+
+        // Always reload stores after pull
         useTransactionStore.getState().load();
         useBudgetStore.getState().load();
         useGoalStore.getState().load();

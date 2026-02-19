@@ -94,6 +94,36 @@ const migrations: Migration[] = [
       `ALTER TABLE settings ADD COLUMN updated_at TEXT NOT NULL DEFAULT (datetime('now'))`,
     ],
   },
+  {
+    version: 4,
+    up: [
+      `CREATE TABLE IF NOT EXISTS user_preferences (
+        id TEXT PRIMARY KEY,
+        email TEXT DEFAULT '',
+        currency TEXT NOT NULL DEFAULT 'INR',
+        overall_balance REAL NOT NULL DEFAULT 0,
+        track_income INTEGER NOT NULL DEFAULT 1,
+        notifications_enabled INTEGER NOT NULL DEFAULT 1,
+        daily_reminder INTEGER NOT NULL DEFAULT 1,
+        weekly_report INTEGER NOT NULL DEFAULT 1,
+        sync_enabled INTEGER NOT NULL DEFAULT 1,
+        has_onboarded TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        synced INTEGER NOT NULL DEFAULT 0
+      )`,
+      `CREATE TABLE IF NOT EXISTS monthly_budgets (
+        id TEXT PRIMARY KEY,
+        month TEXT NOT NULL UNIQUE,
+        budget REAL NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        synced INTEGER NOT NULL DEFAULT 0,
+        deleted INTEGER NOT NULL DEFAULT 0
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_monthly_budgets_month ON monthly_budgets(month)`,
+    ],
+  },
 ];
 
 export function runMigrations(): void {

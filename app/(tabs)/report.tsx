@@ -19,6 +19,7 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
   const currency = useSettingsStore((s) => s.currency);
+  const trackIncome = useSettingsStore((s) => s.trackIncome);
   const income = useTransactionStore((s) => s.income);
   const expenses = useTransactionStore((s) => s.expenses);
   const currentMonth = useTransactionStore((s) => s.currentMonth);
@@ -35,9 +36,8 @@ export default function ReportScreen() {
   const maxDailyAmount = dailyData.reduce((max, d) => Math.max(max, d.amount), 0);
 
   const monthlyBudget = useSettingsStore((s) => s.monthlyBudget);
-  const monthlyBudgetLeft = useSettingsStore((s) => s.monthlyBudgetLeft);
   const spentPercent = monthlyBudget > 0 ? Math.round((expenses / monthlyBudget) * 100) : 0;
-  const leftAmount = monthlyBudgetLeft;
+  const leftAmount = Math.max(monthlyBudget - expenses, 0);
 
   return (
     <ScrollView
@@ -148,6 +148,7 @@ export default function ReportScreen() {
       )}
 
       {/* Income vs Expense */}
+      {trackIncome ? (
       <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
         <Text className="text-[15px] font-bold text-black mb-4">
           Income vs Expenses
@@ -178,6 +179,7 @@ export default function ReportScreen() {
           </View>
         </View>
       </View>
+      ) : null}
 
       {/* Category Breakdown */}
       <View className="mx-6 mt-4 bg-white rounded-2xl p-5">

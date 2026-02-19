@@ -13,6 +13,7 @@ export default function AddTransactionScreen() {
   const insets = useSafeAreaInsets();
   const addTransaction = useTransactionStore((s) => s.addTransaction);
   const currency = useSettingsStore((s) => s.currency);
+  const trackIncome = useSettingsStore((s) => s.trackIncome);
 
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -83,24 +84,26 @@ export default function AddTransactionScreen() {
         </View>
 
         {/* Expense / Income Toggle */}
-        <View className="flex-row mx-6 mt-5 bg-white rounded-xl p-1">
-          <Pressable
-            onPress={() => setIsExpense(true)}
-            className={`flex-1 py-3 rounded-lg items-center ${isExpense ? 'bg-black' : ''}`}
-          >
-            <Text className={`text-[14px] font-semibold ${isExpense ? 'text-white' : 'text-neutral-400'}`}>
-              Expense
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setIsExpense(false)}
-            className={`flex-1 py-3 rounded-lg items-center ${!isExpense ? 'bg-black' : ''}`}
-          >
-            <Text className={`text-[14px] font-semibold ${!isExpense ? 'text-white' : 'text-neutral-400'}`}>
-              Income
-            </Text>
-          </Pressable>
-        </View>
+        {trackIncome ? (
+          <View className="flex-row mx-6 mt-5 bg-white rounded-xl p-1">
+            <Pressable
+              onPress={() => setIsExpense(true)}
+              className={`flex-1 py-3 rounded-lg items-center ${isExpense ? 'bg-black' : ''}`}
+            >
+              <Text className={`text-[14px] font-semibold ${isExpense ? 'text-white' : 'text-neutral-400'}`}>
+                Expense
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setIsExpense(false)}
+              className={`flex-1 py-3 rounded-lg items-center ${!isExpense ? 'bg-black' : ''}`}
+            >
+              <Text className={`text-[14px] font-semibold ${!isExpense ? 'text-white' : 'text-neutral-400'}`}>
+                Income
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {/* Amount */}
         <View className="mx-6 mt-6 bg-white rounded-2xl p-5">

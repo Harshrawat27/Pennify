@@ -4,18 +4,22 @@ import { generateId } from '../utils/id';
 export function seedDatabase(): void {
   const db = getDatabase();
 
-  // Seed default settings (idempotent — INSERT OR IGNORE)
-  db.runSync(
-    "INSERT OR IGNORE INTO settings (key, value, synced, updated_at) VALUES ('currency', 'INR', 0, datetime('now'))"
-  );
+  // Seed default user_preferences row if none exists
+  const prefCount = db.getFirstSync<{ c: number }>('SELECT COUNT(*) as c FROM user_preferences');
+  if (!prefCount || prefCount.c === 0) {
+    const now = new Date().toISOString();
+    db.runSync(
+      'INSERT INTO user_preferences (id, email, currency, overall_balance, track_income, notifications_enabled, daily_reminder, weekly_report, sync_enabled, has_onboarded, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
+      generateId(), '', 'INR', 0, 1, 1, 1, 1, 1, null, now, now
+    );
+  }
 
-  // Only seed if no categories exist
+  // Only seed categories if none exist
   const count = db.getFirstSync<{ c: number }>('SELECT COUNT(*) as c FROM categories');
   if (count && count.c > 0) return;
 
   const now = new Date().toISOString();
 
-  // Seed default categories only — no sample data
   const categories = [
     { id: generateId(), name: 'Food & Dining', icon: 'shopping-bag', type: 'expense', color: '#000000' },
     { id: generateId(), name: 'Transport', icon: 'navigation', type: 'expense', color: '#525252' },

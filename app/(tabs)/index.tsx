@@ -12,8 +12,7 @@ export default function HomeScreen() {
   const expenses = useTransactionStore((s) => s.expenses);
 
   const currency = useSettingsStore((s) => s.currency);
-  const overallBalance = useSettingsStore((s) => s.overallBalance);
-  const totalBalance = parseFloat(overallBalance) || 0;
+  const totalBalance = useSettingsStore((s) => s.overallBalance);
 
   // Format current month/year for display
   const now = new Date();

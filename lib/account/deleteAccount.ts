@@ -30,6 +30,8 @@ export async function deleteAccount(userId: string): Promise<void> {
   db.execSync('DELETE FROM accounts');
   db.execSync('DELETE FROM categories');
   db.execSync('DELETE FROM settings');
+  db.execSync('DELETE FROM user_preferences');
+  db.execSync('DELETE FROM monthly_budgets');
 
   // 4. Reset all Zustand stores so in-memory state matches wiped DB
   useSettingsStore.getState().load();

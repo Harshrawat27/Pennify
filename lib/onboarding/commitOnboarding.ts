@@ -3,28 +3,31 @@ import { useOnboardingStore } from '../stores/useOnboardingStore';
 
 /**
  * Writes onboarding store state → SQLite via DAL.
- * Called once after screen 11 (Motivational), before sign-in.
+ * Called once after screen 10 (Motivational), before sign-in.
  */
 export function commitOnboarding(): void {
   const state = useOnboardingStore.getState();
 
-  // Currency
-  dal.setSetting('currency', state.currency);
+  // User preferences — update the single row
+  dal.updatePreference('currency', state.currency);
+  dal.updatePreference('track_income', state.trackIncome ? 1 : 0);
+  dal.updatePreference('notifications_enabled', state.notificationsEnabled ? 1 : 0);
+  dal.updatePreference('daily_reminder', state.dailyReminder ? 1 : 0);
+  dal.updatePreference('weekly_report', state.weeklyReport ? 1 : 0);
 
-  // Monthly budget
-  dal.setSetting('monthlyBudget', String(state.monthlyBudget));
-  dal.setSetting('monthlyBudgetLeft', String(state.monthlyBudget));
-
-  // Overall balance (optional)
-  if (state.overallBalance.trim()) {
-    dal.setSetting('overallBalance', state.overallBalance.trim());
+  // Overall balance
+  const overallNum = parseFloat(state.overallBalance);
+  if (!isNaN(overallNum)) {
+    dal.updatePreference('overall_balance', overallNum);
   }
 
-  // Track income preference
-  dal.setSetting('trackIncome', String(state.trackIncome));
+  // Monthly budget → monthly_budgets table
+  if (state.monthlyBudget > 0) {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    dal.setMonthlyBudget(currentMonth, state.monthlyBudget);
+  }
 
   // Accounts — apply overallBalance to first account if set
-  const overallNum = parseFloat(state.overallBalance);
   for (let i = 0; i < state.accounts.length; i++) {
     const acc = state.accounts[i];
     dal.createAccount({
@@ -89,7 +92,7 @@ export function commitOnboarding(): void {
     }
   }
 
-  // Recurring payments (store as JSON setting for now)
+  // Recurring payments (store as JSON in legacy settings for now)
   if (state.recurringPayments.length > 0) {
     dal.setSetting('recurringPayments', JSON.stringify(state.recurringPayments));
   }
@@ -107,11 +110,6 @@ export function commitOnboarding(): void {
     }
   }
 
-  // Notification preferences
-  dal.setSetting('notificationsEnabled', String(state.notificationsEnabled));
-  dal.setSetting('dailyReminder', String(state.dailyReminder));
-  dal.setSetting('weeklyReport', String(state.weeklyReport));
-
-  // Selected categories list (for reference)
+  // Selected categories list (for reference, legacy settings)
   dal.setSetting('selectedCategories', JSON.stringify(state.selectedCategories));
 }

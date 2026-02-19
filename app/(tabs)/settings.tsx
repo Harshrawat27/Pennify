@@ -14,6 +14,8 @@ type SettingRow = {
   label: string;
   value?: string;
   toggle?: boolean;
+  toggleValue?: boolean;
+  onToggle?: (value: boolean) => void;
   onPress?: () => void;
 };
 
@@ -36,7 +38,13 @@ const ABOUT_SETTINGS: SettingRow[] = [
 ];
 
 function SettingItem({ item, isLast }: { item: SettingRow; isLast: boolean }) {
-  const [enabled, setEnabled] = useState(true);
+  const [localEnabled, setLocalEnabled] = useState(true);
+  const isControlled = item.toggleValue !== undefined;
+  const enabled = isControlled ? item.toggleValue : localEnabled;
+  const handleToggle = (val: boolean) => {
+    if (item.onToggle) item.onToggle(val);
+    else setLocalEnabled(val);
+  };
 
   return (
     <Pressable
@@ -54,7 +62,7 @@ function SettingItem({ item, isLast }: { item: SettingRow; isLast: boolean }) {
       {item.toggle ? (
         <Switch
           value={enabled}
-          onValueChange={setEnabled}
+          onValueChange={handleToggle}
           trackColor={{ false: '#E5E5E5', true: '#000000' }}
           thumbColor='#FFFFFF'
         />
@@ -104,6 +112,9 @@ export default function SettingsScreen() {
     ? `${currencyInfo.code} (${currencyInfo.symbol})`
     : currency;
 
+  const trackIncome = useSettingsStore((s) => s.trackIncome);
+  const setTrackIncome = useSettingsStore((s) => s.setTrackIncome);
+
   const userName = session?.user?.name ?? 'Pennify User';
   const userEmail = session?.user?.email ?? 'Synced to cloud';
 
@@ -113,6 +124,13 @@ export default function SettingsScreen() {
       label: 'Currency',
       value: currencyLabel,
       onPress: () => router.push('/currency-picker'),
+    },
+    {
+      icon: 'trending-up',
+      label: 'Track Income',
+      toggle: true,
+      toggleValue: trackIncome,
+      onToggle: setTrackIncome,
     },
     ...STATIC_GENERAL_SETTINGS,
   ];
