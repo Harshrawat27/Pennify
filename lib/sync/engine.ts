@@ -348,6 +348,10 @@ export class SyncEngine {
             t.localId
           );
           if (!exists) {
+            // Skip if referenced category or account doesn't exist locally (may be soft-deleted)
+            const catExists = db.getFirstSync<{ id: string }>('SELECT id FROM categories WHERE id = ?', t.categoryLocalId);
+            const accExists = db.getFirstSync<{ id: string }>('SELECT id FROM accounts WHERE id = ?', t.accountLocalId);
+            if (!catExists || !accExists) continue;
             db.runSync(
               'INSERT INTO transactions (id, title, amount, note, date, category_id, account_id, created_at, updated_at, synced, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0)',
               t.localId, t.title, t.amount, t.note, t.date, t.categoryLocalId, t.accountLocalId, t.updatedAt, t.updatedAt
@@ -362,6 +366,9 @@ export class SyncEngine {
             b.localId
           );
           if (!exists) {
+            // Skip if referenced category doesn't exist locally (may be soft-deleted)
+            const catExists = db.getFirstSync<{ id: string }>('SELECT id FROM categories WHERE id = ?', b.categoryLocalId);
+            if (!catExists) continue;
             db.runSync(
               'INSERT INTO budgets (id, category_id, limit_amount, month, created_at, updated_at, synced, deleted) VALUES (?, ?, ?, ?, ?, ?, 1, 0)',
               b.localId, b.categoryLocalId, b.limitAmount, b.month, b.updatedAt, b.updatedAt
