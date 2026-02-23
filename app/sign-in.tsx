@@ -27,12 +27,41 @@ export default function SignInScreen() {
   useEffect(() => {
     if (!session) return;
 
+    console.log('[SignIn] Session established:', {
+      userId: session.user.id,
+      email: session.user.email,
+      createdAt: session.user.createdAt,
+      hasOnboarded,
+    });
+
+    // Came from completing onboarding flow → subscription/trial setup
     if (hasOnboarded === 'pending_auth') {
+      console.log('[SignIn] hasOnboarded=pending_auth → /post-auth-setup');
       router.replace('/post-auth-setup');
+      return;
+    }
+
+    // Detect new vs returning user via account creation timestamp.
+    // Better Auth creates a brand-new user record on first sign-in (or after
+    // account deletion + re-register), so createdAt will be very recent.
+    const accountAgeMs = Date.now() - new Date(session.user.createdAt).getTime();
+    const isNewUser = accountAgeMs < 120_000; // created within last 2 minutes
+
+    console.log('[SignIn] Account age:', Math.round(accountAgeMs / 1000), 's  isNewUser:', isNewUser);
+
+    if (isNewUser) {
+      // Brand-new user or deleted-and-re-registered → must go through onboarding
+      console.log('[SignIn] New user → /onboarding');
+      router.replace('/onboarding');
     } else {
+      // Genuine returning user — ensure hasOnboarded is persisted then go to app
+      console.log('[SignIn] Returning user → /(tabs)');
+      if (!hasOnboarded) {
+        useSettingsStore.getState().setHasOnboarded('true');
+      }
       router.replace('/(tabs)');
     }
-  }, [session, hasOnboarded]);
+  }, [session]);
 
   const handleGoogleSignIn = async () => {
     setError("");

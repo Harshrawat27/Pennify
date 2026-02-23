@@ -27,15 +27,22 @@ function RootLayoutNav() {
     if (hasRouted.current) return;
     hasRouted.current = true;
 
+    console.log('[Layout] Initial route — hasOnboarded:', hasOnboarded, ' session:', !!session);
+
     if (!hasOnboarded) {
+      console.log('[Layout] → /onboarding (no onboarding record)');
       router.replace('/onboarding');
     } else if (hasOnboarded === 'pending_auth' && !session) {
+      console.log('[Layout] → /sign-in (pending_auth, no session)');
       router.replace('/sign-in?fromOnboarding=true');
     } else if (hasOnboarded === 'pending_auth' && session) {
+      console.log('[Layout] → /post-auth-setup (pending_auth, has session)');
       router.replace('/post-auth-setup');
     } else if (hasOnboarded === 'true' && !session) {
+      console.log('[Layout] → /sign-in (returning user, no session)');
       router.replace('/sign-in');
     } else if (hasOnboarded === 'true' && session) {
+      console.log('[Layout] → /(tabs) (returning user, has session)');
       router.replace('/(tabs)');
     }
   }, [hasOnboarded, session, isPending]);
