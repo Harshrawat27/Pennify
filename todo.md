@@ -9,8 +9,7 @@ and because we have all the convex code in web is it safe? or anyone from outsid
 
 ⏺ Good security question. Let me break it into two parts:
 
-1. Is the Vercel bridge a security risk?  
-
+1. Is the Vercel bridge a security risk?
 
 No. pennifyweb is just an HTTPS proxy — it forwards auth requests to Convex and passes the  
  response back. No credentials are stored there, no data passes through it (only auth  
@@ -68,3 +67,5 @@ solvable problem for when you're closer to production.
 
 For now: the random-ID approach is fine for development. Before launch, switching to
 ctx.auth is the right move.
+
+- why we are not adding email in DB
