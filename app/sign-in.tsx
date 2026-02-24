@@ -1,5 +1,7 @@
 import { authClient } from "@/lib/auth-client";
+import { convex } from "@/lib/convex";
 import { useSettingsStore } from "@/lib/stores/useSettingsStore";
+import { api } from "@/convex/_generated/api";
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
@@ -21,6 +23,7 @@ export default function SignInScreen() {
   const hasOnboarded = useSettingsStore((s) => s.hasOnboarded);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingCloud, setIsCheckingCloud] = useState(false);
   const [error, setError] = useState("");
 
   // Navigate away once session appears (sign-in succeeded)
@@ -30,7 +33,6 @@ export default function SignInScreen() {
     console.log('[SignIn] Session established:', {
       userId: session.user.id,
       email: session.user.email,
-      createdAt: session.user.createdAt,
       hasOnboarded,
     });
 
@@ -41,26 +43,43 @@ export default function SignInScreen() {
       return;
     }
 
-    // Detect new vs returning user via account creation timestamp.
-    // Better Auth creates a brand-new user record on first sign-in (or after
-    // account deletion + re-register), so createdAt will be very recent.
-    const accountAgeMs = Date.now() - new Date(session.user.createdAt).getTime();
-    const isNewUser = accountAgeMs < 120_000; // created within last 2 minutes
+    // Check Convex cloud for existing data to distinguish new vs returning users.
+    // This is more reliable than createdAt timestamps — works even when someone
+    // creates an account on Device 1 and immediately opens Device 2.
+    setIsCheckingCloud(true);
+    convex.query(api.sync.pullAll, { userId: session.user.id })
+      .then((data) => {
+        const hasCloudData = Boolean(
+          data && (
+            data.accounts.length > 0 ||
+            data.transactions.length > 0 ||
+            data.categories.length > 0
+          )
+        );
 
-    console.log('[SignIn] Account age:', Math.round(accountAgeMs / 1000), 's  isNewUser:', isNewUser);
+        console.log('[SignIn] Cloud check — hasCloudData:', hasCloudData);
 
-    if (isNewUser) {
-      // Brand-new user or deleted-and-re-registered → must go through onboarding
-      console.log('[SignIn] New user → /onboarding');
-      router.replace('/onboarding');
-    } else {
-      // Genuine returning user — ensure hasOnboarded is persisted then go to app
-      console.log('[SignIn] Returning user → /(tabs)');
-      if (!hasOnboarded) {
-        useSettingsStore.getState().setHasOnboarded('true');
-      }
-      router.replace('/(tabs)');
-    }
+        if (!hasCloudData) {
+          console.log('[SignIn] No cloud data → new user → /onboarding');
+          router.replace('/onboarding');
+        } else {
+          console.log('[SignIn] Has cloud data → returning user → /(tabs)');
+          if (!hasOnboarded) {
+            useSettingsStore.getState().setHasOnboarded('true');
+          }
+          router.replace('/(tabs)');
+        }
+      })
+      .catch((e) => {
+        // Network error during check — fall back to hasOnboarded value
+        console.warn('[SignIn] Cloud check failed, falling back:', e);
+        if (!hasOnboarded) {
+          router.replace('/onboarding');
+        } else {
+          router.replace('/(tabs)');
+        }
+      })
+      .finally(() => setIsCheckingCloud(false));
   }, [session]);
 
   const handleGoogleSignIn = async () => {
@@ -78,6 +97,16 @@ export default function SignInScreen() {
       setIsLoading(false);
     }
   };
+
+  // Full-screen overlay while we check Convex cloud after sign-in
+  if (isCheckingCloud) {
+    return (
+      <View className="flex-1 bg-black items-center justify-center">
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text className="text-neutral-500 text-[14px] mt-4">Checking your account…</Text>
+      </View>
+    );
+  }
 
   return (
     <View

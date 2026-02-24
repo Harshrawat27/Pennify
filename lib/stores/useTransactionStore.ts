@@ -35,36 +35,17 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
   addTransaction: (data) => {
     dal.createTransaction(data);
-
-    // Update account balance in accounts table
-    const account = dal.getAccountById(data.account_id);
-    if (account) {
-      dal.updateAccountBalance(data.account_id, account.balance + data.amount);
-    }
-
-    // Update overallBalance in user_preferences
-    const total = dal.getAllAccounts().reduce((sum, a) => sum + a.balance, 0);
-    useSettingsStore.getState().setOverallBalance(total);
-
+    // Balance is now derived (initial account balance + SUM transactions) — no mutation needed
     get().load();
+    useSettingsStore.getState().load(); // recalculate derived overallBalance
     triggerSync();
   },
 
   removeTransaction: (id) => {
-    const tx = dal.getTransactionById(id);
-    if (tx) {
-      const account = dal.getAccountById(tx.account_id);
-      if (account) {
-        dal.updateAccountBalance(tx.account_id, account.balance - tx.amount);
-      }
-    }
     dal.deleteTransaction(id);
-
-    // Update overallBalance in user_preferences
-    const total = dal.getAllAccounts().reduce((sum, a) => sum + a.balance, 0);
-    useSettingsStore.getState().setOverallBalance(total);
-
+    // Balance is now derived — no mutation needed
     get().load();
+    useSettingsStore.getState().load(); // recalculate derived overallBalance
     triggerSync();
   },
 }));

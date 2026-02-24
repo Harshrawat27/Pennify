@@ -5,14 +5,13 @@ interface SettingsState {
   currency: string;
   hasOnboarded: string | null; // null | 'pending_auth' | 'true'
   monthlyBudget: number; // current month's budget (from monthly_budgets table)
-  overallBalance: number;
+  overallBalance: number; // derived: initial account balances + SUM(all transactions)
   trackIncome: boolean;
 
   load: () => void;
   setCurrency: (code: string) => void;
   setHasOnboarded: (value: string) => void;
   setMonthlyBudget: (amount: number) => void;
-  setOverallBalance: (balance: number) => void;
   setTrackIncome: (track: boolean) => void;
 }
 
@@ -34,7 +33,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     set({
       currency: pref?.currency ?? 'INR',
       hasOnboarded: pref?.has_onboarded ?? null,
-      overallBalance: pref?.overall_balance ?? 0,
+      // Derived from initial account balances + SUM(all transactions) — never stale
+      overallBalance: dal.getTotalBalance(),
       trackIncome: pref?.track_income !== 0,
       monthlyBudget: mb?.budget ?? 0,
     });
@@ -53,11 +53,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setMonthlyBudget: (amount) => {
     dal.setMonthlyBudget(getCurrentMonth(), amount);
     set({ monthlyBudget: amount });
-  },
-
-  setOverallBalance: (balance) => {
-    dal.updatePreference('overall_balance', balance);
-    set({ overallBalance: balance });
   },
 
   setTrackIncome: (track) => {

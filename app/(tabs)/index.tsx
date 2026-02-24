@@ -1,8 +1,10 @@
 import { useSettingsStore } from '@/lib/stores/useSettingsStore';
 import { useTransactionStore } from '@/lib/stores/useTransactionStore';
+import { useSyncStore } from '@/lib/stores/useSyncStore';
+import * as dal from '@/lib/dal';
 import { formatCurrency } from '@/lib/utils/currency';
 import { Feather } from '@expo/vector-icons';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
@@ -13,6 +15,19 @@ export default function HomeScreen() {
 
   const currency = useSettingsStore((s) => s.currency);
   const totalBalance = useSettingsStore((s) => s.overallBalance);
+
+  const isInitialSyncDone = useSyncStore((s) => s.isInitialSyncDone);
+  const hasLocalData = dal.getAllAccounts().length > 0;
+
+  // Show loading overlay on fresh device until first sync completes and data is pulled
+  if (!isInitialSyncDone && !hasLocalData) {
+    return (
+      <View className='flex-1 bg-black items-center justify-center'>
+        <ActivityIndicator size='large' color='#ffffff' />
+        <Text className='text-neutral-500 text-[14px] mt-4'>Syncing your data…</Text>
+      </View>
+    );
+  }
 
   // Format current month/year for display
   const now = new Date();

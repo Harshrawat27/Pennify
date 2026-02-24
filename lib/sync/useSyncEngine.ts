@@ -6,6 +6,7 @@ import { useTransactionStore } from "../stores/useTransactionStore";
 import { useBudgetStore } from "../stores/useBudgetStore";
 import { useGoalStore } from "../stores/useGoalStore";
 import { useSettingsStore } from "../stores/useSettingsStore";
+import { useSyncStore } from "../stores/useSyncStore";
 import { SyncEngine } from "./engine";
 
 export function useSyncEngine({ enabled = true }: { enabled?: boolean } = {}) {
@@ -17,6 +18,7 @@ export function useSyncEngine({ enabled = true }: { enabled?: boolean } = {}) {
     if (!userId) {
       engineRef.current?.stop();
       engineRef.current = null;
+      useSyncStore.getState().reset();
       return;
     }
 
@@ -49,6 +51,9 @@ export function useSyncEngine({ enabled = true }: { enabled?: boolean } = {}) {
         useSettingsStore.getState().load();
       } catch (e) {
         console.warn("[useSyncEngine] initial pull failed:", e);
+      } finally {
+        // Signal that the first sync attempt is done regardless of outcome
+        useSyncStore.getState().setInitialSyncDone();
       }
       engine.start();
     })();

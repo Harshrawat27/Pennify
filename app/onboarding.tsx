@@ -18,6 +18,9 @@ import { Notifications } from '@/components/onboarding/Notifications';
 import { Motivational } from '@/components/onboarding/Motivational';
 import { commitOnboarding } from '@/lib/onboarding/commitOnboarding';
 import { useSettingsStore } from '@/lib/stores/useSettingsStore';
+import { useTransactionStore } from '@/lib/stores/useTransactionStore';
+import { useBudgetStore } from '@/lib/stores/useBudgetStore';
+import { useGoalStore } from '@/lib/stores/useGoalStore';
 
 const TOTAL_STEPS = 11;
 
@@ -46,6 +49,11 @@ export default function OnboardingScreen() {
   const finish = useCallback(() => {
     commitOnboarding();
     setHasOnboarded('pending_auth');
+    // Reload all stores so data committed during onboarding is immediately visible
+    useTransactionStore.getState().load();
+    useBudgetStore.getState().load();
+    useGoalStore.getState().load();
+    useSettingsStore.getState().load();
     router.replace('/sign-in?fromOnboarding=true');
   }, [setHasOnboarded]);
 

@@ -124,6 +124,20 @@ const migrations: Migration[] = [
       `CREATE INDEX IF NOT EXISTS idx_monthly_budgets_month ON monthly_budgets(month)`,
     ],
   },
+  {
+    version: 5,
+    up: [
+      // accounts.balance was previously a running total (initial + all transactions).
+      // We now derive current balance as: initial_balance + SUM(transactions).
+      // Backfill: strip out transaction amounts so accounts.balance = initial only.
+      `UPDATE accounts
+       SET balance = balance - COALESCE(
+         (SELECT SUM(t.amount) FROM transactions t
+          WHERE t.account_id = accounts.id AND t.deleted = 0),
+         0
+       )`,
+    ],
+  },
 ];
 
 export function runMigrations(): void {

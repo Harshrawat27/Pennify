@@ -34,3 +34,19 @@ export function deleteAccount(id: string): void {
   const now = new Date().toISOString();
   db.runSync('UPDATE accounts SET deleted = 1, synced = 0, updated_at = ? WHERE id = ?', now, id);
 }
+
+/**
+ * Derives total balance from initial account balances + all non-deleted transactions.
+ * This is always correct across devices because transactions sync as individual records.
+ */
+export function getTotalBalance(): number {
+  const db = getDatabase();
+  const result = db.getFirstSync<{ total: number | null }>(
+    `SELECT
+       COALESCE(SUM(a.balance), 0) +
+       COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.deleted = 0), 0)
+     AS total
+     FROM accounts a WHERE a.deleted = 0`
+  );
+  return result?.total ?? 0;
+}
