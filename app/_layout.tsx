@@ -1,6 +1,6 @@
+import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { ConvexAuthSetup } from '@/lib/auth/ConvexAuthSetup';
-import { api } from '@/convex/_generated/api';
 import { useQuery } from 'convex/react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
