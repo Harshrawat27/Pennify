@@ -2,18 +2,26 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useSettingsStore } from '@/lib/stores/useSettingsStore';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { authClient } from '@/lib/auth-client';
 import { CURRENCIES } from '@/lib/utils/currency';
 
 const currencyList = Object.values(CURRENCIES);
 
 export default function CurrencyPickerScreen() {
   const insets = useSafeAreaInsets();
-  const currency = useSettingsStore((s) => s.currency);
-  const setCurrency = useSettingsStore((s) => s.setCurrency);
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
 
-  const handleSelect = (code: string) => {
-    setCurrency(code);
+  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const updateCurrency = useMutation(api.preferences.updateCurrency);
+
+  const currency = prefs?.currency ?? 'INR';
+
+  const handleSelect = async (code: string) => {
+    if (!userId) return;
+    await updateCurrency({ userId, currency: code });
     router.back();
   };
 

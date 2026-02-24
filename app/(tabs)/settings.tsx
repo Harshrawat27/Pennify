@@ -1,10 +1,10 @@
 import { authClient } from '@/lib/auth-client';
-import { useSettingsStore } from '@/lib/stores/useSettingsStore';
+import { api } from '@/convex/_generated/api';
+import { useQuery, useMutation } from 'convex/react';
 import { CURRENCIES } from '@/lib/utils/currency';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 import { deleteAccount } from '@/lib/account/deleteAccount';
 import { requestNotificationPermission, scheduleDailyReminder, cancelAllNotifications } from '@/lib/utils/notifications';
-import * as dal from '@/lib/dal';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -79,13 +79,7 @@ function SettingItem({ item, isLast }: { item: SettingRow; isLast: boolean }) {
   );
 }
 
-function SettingGroup({
-  title,
-  items,
-}: {
-  title: string;
-  items: SettingRow[];
-}) {
+function SettingGroup({ title, items }: { title: string; items: SettingRow[] }) {
   return (
     <View className='mx-6 mt-6'>
       <Text className='text-[12px] text-neutral-400 font-semibold uppercase tracking-wider mb-2 ml-1'>
@@ -107,28 +101,39 @@ function SettingGroup({
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
-  const currency = useSettingsStore((s) => s.currency);
+  const userId = session?.user?.id;
+
+  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const updateCurrency = useMutation(api.preferences.updateCurrency);
+  const updateTrackIncome = useMutation(api.preferences.updateTrackIncome);
+  const updateNotifications = useMutation(api.preferences.updateNotifications);
+
+  const currency = prefs?.currency ?? 'INR';
+  const trackIncome = prefs?.trackIncome ?? true;
+  const notificationsOn = prefs?.notificationsEnabled ?? false;
+
   const currencyInfo = CURRENCIES[currency];
   const currencyLabel = currencyInfo
     ? `${currencyInfo.code} (${currencyInfo.symbol})`
     : currency;
 
-  const trackIncome = useSettingsStore((s) => s.trackIncome);
-  const setTrackIncome = useSettingsStore((s) => s.setTrackIncome);
+  const handleSetCurrency = async (code: string) => {
+    if (!userId) return;
+    await updateCurrency({ userId, currency: code });
+  };
 
-  // Read notification preference from DB
-  const pref = dal.getUserPreferences();
-  const [notificationsOn, setNotificationsOn] = useState(pref?.notifications_enabled === 1);
+  const handleToggleTrackIncome = async (value: boolean) => {
+    if (!userId) return;
+    await updateTrackIncome({ userId, trackIncome: value });
+  };
 
   const handleToggleNotifications = async (value: boolean) => {
+    if (!userId) return;
     if (value) {
       const granted = await requestNotificationPermission();
       if (granted) {
-        dal.updatePreference('notifications_enabled', 1);
-        setNotificationsOn(true);
-        // Re-schedule based on saved daily/weekly preferences
-        const p = dal.getUserPreferences();
-        void scheduleDailyReminder(p?.daily_reminder === 1);
+        await updateNotifications({ userId, notificationsEnabled: true });
+        void scheduleDailyReminder(prefs?.dailyReminder ?? true);
       } else {
         Alert.alert(
           'Notifications Blocked',
@@ -140,8 +145,7 @@ export default function SettingsScreen() {
         );
       }
     } else {
-      dal.updatePreference('notifications_enabled', 0);
-      setNotificationsOn(false);
+      await updateNotifications({ userId, notificationsEnabled: false });
       void cancelAllNotifications();
     }
   };
@@ -161,7 +165,7 @@ export default function SettingsScreen() {
       label: 'Track Income',
       toggle: true,
       toggleValue: trackIncome,
-      onToggle: setTrackIncome,
+      onToggle: handleToggleTrackIncome,
     },
     {
       icon: 'bell',
@@ -182,13 +186,11 @@ export default function SettingsScreen() {
   };
 
   const handleDeleteAccount = async () => {
-    const userId = session?.user?.id;
     if (!userId) return;
-
     setIsDeleting(true);
     try {
       await deleteAccount(userId);
-      router.replace('/onboarding');
+      router.replace('/sign-in');
     } catch (e) {
       console.error('[Settings] Delete account failed:', e);
     } finally {

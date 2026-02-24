@@ -2,9 +2,9 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
-import { useTransactionStore } from '@/lib/stores/useTransactionStore';
-import { getCategoryBreakdown, getDailySpending } from '@/lib/dal';
-import { useSettingsStore } from '@/lib/stores/useSettingsStore';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { authClient } from '@/lib/auth-client';
 import { formatCurrency, getCurrencySymbol } from '@/lib/utils/currency';
 
 const PERIOD_TABS = ['Week', 'Month', 'Year'];
@@ -18,26 +18,31 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
-  const currency = useSettingsStore((s) => s.currency);
-  const trackIncome = useSettingsStore((s) => s.trackIncome);
-  const income = useTransactionStore((s) => s.income);
-  const expenses = useTransactionStore((s) => s.expenses);
-  const currentMonth = useTransactionStore((s) => s.currentMonth);
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
 
-  const categories = getCategoryBreakdown(currentMonth);
-  const dailyRaw = getDailySpending(currentMonth);
+  const currentMonth = new Date().toISOString().slice(0, 7);
 
-  // Build weekly spending data from daily data
-  const dailyData = dailyRaw.map((d) => ({
+  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const monthlyStats = useQuery(api.transactions.getMonthlyStats, userId ? { userId, month: currentMonth } : 'skip');
+  const categoryBreakdown = useQuery(api.transactions.getCategoryBreakdown, userId ? { userId, month: currentMonth } : 'skip');
+  const dailySpending = useQuery(api.transactions.getDailySpending, userId ? { userId, month: currentMonth } : 'skip');
+  const monthlyBudget = useQuery(api.monthlyBudgets.getByMonth, userId ? { userId, month: currentMonth } : 'skip');
+
+  const currency = prefs?.currency ?? 'INR';
+  const trackIncome = prefs?.trackIncome ?? true;
+  const income = monthlyStats?.income ?? 0;
+  const expenses = monthlyStats?.expenses ?? 0;
+  const budget = monthlyBudget?.budget ?? 0;
+
+  const dailyData = (dailySpending ?? []).map((d) => ({
     day: DAY_NAMES[new Date(d.day + 'T00:00:00').getDay()],
     amount: d.amount,
   }));
 
   const maxDailyAmount = dailyData.reduce((max, d) => Math.max(max, d.amount), 0);
-
-  const monthlyBudget = useSettingsStore((s) => s.monthlyBudget);
-  const spentPercent = monthlyBudget > 0 ? Math.round((expenses / monthlyBudget) * 100) : 0;
-  const leftAmount = Math.max(monthlyBudget - expenses, 0);
+  const spentPercent = budget > 0 ? Math.round((expenses / budget) * 100) : 0;
+  const leftAmount = Math.max(budget - expenses, 0);
 
   return (
     <ScrollView
@@ -75,11 +80,10 @@ export default function ReportScreen() {
         ))}
       </View>
 
-      {/* Donut Ring — Spent vs Income */}
+      {/* Donut Ring */}
       <View className="items-center mt-8">
         <View style={{ width: RING_SIZE, height: RING_SIZE }}>
           <Svg width={RING_SIZE} height={RING_SIZE}>
-            {/* Background ring */}
             <Circle
               cx={RING_SIZE / 2}
               cy={RING_SIZE / 2}
@@ -88,7 +92,6 @@ export default function ReportScreen() {
               strokeWidth={RING_STROKE}
               fill="none"
             />
-            {/* Spent ring */}
             <Circle
               cx={RING_SIZE / 2}
               cy={RING_SIZE / 2}
@@ -102,7 +105,6 @@ export default function ReportScreen() {
               origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}
             />
           </Svg>
-          {/* Center text */}
           <View className="absolute inset-0 items-center justify-center">
             <Text className="text-[28px] font-bold text-black">{spentPercent}%</Text>
             <Text className="text-[11px] text-neutral-400">of budget</Text>
@@ -149,36 +151,36 @@ export default function ReportScreen() {
 
       {/* Income vs Expense */}
       {trackIncome ? (
-      <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
-        <Text className="text-[15px] font-bold text-black mb-4">
-          Income vs Expenses
-        </Text>
-        <View className="flex-row gap-3">
-          <View className="flex-1">
-            <View className="flex-row items-center gap-1.5 mb-2">
-              <View className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <Text className="text-[12px] text-neutral-400">Income</Text>
+        <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
+          <Text className="text-[15px] font-bold text-black mb-4">
+            Income vs Expenses
+          </Text>
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <View className="flex-row items-center gap-1.5 mb-2">
+                <View className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <Text className="text-[12px] text-neutral-400">Income</Text>
+              </View>
+              <Text className="text-[20px] font-bold text-black">{formatCurrency(income, currency)}</Text>
+              <View className="h-1.5 bg-neutral-100 rounded-full mt-2">
+                <View className="h-1.5 bg-emerald-500 rounded-full" style={{ width: '100%' }} />
+              </View>
             </View>
-            <Text className="text-[20px] font-bold text-black">{formatCurrency(income, currency)}</Text>
-            <View className="h-1.5 bg-neutral-100 rounded-full mt-2">
-              <View className="h-1.5 bg-emerald-500 rounded-full" style={{ width: '100%' }} />
-            </View>
-          </View>
-          <View className="flex-1">
-            <View className="flex-row items-center gap-1.5 mb-2">
-              <View className="w-2.5 h-2.5 rounded-full bg-black" />
-              <Text className="text-[12px] text-neutral-400">Expenses</Text>
-            </View>
-            <Text className="text-[20px] font-bold text-black">{formatCurrency(expenses, currency)}</Text>
-            <View className="h-1.5 bg-neutral-100 rounded-full mt-2">
-              <View
-                className="h-1.5 bg-black rounded-full"
-                style={{ width: `${monthlyBudget > 0 ? Math.min(Math.round((expenses / monthlyBudget) * 100), 100) : 0}%` }}
-              />
+            <View className="flex-1">
+              <View className="flex-row items-center gap-1.5 mb-2">
+                <View className="w-2.5 h-2.5 rounded-full bg-black" />
+                <Text className="text-[12px] text-neutral-400">Expenses</Text>
+              </View>
+              <Text className="text-[20px] font-bold text-black">{formatCurrency(expenses, currency)}</Text>
+              <View className="h-1.5 bg-neutral-100 rounded-full mt-2">
+                <View
+                  className="h-1.5 bg-black rounded-full"
+                  style={{ width: `${budget > 0 ? Math.min(Math.round((expenses / budget) * 100), 100) : 0}%` }}
+                />
+              </View>
             </View>
           </View>
         </View>
-      </View>
       ) : null}
 
       {/* Category Breakdown */}
@@ -192,17 +194,17 @@ export default function ReportScreen() {
           </Pressable>
         </View>
 
-        {categories.length === 0 ? (
+        {(categoryBreakdown ?? []).length === 0 ? (
           <View className="py-4 items-center">
             <Text className="text-neutral-400 text-[13px]">No spending data yet</Text>
           </View>
         ) : (
-          categories.map((cat, i) => (
+          (categoryBreakdown ?? []).map((cat, i) => (
             <View key={cat.name} className={i > 0 ? 'mt-4' : ''}>
               <View className="flex-row items-center justify-between mb-2">
                 <View className="flex-row items-center gap-3">
                   <View className="w-9 h-9 rounded-xl bg-neutral-100 items-center justify-center">
-                    <Feather name={cat.icon} size={16} color="#000" />
+                    <Feather name={cat.icon as any} size={16} color="#000" />
                   </View>
                   <Text className="text-[14px] font-medium text-black">
                     {cat.name}

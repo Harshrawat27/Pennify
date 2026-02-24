@@ -1,59 +1,69 @@
 import { authClient } from '@/lib/auth-client';
 import { ConvexAuthSetup } from '@/lib/auth/ConvexAuthSetup';
-import { useDatabase } from '@/lib/hooks/useDatabase';
-import { useSettingsStore } from '@/lib/stores/useSettingsStore';
-import { useSyncEngine } from '@/lib/sync/useSyncEngine';
+import { api } from '@/convex/_generated/api';
+import { useQuery } from 'convex/react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import '../global.css';
 
-function SyncManager() {
-  const { data: session } = authClient.useSession();
-  // Only activate sync when signed in — but always mounted so tree never changes
-  useSyncEngine({ enabled: !!session });
-  return null;
-}
-
 function RootLayoutNav() {
   const { data: session, isPending } = authClient.useSession();
-  const hasOnboarded = useSettingsStore((s) => s.hasOnboarded);
+  const userId = session?.user?.id;
+
+  // Check Convex for user preferences to determine routing
+  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+
   const hasRouted = useRef(false);
+  const prevUserId = useRef<string | undefined>(undefined);
 
-  // One-time initial route — decide where to go when app starts, then never again.
   useEffect(() => {
-    if (isPending) return;
+    // Reset routing flag when userId changes (e.g. sign-out then sign-in)
+    if (prevUserId.current !== userId) {
+      console.log('[Layout] userId changed:', prevUserId.current, '→', userId);
+      hasRouted.current = false;
+      prevUserId.current = userId;
+    }
+
+    if (isPending) {
+      console.log('[Layout] auth isPending — waiting');
+      return;
+    }
     if (hasRouted.current) return;
-    hasRouted.current = true;
 
-    console.log('[Layout] Initial route — hasOnboarded:', hasOnboarded, ' session:', !!session);
-
-    if (!hasOnboarded) {
-      console.log('[Layout] → /onboarding (no onboarding record)');
-      router.replace('/onboarding');
-    } else if (hasOnboarded === 'pending_auth' && !session) {
-      console.log('[Layout] → /sign-in (pending_auth, no session)');
-      router.replace('/sign-in?fromOnboarding=true');
-    } else if (hasOnboarded === 'pending_auth' && session) {
-      console.log('[Layout] → /post-auth-setup (pending_auth, has session)');
-      router.replace('/post-auth-setup');
-    } else if (hasOnboarded === 'true' && !session) {
-      console.log('[Layout] → /sign-in (returning user, no session)');
+    if (!session) {
+      console.log('[Layout] No session → /sign-in');
+      hasRouted.current = true;
       router.replace('/sign-in');
-    } else if (hasOnboarded === 'true' && session) {
-      console.log('[Layout] → /(tabs) (returning user, has session)');
+      return;
+    }
+
+    // Session exists — wait for Convex prefs to load
+    if (prefs === undefined) {
+      console.log('[Layout] Session exists, prefs loading…');
+      return;
+    }
+
+    hasRouted.current = true;
+    if (prefs === null) {
+      console.log('[Layout] No prefs (new user) → /onboarding');
+      router.replace('/onboarding');
+    } else {
+      console.log('[Layout] Has prefs (returning user) → /(tabs)');
       router.replace('/(tabs)');
     }
-  }, [hasOnboarded, session, isPending]);
+  }, [session, isPending, prefs, userId]);
 
-  const statusStyle = !hasOnboarded || !session ? 'light' : 'dark';
+  const statusStyle = !session ? 'light' : 'dark';
 
-  // Always render the Stack — never swap it for a spinner.
-  // This prevents onboarding (and all screens) from unmounting when isPending flickers.
+  // Show loading overlay ON TOP of the Stack (never unmount the Stack)
+  // This is critical — Expo Router needs the Stack always mounted for OAuth
+  // redirects and deep-link handling to work correctly.
+  const showOverlay = isPending || (!!session && prefs === undefined);
+
   return (
     <>
-      <SyncManager />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name='onboarding' />
         <Stack.Screen name='sign-in' />
@@ -71,21 +81,29 @@ function RootLayoutNav() {
         />
       </Stack>
       <StatusBar style={statusStyle} />
+
+      {/* Full-screen loading overlay — rendered on top, Stack stays mounted */}
+      {showOverlay && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: '#000',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <ActivityIndicator color='#fff' size='large' />
+        </View>
+      )}
     </>
   );
 }
 
 export default function RootLayout() {
-  const isReady = useDatabase();
-
-  if (!isReady) {
-    return (
-      <View className='flex-1 bg-black items-center justify-center'>
-        <ActivityIndicator color='#fff' size='large' />
-      </View>
-    );
-  }
-
   return (
     <ConvexAuthSetup>
       <RootLayoutNav />

@@ -1,30 +1,48 @@
-import { useSettingsStore } from '@/lib/stores/useSettingsStore';
-import { useTransactionStore } from '@/lib/stores/useTransactionStore';
-import { useSyncStore } from '@/lib/stores/useSyncStore';
-import * as dal from '@/lib/dal';
+import { api } from '@/convex/_generated/api';
+import { authClient } from '@/lib/auth-client';
 import { formatCurrency } from '@/lib/utils/currency';
 import { Feather } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { useQuery } from 'convex/react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const transactions = useTransactionStore((s) => s.transactions);
-  const income = useTransactionStore((s) => s.income);
-  const expenses = useTransactionStore((s) => s.expenses);
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
 
-  const currency = useSettingsStore((s) => s.currency);
-  const totalBalance = useSettingsStore((s) => s.overallBalance);
+  const currentMonth = new Date().toISOString().slice(0, 7);
 
-  const isInitialSyncDone = useSyncStore((s) => s.isInitialSyncDone);
-  const hasLocalData = dal.getAllAccounts().length > 0;
+  const transactions = useQuery(
+    api.transactions.listByMonth,
+    userId ? { userId, month: currentMonth } : 'skip'
+  );
+  const monthlyStats = useQuery(
+    api.transactions.getMonthlyStats,
+    userId ? { userId, month: currentMonth } : 'skip'
+  );
+  const totalBalance = useQuery(
+    api.accounts.getTotalBalance,
+    userId ? { userId } : 'skip'
+  );
+  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
 
-  // Show loading overlay on fresh device until first sync completes and data is pulled
-  if (!isInitialSyncDone && !hasLocalData) {
+  const currency = prefs?.currency ?? 'INR';
+  const income = monthlyStats?.income ?? 0;
+  const expenses = monthlyStats?.expenses ?? 0;
+
+  // Show loading while data is fetching
+  if (transactions === undefined || totalBalance === undefined) {
     return (
       <View className='flex-1 bg-black items-center justify-center'>
         <ActivityIndicator size='large' color='#ffffff' />
-        <Text className='text-neutral-500 text-[14px] mt-4'>Syncing your data…</Text>
+        <Text className='text-neutral-500 text-[14px] mt-4'>Loading…</Text>
       </View>
     );
   }
@@ -36,8 +54,6 @@ export default function HomeScreen() {
     year: 'numeric',
   });
 
-  // Group transactions by date
-  const today = now.toISOString().split('T')[0];
   const todayFormatted = now.toLocaleDateString('en-US', {
     weekday: 'long',
     day: 'numeric',
@@ -86,12 +102,12 @@ export default function HomeScreen() {
               Current Balance
             </Text>
             <Text className='text-white text-[48px] font-bold mt-2 tracking-tight leading-none'>
-              {formatCurrency(totalBalance, currency)}
+              {formatCurrency(totalBalance ?? 0, currency)}
             </Text>
           </View>
         </View>
 
-        {/* ===== WHITE CONTENT AREA (overlaps hero) ===== */}
+        {/* ===== WHITE CONTENT AREA ===== */}
         <View className='bg-neutral-50 rounded-t-[32px] -mt-4'>
           {/* ── Your Money ── */}
           <View className='px-6 pt-7'>
@@ -167,7 +183,6 @@ export default function HomeScreen() {
 
           {/* ── Transactions ── */}
           <View className='px-6 mt-8'>
-            {/* Section header */}
             <View className='flex-row justify-between items-center'>
               <Text className='text-[18px] font-bold text-black'>
                 Transactions
@@ -187,7 +202,6 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            {/* Date row */}
             <View className='flex-row justify-between items-center mt-5 mb-4'>
               <Text className='text-[13px] text-neutral-400'>
                 {todayFormatted}
@@ -197,7 +211,6 @@ export default function HomeScreen() {
               </Text>
             </View>
 
-            {/* Transaction cards */}
             {transactions.length === 0 ? (
               <View className='bg-white rounded-2xl p-8 items-center'>
                 <Feather name='inbox' size={32} color='#D4D4D4' />
@@ -210,14 +223,16 @@ export default function HomeScreen() {
               </View>
             ) : (
               transactions.map((tx) => (
-                <View key={tx.id} className='bg-white rounded-2xl p-4 mb-3'>
+                <View key={tx._id} className='bg-white rounded-2xl p-4 mb-3'>
                   <View className='flex-row items-center'>
-                    {/* Icon */}
                     <View className='w-12 h-12 rounded-2xl bg-neutral-100 items-center justify-center'>
-                      <Feather name={tx.category_icon} size={19} color='#000' />
+                      <Feather
+                        name={tx.categoryIcon as any}
+                        size={19}
+                        color='#000'
+                      />
                     </View>
 
-                    {/* Title + subtitle */}
                     <View className='flex-1 ml-3.5'>
                       <Text className='text-black font-bold text-[15px]'>
                         {tx.title}
@@ -238,13 +253,12 @@ export default function HomeScreen() {
                         <View className='flex-row items-center gap-1'>
                           <Feather name='tag' size={10} color='#A3A3A3' />
                           <Text className='text-neutral-400 text-[11px]'>
-                            {tx.category_name}
+                            {tx.categoryName}
                           </Text>
                         </View>
                       </View>
                     </View>
 
-                    {/* Amount */}
                     <View className='items-end ml-2'>
                       <Text
                         className={`font-bold text-[15px] ${
@@ -252,7 +266,7 @@ export default function HomeScreen() {
                         }`}
                       >
                         {tx.amount > 0 ? '+' : '-'}
-                        {formatCurrency(tx.amount, currency)}
+                        {formatCurrency(Math.abs(tx.amount), currency)}
                       </Text>
                     </View>
                   </View>
@@ -261,7 +275,6 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {/* Bottom spacer for tab bar */}
           <View className='h-32' />
         </View>
       </ScrollView>

@@ -1,8 +1,11 @@
 import { useState, useCallback } from 'react';
-import { View } from 'react-native';
+import { ActivityIndicator, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { authClient } from '@/lib/auth-client';
 import { StepPager } from '@/components/onboarding/StepPager';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { GetStarted } from '@/components/onboarding/GetStarted';
@@ -16,18 +19,18 @@ import { RecurringPayments } from '@/components/onboarding/RecurringPayments';
 import { SetGoals } from '@/components/onboarding/SetGoals';
 import { Notifications } from '@/components/onboarding/Notifications';
 import { Motivational } from '@/components/onboarding/Motivational';
-import { commitOnboarding } from '@/lib/onboarding/commitOnboarding';
-import { useSettingsStore } from '@/lib/stores/useSettingsStore';
-import { useTransactionStore } from '@/lib/stores/useTransactionStore';
-import { useBudgetStore } from '@/lib/stores/useBudgetStore';
-import { useGoalStore } from '@/lib/stores/useGoalStore';
+import { useOnboardingStore } from '@/lib/stores/useOnboardingStore';
+import { scheduleDailyReminder, scheduleWeeklyReport, cancelAllNotifications } from '@/lib/utils/notifications';
 
 const TOTAL_STEPS = 11;
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
-  const setHasOnboarded = useSettingsStore((s) => s.setHasOnboarded);
+  const [isCommitting, setIsCommitting] = useState(false);
+
+  const { data: session } = authClient.useSession();
+  const commitAll = useMutation(api.onboarding.commitAll);
 
   const next = useCallback(() => {
     if (step < TOTAL_STEPS - 1) {
@@ -42,25 +45,78 @@ export default function OnboardingScreen() {
   }, [step]);
 
   const skipBalance = useCallback(() => {
-    // Skip overall balance screen → go to next
     setStep((s) => s + 1);
   }, []);
 
-  const finish = useCallback(() => {
-    commitOnboarding();
-    setHasOnboarded('pending_auth');
-    // Reload all stores so data committed during onboarding is immediately visible
-    useTransactionStore.getState().load();
-    useBudgetStore.getState().load();
-    useGoalStore.getState().load();
-    useSettingsStore.getState().load();
-    router.replace('/sign-in?fromOnboarding=true');
-  }, [setHasOnboarded]);
+  const finish = useCallback(async () => {
+    if (!session?.user?.id) {
+      // Not signed in yet — shouldn't happen in new flow (sign-in first)
+      // but handle gracefully by going to sign-in
+      router.replace('/sign-in');
+      return;
+    }
+
+    const state = useOnboardingStore.getState();
+    const overallNum = parseFloat(state.overallBalance);
+
+    setIsCommitting(true);
+    try {
+      await commitAll({
+        userId: session.user.id,
+        preferences: {
+          currency: state.currency,
+          trackIncome: state.trackIncome,
+          notificationsEnabled: state.notificationsEnabled,
+          dailyReminder: state.dailyReminder,
+          weeklyReport: state.weeklyReport,
+        },
+        accounts: state.accounts.map((acc, i) => ({
+          name: acc.name,
+          type: acc.type,
+          balance: i === 0 && !isNaN(overallNum) ? overallNum : acc.balance,
+          icon: acc.icon as string,
+        })),
+        selectedCategories: state.selectedCategories,
+        customCategories: state.customCategories,
+        goals: state.goals
+          .map((g) => ({ name: g.name, icon: g.icon as string, target: parseFloat(g.target), color: g.color }))
+          .filter((g) => !isNaN(g.target) && g.target > 0),
+        monthlyBudget:
+          state.monthlyBudget > 0
+            ? { month: new Date().toISOString().slice(0, 7), budget: state.monthlyBudget }
+            : undefined,
+      });
+
+      // Schedule notifications
+      if (state.notificationsEnabled) {
+        void scheduleDailyReminder(state.dailyReminder);
+        void scheduleWeeklyReport(state.weeklyReport);
+      } else {
+        void cancelAllNotifications();
+      }
+
+      // Reset onboarding store
+      useOnboardingStore.getState().reset();
+
+      router.replace('/(tabs)');
+    } catch (e) {
+      console.error('[Onboarding] commitAll failed:', e);
+      setIsCommitting(false);
+    }
+  }, [session, commitAll]);
 
   const goToSignIn = useCallback(() => {
-    // "Already have an account?" — skip onboarding entirely
     router.replace('/sign-in');
   }, []);
+
+  if (isCommitting) {
+    return (
+      <View className='flex-1 bg-black items-center justify-center'>
+        <ActivityIndicator size='large' color='#ffffff' />
+        <Text className='text-neutral-500 text-[14px] mt-4'>Setting up your account…</Text>
+      </View>
+    );
+  }
 
   // Screen 1 (GetStarted) is full black, no progress bar
   if (step === 0) {

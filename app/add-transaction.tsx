@@ -1,66 +1,71 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useTransactionStore } from '@/lib/stores/useTransactionStore';
-import { useSettingsStore } from '@/lib/stores/useSettingsStore';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { authClient } from '@/lib/auth-client';
 import { getCurrencySymbol } from '@/lib/utils/currency';
-import { getAllCategories, getAllAccounts } from '@/lib/dal';
-import type { Category, Account } from '@/lib/models/types';
 
 export default function AddTransactionScreen() {
   const insets = useSafeAreaInsets();
-  const addTransaction = useTransactionStore((s) => s.addTransaction);
-  const currency = useSettingsStore((s) => s.currency);
-  const trackIncome = useSettingsStore((s) => s.trackIncome);
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id ?? '';
+
+  const categories = useQuery(api.categories.list, userId ? { userId } : 'skip');
+  const accounts = useQuery(api.accounts.list, userId ? { userId } : 'skip');
+  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const createTransaction = useMutation(api.transactions.create);
+
+  const currency = prefs?.currency ?? 'INR';
+  const trackIncome = prefs?.trackIncome ?? true;
 
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [isExpense, setIsExpense] = useState(true);
   const [note, setNote] = useState('');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState('');
-  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    const cats = getAllCategories();
-    const accts = getAllAccounts();
-    setCategories(cats);
-    setAccounts(accts);
-    // Default selections
-    const expenseCats = cats.filter((c) => c.type === 'expense');
-    if (expenseCats.length > 0) setSelectedCategoryId(expenseCats[0].id);
-    if (accts.length > 0) setSelectedAccountId(accts[0].id);
-  }, []);
-
-  const filteredCategories = categories.filter((c) =>
+  const filteredCategories = (categories ?? []).filter((c) =>
     isExpense ? c.type === 'expense' : c.type === 'income'
   );
 
-  // Update selected category when toggling expense/income
-  useEffect(() => {
-    if (filteredCategories.length > 0 && !filteredCategories.find((c) => c.id === selectedCategoryId)) {
-      setSelectedCategoryId(filteredCategories[0].id);
-    }
-  }, [isExpense, filteredCategories, selectedCategoryId]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
 
-  const handleSave = () => {
+  // Auto-select first category / account when loaded
+  const effectiveCategoryId =
+    selectedCategoryId && filteredCategories.find((c) => c._id === selectedCategoryId)
+      ? selectedCategoryId
+      : filteredCategories[0]?._id ?? '';
+
+  const effectiveAccountId =
+    selectedAccountId && (accounts ?? []).find((a) => a._id === selectedAccountId)
+      ? selectedAccountId
+      : (accounts ?? [])[0]?._id ?? '';
+
+  const handleSave = async () => {
     const numAmount = parseFloat(amount);
-    if (!title.trim() || isNaN(numAmount) || numAmount <= 0 || !selectedCategoryId || !selectedAccountId) return;
+    if (!title.trim() || isNaN(numAmount) || numAmount <= 0 || !effectiveCategoryId || !effectiveAccountId) return;
 
-    const today = new Date().toISOString().split('T')[0];
-    addTransaction({
-      title: title.trim(),
-      amount: isExpense ? -numAmount : numAmount,
-      note: note.trim(),
-      date: today,
-      category_id: selectedCategoryId,
-      account_id: selectedAccountId,
-    });
-
-    router.back();
+    setIsSaving(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      await createTransaction({
+        userId,
+        title: title.trim(),
+        amount: isExpense ? -numAmount : numAmount,
+        note: note.trim(),
+        date: today,
+        categoryId: effectiveCategoryId,
+        accountId: effectiveAccountId,
+      });
+      router.back();
+    } catch (e) {
+      console.error('[AddTransaction] save failed:', e);
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -139,20 +144,20 @@ export default function AddTransactionScreen() {
           <View className="flex-row flex-wrap gap-2">
             {filteredCategories.map((cat) => (
               <Pressable
-                key={cat.id}
-                onPress={() => setSelectedCategoryId(cat.id)}
+                key={cat._id}
+                onPress={() => setSelectedCategoryId(cat._id)}
                 className={`flex-row items-center gap-2 px-4 py-2.5 rounded-xl ${
-                  selectedCategoryId === cat.id ? 'bg-black' : 'bg-neutral-100'
+                  effectiveCategoryId === cat._id ? 'bg-black' : 'bg-neutral-100'
                 }`}
               >
                 <Feather
-                  name={cat.icon}
+                  name={cat.icon as any}
                   size={14}
-                  color={selectedCategoryId === cat.id ? '#fff' : '#000'}
+                  color={effectiveCategoryId === cat._id ? '#fff' : '#000'}
                 />
                 <Text
                   className={`text-[13px] font-medium ${
-                    selectedCategoryId === cat.id ? 'text-white' : 'text-black'
+                    effectiveCategoryId === cat._id ? 'text-white' : 'text-black'
                   }`}
                 >
                   {cat.name}
@@ -166,22 +171,22 @@ export default function AddTransactionScreen() {
         <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
           <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Account</Text>
           <View className="flex-row flex-wrap gap-2">
-            {accounts.map((acc) => (
+            {(accounts ?? []).map((acc) => (
               <Pressable
-                key={acc.id}
-                onPress={() => setSelectedAccountId(acc.id)}
+                key={acc._id}
+                onPress={() => setSelectedAccountId(acc._id)}
                 className={`flex-row items-center gap-2 px-4 py-2.5 rounded-xl ${
-                  selectedAccountId === acc.id ? 'bg-black' : 'bg-neutral-100'
+                  effectiveAccountId === acc._id ? 'bg-black' : 'bg-neutral-100'
                 }`}
               >
                 <Feather
-                  name={acc.icon}
+                  name={acc.icon as any}
                   size={14}
-                  color={selectedAccountId === acc.id ? '#fff' : '#000'}
+                  color={effectiveAccountId === acc._id ? '#fff' : '#000'}
                 />
                 <Text
                   className={`text-[13px] font-medium ${
-                    selectedAccountId === acc.id ? 'text-white' : 'text-black'
+                    effectiveAccountId === acc._id ? 'text-white' : 'text-black'
                   }`}
                 >
                   {acc.name}
@@ -208,11 +213,16 @@ export default function AddTransactionScreen() {
         <View className="mx-6 mt-6">
           <Pressable
             onPress={handleSave}
+            disabled={isSaving || !title.trim() || !amount}
             className={`py-4 rounded-2xl items-center ${
-              title.trim() && amount ? 'bg-black' : 'bg-neutral-300'
+              title.trim() && amount && !isSaving ? 'bg-black' : 'bg-neutral-300'
             }`}
           >
-            <Text className="text-white font-bold text-[16px]">Save Transaction</Text>
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text className="text-white font-bold text-[16px]">Save Transaction</Text>
+            )}
           </Pressable>
         </View>
       </ScrollView>

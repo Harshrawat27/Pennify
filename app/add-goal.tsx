@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useGoalStore } from '@/lib/stores/useGoalStore';
-import { useSettingsStore } from '@/lib/stores/useSettingsStore';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { authClient } from '@/lib/auth-client';
 import { getCurrencySymbol } from '@/lib/utils/currency';
 import type { FeatherIcon } from '@/lib/models/types';
 
@@ -23,26 +24,38 @@ const GOAL_COLORS = ['#000000', '#525252', '#A3A3A3', '#059669', '#2563EB', '#DC
 
 export default function AddGoalScreen() {
   const insets = useSafeAreaInsets();
-  const addGoal = useGoalStore((s) => s.addGoal);
-  const currency = useSettingsStore((s) => s.currency);
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id ?? '';
+
+  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const createGoal = useMutation(api.goals.create);
+
+  const currency = prefs?.currency ?? 'INR';
 
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
   const [selectedIcon, setSelectedIcon] = useState<FeatherIcon>('target');
   const [selectedColor, setSelectedColor] = useState('#000000');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const numTarget = parseFloat(target);
     if (!name.trim() || isNaN(numTarget) || numTarget <= 0) return;
 
-    addGoal({
-      name: name.trim(),
-      icon: selectedIcon,
-      target: numTarget,
-      color: selectedColor,
-    });
-
-    router.back();
+    setIsSaving(true);
+    try {
+      await createGoal({
+        userId,
+        name: name.trim(),
+        icon: selectedIcon as string,
+        target: numTarget,
+        color: selectedColor,
+      });
+      router.back();
+    } catch (e) {
+      console.error('[AddGoal] save failed:', e);
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -140,11 +153,16 @@ export default function AddGoalScreen() {
         <View className="mx-6 mt-6">
           <Pressable
             onPress={handleSave}
+            disabled={isSaving || !name.trim() || !target}
             className={`py-4 rounded-2xl items-center ${
-              name.trim() && target ? 'bg-black' : 'bg-neutral-300'
+              name.trim() && target && !isSaving ? 'bg-black' : 'bg-neutral-300'
             }`}
           >
-            <Text className="text-white font-bold text-[16px]">Save Goal</Text>
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text className="text-white font-bold text-[16px]">Save Goal</Text>
+            )}
           </Pressable>
         </View>
       </ScrollView>

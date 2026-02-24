@@ -2,19 +2,26 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useBudgetStore } from '@/lib/stores/useBudgetStore';
-import { useGoalStore } from '@/lib/stores/useGoalStore';
-import { useSettingsStore } from '@/lib/stores/useSettingsStore';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { authClient } from '@/lib/auth-client';
 import { formatCurrency, formatCurrencyCompact } from '@/lib/utils/currency';
 
 export default function PlanScreen() {
   const insets = useSafeAreaInsets();
-  const currency = useSettingsStore((s) => s.currency);
-  const budgets = useBudgetStore((s) => s.budgets);
-  const goals = useGoalStore((s) => s.goals);
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
 
-  const totalSpent = budgets.reduce((s, b) => s + b.spent, 0);
-  const totalLimit = budgets.reduce((s, b) => s + b.limit_amount, 0);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+
+  const budgets = useQuery(api.budgets.listByMonth, userId ? { userId, month: currentMonth } : 'skip');
+  const goals = useQuery(api.goals.list, userId ? { userId } : 'skip');
+  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+
+  const currency = prefs?.currency ?? 'INR';
+
+  const totalSpent = (budgets ?? []).reduce((s, b) => s + (b.spent ?? 0), 0);
+  const totalLimit = (budgets ?? []).reduce((s, b) => s + b.limitAmount, 0);
 
   return (
     <ScrollView
@@ -66,30 +73,30 @@ export default function PlanScreen() {
           </Pressable>
         </View>
 
-        {budgets.length === 0 ? (
+        {(budgets ?? []).length === 0 ? (
           <View className="bg-white rounded-2xl p-8 items-center">
             <Feather name="clipboard" size={32} color="#D4D4D4" />
             <Text className="text-neutral-400 text-[14px] mt-3">No budgets set</Text>
             <Text className="text-neutral-300 text-[12px] mt-1">Tap + to create one</Text>
           </View>
         ) : (
-          budgets.map((b) => {
-            const pct = b.limit_amount > 0 ? Math.round((b.spent / b.limit_amount) * 100) : 0;
+          (budgets ?? []).map((b) => {
+            const pct = b.limitAmount > 0 ? Math.round(((b.spent ?? 0) / b.limitAmount) * 100) : 0;
             const isOver = pct > 90;
 
             return (
-              <View key={b.id} className="bg-white rounded-2xl p-4 mb-3">
+              <View key={b._id} className="bg-white rounded-2xl p-4 mb-3">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center gap-3">
                     <View className="w-10 h-10 rounded-xl bg-neutral-100 items-center justify-center">
-                      <Feather name={b.category_icon} size={17} color="#000" />
+                      <Feather name={b.categoryIcon as any} size={17} color="#000" />
                     </View>
                     <View>
                       <Text className="text-[14px] font-semibold text-black">
-                        {b.category_name}
+                        {b.categoryName}
                       </Text>
                       <Text className="text-[11px] text-neutral-400 mt-0.5">
-                        {formatCurrency(b.spent, currency)} of {formatCurrency(b.limit_amount, currency)}
+                        {formatCurrency(b.spent ?? 0, currency)} of {formatCurrency(b.limitAmount, currency)}
                       </Text>
                     </View>
                   </View>
@@ -128,24 +135,24 @@ export default function PlanScreen() {
           </Pressable>
         </View>
 
-        {goals.length === 0 ? (
+        {(goals ?? []).length === 0 ? (
           <View className="bg-white rounded-2xl p-8 items-center">
             <Feather name="target" size={32} color="#D4D4D4" />
             <Text className="text-neutral-400 text-[14px] mt-3">No goals yet</Text>
             <Text className="text-neutral-300 text-[12px] mt-1">Tap Add Goal to start saving</Text>
           </View>
         ) : (
-          goals.map((g) => {
+          (goals ?? []).map((g) => {
             const pct = g.target > 0 ? Math.round((g.saved / g.target) * 100) : 0;
 
             return (
-              <View key={g.id} className="bg-white rounded-2xl p-5 mb-3">
+              <View key={g._id} className="bg-white rounded-2xl p-5 mb-3">
                 <View className="flex-row items-center gap-3">
                   <View
                     className="w-11 h-11 rounded-2xl items-center justify-center"
                     style={{ backgroundColor: g.color + '15' }}
                   >
-                    <Feather name={g.icon} size={18} color={g.color} />
+                    <Feather name={g.icon as any} size={18} color={g.color} />
                   </View>
                   <View className="flex-1">
                     <Text className="text-[14px] font-semibold text-black">

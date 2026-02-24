@@ -1,41 +1,51 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useBudgetStore } from '@/lib/stores/useBudgetStore';
-import { useSettingsStore } from '@/lib/stores/useSettingsStore';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { authClient } from '@/lib/auth-client';
 import { getCurrencySymbol } from '@/lib/utils/currency';
-import { getCategoriesByType } from '@/lib/dal';
-import type { Category } from '@/lib/models/types';
 
 export default function AddBudgetScreen() {
   const insets = useSafeAreaInsets();
-  const addBudget = useBudgetStore((s) => s.addBudget);
-  const currency = useSettingsStore((s) => s.currency);
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id ?? '';
+
+  const categories = useQuery(api.categories.listByType, userId ? { userId, type: 'expense' } : 'skip');
+  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const createBudget = useMutation(api.budgets.create);
+
+  const currency = prefs?.currency ?? 'INR';
 
   const [limit, setLimit] = useState('');
-  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    const cats = getCategoriesByType('expense');
-    setCategories(cats);
-    if (cats.length > 0) setSelectedCategoryId(cats[0].id);
-  }, []);
+  const effectiveCategoryId =
+    selectedCategoryId && (categories ?? []).find((c) => c._id === selectedCategoryId)
+      ? selectedCategoryId
+      : (categories ?? [])[0]?._id ?? '';
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const numLimit = parseFloat(limit);
-    if (isNaN(numLimit) || numLimit <= 0 || !selectedCategoryId) return;
+    if (isNaN(numLimit) || numLimit <= 0 || !effectiveCategoryId) return;
 
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    addBudget({
-      category_id: selectedCategoryId,
-      limit_amount: numLimit,
-      month: currentMonth,
-    });
-
-    router.back();
+    setIsSaving(true);
+    try {
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      await createBudget({
+        userId,
+        categoryId: effectiveCategoryId,
+        limitAmount: numLimit,
+        month: currentMonth,
+      });
+      router.back();
+    } catch (e) {
+      console.error('[AddBudget] save failed:', e);
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -78,22 +88,22 @@ export default function AddBudgetScreen() {
         <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
           <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Category</Text>
           <View className="flex-row flex-wrap gap-2">
-            {categories.map((cat) => (
+            {(categories ?? []).map((cat) => (
               <Pressable
-                key={cat.id}
-                onPress={() => setSelectedCategoryId(cat.id)}
+                key={cat._id}
+                onPress={() => setSelectedCategoryId(cat._id)}
                 className={`flex-row items-center gap-2 px-4 py-2.5 rounded-xl ${
-                  selectedCategoryId === cat.id ? 'bg-black' : 'bg-neutral-100'
+                  effectiveCategoryId === cat._id ? 'bg-black' : 'bg-neutral-100'
                 }`}
               >
                 <Feather
-                  name={cat.icon}
+                  name={cat.icon as any}
                   size={14}
-                  color={selectedCategoryId === cat.id ? '#fff' : '#000'}
+                  color={effectiveCategoryId === cat._id ? '#fff' : '#000'}
                 />
                 <Text
                   className={`text-[13px] font-medium ${
-                    selectedCategoryId === cat.id ? 'text-white' : 'text-black'
+                    effectiveCategoryId === cat._id ? 'text-white' : 'text-black'
                   }`}
                 >
                   {cat.name}
@@ -107,11 +117,16 @@ export default function AddBudgetScreen() {
         <View className="mx-6 mt-6">
           <Pressable
             onPress={handleSave}
+            disabled={isSaving || !limit}
             className={`py-4 rounded-2xl items-center ${
-              limit ? 'bg-black' : 'bg-neutral-300'
+              limit && !isSaving ? 'bg-black' : 'bg-neutral-300'
             }`}
           >
-            <Text className="text-white font-bold text-[16px]">Save Budget</Text>
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text className="text-white font-bold text-[16px]">Save Budget</Text>
+            )}
           </Pressable>
         </View>
       </ScrollView>
