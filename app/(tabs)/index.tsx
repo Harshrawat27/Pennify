@@ -1,7 +1,9 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { formatCurrency } from '@/lib/utils/currency';
+import { currentMonth, formatMonthLabel } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useQuery } from 'convex/react';
 import {
   ActivityIndicator,
@@ -17,15 +19,13 @@ export default function HomeScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
-
   const transactions = useQuery(
     api.transactions.listByMonth,
-    userId ? { userId, month: currentMonth } : 'skip'
+    userId ? { userId, month: currentMonth() } : 'skip'
   );
   const monthlyStats = useQuery(
     api.transactions.getMonthlyStats,
-    userId ? { userId, month: currentMonth } : 'skip'
+    userId ? { userId, month: currentMonth() } : 'skip'
   );
   const totalBalance = useQuery(
     api.accounts.getTotalBalance,
@@ -47,13 +47,7 @@ export default function HomeScreen() {
     );
   }
 
-  // Format current month/year for display
   const now = new Date();
-  const monthName = now.toLocaleString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
-
   const todayFormatted = now.toLocaleDateString('en-US', {
     weekday: 'long',
     day: 'numeric',
@@ -76,9 +70,12 @@ export default function HomeScreen() {
               <Feather name='user' size={20} color='#fff' />
             </View>
 
-            <Pressable className='flex-row items-center bg-white/15 rounded-full px-5 py-2.5'>
+            <Pressable
+              onPress={() => router.push(`/month-detail?month=${currentMonth()}`)}
+              className='flex-row items-center bg-white/15 rounded-full px-5 py-2.5'
+            >
               <Text className='text-[13px] font-semibold text-white'>
-                {monthName}
+                {formatMonthLabel(currentMonth())}
               </Text>
               <Feather
                 name='chevron-down'
@@ -164,7 +161,7 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Insight Banner ── */}
-          {/* <View className='mx-6 mt-6'>
+          <View className='mx-6 mt-6'>
             <View className='bg-black rounded-2xl px-5 py-4 flex-row items-center justify-between'>
               <View className='flex-row items-center gap-2.5'>
                 <Text className='text-[14px]'>✨</Text>
@@ -179,7 +176,7 @@ export default function HomeScreen() {
                 <Feather name='chevron-right' size={14} color='#737373' />
               </Pressable>
             </View>
-          </View> */}
+          </View>
 
           {/* ── Transactions ── */}
           <View className='px-6 mt-8'>
@@ -256,6 +253,18 @@ export default function HomeScreen() {
                             {tx.categoryName}
                           </Text>
                         </View>
+                        {tx.accountName ? (
+                          <View className='flex-row items-center gap-1'>
+                            <Feather
+                              name='credit-card'
+                              size={10}
+                              color='#A3A3A3'
+                            />
+                            <Text className='text-neutral-400 text-[11px]'>
+                              {tx.accountName}
+                            </Text>
+                          </View>
+                        ) : null}
                       </View>
                     </View>
 

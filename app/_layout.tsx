@@ -79,6 +79,7 @@ function RootLayoutNav() {
           name='currency-picker'
           options={{ presentation: 'modal' }}
         />
+        <Stack.Screen name='month-detail' />
       </Stack>
       <StatusBar style={statusStyle} />
 
