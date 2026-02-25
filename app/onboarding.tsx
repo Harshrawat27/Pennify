@@ -65,15 +65,16 @@ export default function OnboardingScreen() {
         userId: session.user.id,
         preferences: {
           currency: state.currency,
+          overallBalance: isNaN(overallNum) ? 0 : overallNum,
           trackIncome: state.trackIncome,
           notificationsEnabled: state.notificationsEnabled,
           dailyReminder: state.dailyReminder,
           weeklyReport: state.weeklyReport,
         },
-        accounts: state.accounts.map((acc, i) => ({
+        accounts: state.accounts.map((acc) => ({
           name: acc.name,
           type: acc.type,
-          balance: i === 0 && !isNaN(overallNum) ? overallNum : acc.balance,
+          balance: acc.balance,
           icon: acc.icon as string,
         })),
         selectedCategories: state.selectedCategories,

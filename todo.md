@@ -69,3 +69,5 @@ For now: the random-ID approach is fine for development. Before launch, switchin
 ctx.auth is the right move.
 
 - why we are not adding email in DB
+
+- goal has a relation with currentbalance not with expense and income and even if there is a relation then upon deletion why are you adding that as income and not removing as expense? not doing good.
