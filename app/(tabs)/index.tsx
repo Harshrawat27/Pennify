@@ -164,7 +164,7 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Insight Banner ── */}
-          <View className='mx-6 mt-6'>
+          {/* <View className='mx-6 mt-6'>
             <View className='bg-black rounded-2xl px-5 py-4 flex-row items-center justify-between'>
               <View className='flex-row items-center gap-2.5'>
                 <Text className='text-[14px]'>✨</Text>
@@ -179,7 +179,7 @@ export default function HomeScreen() {
                 <Feather name='chevron-right' size={14} color='#737373' />
               </Pressable>
             </View>
-          </View>
+          </View> */}
 
           {/* ── Transactions ── */}
           <View className='px-6 mt-8'>
