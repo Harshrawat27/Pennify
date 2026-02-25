@@ -3,10 +3,13 @@ import { authClient } from '@/lib/auth-client';
 import { ConvexAuthSetup } from '@/lib/auth/ConvexAuthSetup';
 import { useQuery } from 'convex/react';
 import { Stack, router } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
-import { ActivityIndicator, View } from 'react-native';
 import '../global.css';
+
+// Keep the splash screen visible until we manually hide it
+SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const { data: session, isPending } = authClient.useSession();
@@ -17,6 +20,13 @@ function RootLayoutNav() {
 
   const hasRouted = useRef(false);
   const prevUserId = useRef<string | undefined>(undefined);
+
+  // Hide splash as soon as auth state is known
+  useEffect(() => {
+    if (!isPending) {
+      SplashScreen.hideAsync();
+    }
+  }, [isPending]);
 
   useEffect(() => {
     // Reset routing flag when userId changes (e.g. sign-out then sign-in)
@@ -57,11 +67,6 @@ function RootLayoutNav() {
 
   const statusStyle = !session ? 'light' : 'dark';
 
-  // Show loading overlay ON TOP of the Stack (never unmount the Stack)
-  // This is critical — Expo Router needs the Stack always mounted for OAuth
-  // redirects and deep-link handling to work correctly.
-  const showOverlay = isPending || (!!session && prefs === undefined);
-
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
@@ -82,24 +87,6 @@ function RootLayoutNav() {
         <Stack.Screen name='month-detail' />
       </Stack>
       <StatusBar style={statusStyle} />
-
-      {/* Full-screen loading overlay — rendered on top, Stack stays mounted */}
-      {showOverlay && (
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: '#000',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <ActivityIndicator color='#fff' size='large' />
-        </View>
-      )}
     </>
   );
 }

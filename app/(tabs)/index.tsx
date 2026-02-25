@@ -3,16 +3,76 @@ import { authClient } from '@/lib/auth-client';
 import { formatCurrency } from '@/lib/utils/currency';
 import { currentMonth, formatMonthLabel } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { useQuery } from 'convex/react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { router } from 'expo-router';
+import { useEffect, useRef } from 'react';
+import { Animated, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+function SkeletonBox({
+  width,
+  height,
+  borderRadius = 8,
+  dark = false,
+}: {
+  width: number | string;
+  height: number;
+  borderRadius?: number;
+  dark?: boolean;
+}) {
+  const opacity = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.5,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [opacity]);
+
+  return (
+    <Animated.View
+      style={
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: dark ? 'rgba(255,255,255,0.2)' : '#E5E5E5',
+          opacity,
+        } as any
+      }
+    />
+  );
+}
+
+function TransactionSkeleton() {
+  return (
+    <View className='bg-white rounded-2xl p-4 mb-3'>
+      <View className='flex-row items-center'>
+        <View className='w-12 h-12 rounded-2xl bg-neutral-100' />
+        <View className='flex-1 ml-3.5 gap-2'>
+          <SkeletonBox width={140} height={14} borderRadius={6} />
+          <View className='flex-row gap-2'>
+            <SkeletonBox width={60} height={10} borderRadius={4} />
+            <SkeletonBox width={56} height={10} borderRadius={4} />
+          </View>
+        </View>
+        <SkeletonBox width={72} height={14} borderRadius={6} />
+      </View>
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -36,16 +96,6 @@ export default function HomeScreen() {
   const currency = prefs?.currency ?? 'INR';
   const income = monthlyStats?.income ?? 0;
   const expenses = monthlyStats?.expenses ?? 0;
-
-  // Show loading while data is fetching
-  if (transactions === undefined || totalBalance === undefined) {
-    return (
-      <View className='flex-1 bg-black items-center justify-center'>
-        <ActivityIndicator size='large' color='#ffffff' />
-        <Text className='text-neutral-500 text-[14px] mt-4'>Loading…</Text>
-      </View>
-    );
-  }
 
   const now = new Date();
   const todayFormatted = now.toLocaleDateString('en-US', {
@@ -71,7 +121,9 @@ export default function HomeScreen() {
             </View>
 
             <Pressable
-              onPress={() => router.push(`/month-detail?month=${currentMonth()}`)}
+              onPress={() =>
+                router.push(`/month-detail?month=${currentMonth()}`)
+              }
               className='flex-row items-center bg-white/15 rounded-full px-5 py-2.5'
             >
               <Text className='text-[13px] font-semibold text-white'>
@@ -98,9 +150,15 @@ export default function HomeScreen() {
             <Text className='text-neutral-500 text-[14px] tracking-widest uppercase'>
               Current Balance
             </Text>
-            <Text className='text-white text-[48px] font-bold mt-2 tracking-tight leading-none'>
-              {formatCurrency(totalBalance ?? 0, currency)}
-            </Text>
+            <View className='mt-2'>
+              {totalBalance === undefined ? (
+                <SkeletonBox width={200} height={52} borderRadius={12} dark />
+              ) : (
+                <Text className='text-white text-[48px] font-bold tracking-tight leading-none'>
+                  {formatCurrency(totalBalance, currency)}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
 
@@ -134,9 +192,13 @@ export default function HomeScreen() {
                     <Text className='text-neutral-400 text-[13px]'>Income</Text>
                     <Feather name='info' size={11} color='#D4D4D4' />
                   </View>
-                  <Text className='text-black text-[22px] font-bold tracking-tight'>
-                    {formatCurrency(income, currency)}
-                  </Text>
+                  {monthlyStats === undefined ? (
+                    <SkeletonBox width={90} height={26} borderRadius={6} />
+                  ) : (
+                    <Text className='text-black text-[22px] font-bold tracking-tight'>
+                      {formatCurrency(income, currency)}
+                    </Text>
+                  )}
                 </View>
               </View>
 
@@ -152,9 +214,13 @@ export default function HomeScreen() {
                     </Text>
                     <Feather name='info' size={11} color='#D4D4D4' />
                   </View>
-                  <Text className='text-black text-[22px] font-bold tracking-tight'>
-                    {formatCurrency(expenses, currency)}
-                  </Text>
+                  {monthlyStats === undefined ? (
+                    <SkeletonBox width={90} height={26} borderRadius={6} />
+                  ) : (
+                    <Text className='text-black text-[22px] font-bold tracking-tight'>
+                      {formatCurrency(expenses, currency)}
+                    </Text>
+                  )}
                 </View>
               </View>
             </View>
@@ -203,12 +269,24 @@ export default function HomeScreen() {
               <Text className='text-[13px] text-neutral-400'>
                 {todayFormatted}
               </Text>
-              <Text className='text-[13px] text-black font-bold'>
-                {transactions.length} transactions
-              </Text>
+              {transactions === undefined ? (
+                <SkeletonBox width={80} height={13} borderRadius={4} />
+              ) : (
+                <Text className='text-[13px] text-black font-bold'>
+                  {transactions.length} transactions
+                </Text>
+              )}
             </View>
 
-            {transactions.length === 0 ? (
+            {transactions === undefined ? (
+              <>
+                <TransactionSkeleton />
+                <TransactionSkeleton />
+                <TransactionSkeleton />
+                <TransactionSkeleton />
+                <TransactionSkeleton />
+              </>
+            ) : transactions.length === 0 ? (
               <View className='bg-white rounded-2xl p-8 items-center'>
                 <Feather name='inbox' size={32} color='#D4D4D4' />
                 <Text className='text-neutral-400 text-[14px] mt-3'>
@@ -219,7 +297,7 @@ export default function HomeScreen() {
                 </Text>
               </View>
             ) : (
-              transactions.map((tx) => (
+              transactions.slice(0, 10).map((tx) => (
                 <View key={tx._id} className='bg-white rounded-2xl p-4 mb-3'>
                   <View className='flex-row items-center'>
                     <View className='w-12 h-12 rounded-2xl bg-neutral-100 items-center justify-center'>
@@ -281,6 +359,20 @@ export default function HomeScreen() {
                   </View>
                 </View>
               ))
+            )}
+
+            {transactions !== undefined && transactions.length > 10 && (
+              <Pressable
+                onPress={() =>
+                  router.push(`/month-detail?month=${currentMonth()}`)
+                }
+                className='flex-row items-center justify-center bg-white rounded-2xl p-4 mb-3 gap-2'
+              >
+                <Text className='text-[14px] font-semibold text-black'>
+                  View all {transactions.length} transactions
+                </Text>
+                <Feather name='arrow-right' size={15} color='#000' />
+              </Pressable>
             )}
           </View>
 
