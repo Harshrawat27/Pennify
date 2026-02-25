@@ -74,7 +74,6 @@ export default function OnboardingScreen() {
         accounts: state.accounts.map((acc) => ({
           name: acc.name,
           type: acc.type,
-          balance: acc.balance,
           icon: acc.icon as string,
         })),
         selectedCategories: state.selectedCategories,
