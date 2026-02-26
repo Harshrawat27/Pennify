@@ -20,6 +20,7 @@ function RootLayoutNav() {
 
   const hasRouted = useRef(false);
   const prevUserId = useRef<string | undefined>(undefined);
+  const prevSubStatus = useRef<string | undefined>(undefined);
 
   // Hide splash as soon as auth state is known
   useEffect(() => {
@@ -27,6 +28,20 @@ function RootLayoutNav() {
       SplashScreen.hideAsync();
     }
   }, [isPending]);
+
+  // Re-route instantly when subscription status changes (e.g. after RevenueCat purchase)
+  useEffect(() => {
+    if (!hasRouted.current) return;
+    const status = prefs?.subscriptionStatus;
+    if (status === prevSubStatus.current) return;
+    prevSubStatus.current = status;
+    const isPremium = status === 'monthly' || status === 'yearly';
+    if (isPremium) {
+      router.replace('/(tabs)');
+    } else if (status === 'expired' || status === 'none') {
+      router.replace('/paywall');
+    }
+  }, [prefs?.subscriptionStatus]);
 
   useEffect(() => {
     // Reset routing flag when userId changes (e.g. sign-out then sign-in)
@@ -56,12 +71,23 @@ function RootLayoutNav() {
     }
 
     hasRouted.current = true;
+
     if (prefs === null) {
       console.log('[Layout] No prefs (new user) → /onboarding');
       router.replace('/onboarding');
-    } else {
-      console.log('[Layout] Has prefs (returning user) → /(tabs)');
+      return;
+    }
+
+    const isPremium =
+      prefs.subscriptionStatus === 'monthly' ||
+      prefs.subscriptionStatus === 'yearly';
+
+    if (isPremium) {
+      console.log('[Layout] Premium user → /(tabs)');
       router.replace('/(tabs)');
+    } else {
+      console.log('[Layout] No subscription → /paywall');
+      router.replace('/paywall');
     }
   }, [session, isPending, prefs, userId]);
 
@@ -71,6 +97,7 @@ function RootLayoutNav() {
     <>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name='onboarding' />
+        <Stack.Screen name='paywall' />
         <Stack.Screen name='sign-in' />
         <Stack.Screen name='post-auth-setup' />
         <Stack.Screen name='(tabs)' />
