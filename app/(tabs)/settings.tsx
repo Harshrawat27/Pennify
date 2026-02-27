@@ -161,6 +161,11 @@ export default function SettingsScreen() {
       onPress: () => router.push('/currency-picker'),
     },
     {
+      icon: 'repeat',
+      label: 'Subscriptions',
+      onPress: () => router.push('/subscriptions'),
+    },
+    {
       icon: 'trending-up',
       label: 'Track Income',
       toggle: true,

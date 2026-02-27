@@ -81,6 +81,9 @@ export default function OnboardingScreen() {
         goals: state.goals
           .map((g) => ({ name: g.name, icon: g.icon as string, target: parseFloat(g.target), color: g.color }))
           .filter((g) => !isNaN(g.target) && g.target > 0),
+        recurringPayments: state.recurringPayments
+          .map((p) => ({ name: p.name, amount: parseFloat(p.amount), frequency: p.frequency }))
+          .filter((p) => !isNaN(p.amount) && p.amount > 0),
         monthlyBudget:
           state.monthlyBudget > 0
             ? { month: new Date().toISOString().slice(0, 7), budget: state.monthlyBudget }

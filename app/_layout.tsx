@@ -21,10 +21,12 @@ function RootLayoutNav() {
   const hasRouted = useRef(false);
   const prevUserId = useRef<string | undefined>(undefined);
   const prevSubStatus = useRef<string | undefined>(undefined);
+  const splashHidden = useRef(false);
 
-  // Hide splash as soon as auth state is known
+  // Hide splash as soon as auth state is known (only once)
   useEffect(() => {
-    if (!isPending) {
+    if (!isPending && !splashHidden.current) {
+      splashHidden.current = true;
       SplashScreen.hideAsync();
     }
   }, [isPending]);
@@ -112,6 +114,7 @@ function RootLayoutNav() {
           options={{ presentation: 'modal' }}
         />
         <Stack.Screen name='month-detail' />
+        <Stack.Screen name='subscriptions' />
       </Stack>
       <StatusBar style={statusStyle} />
     </>

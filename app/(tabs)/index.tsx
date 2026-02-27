@@ -297,7 +297,7 @@ export default function HomeScreen() {
                 </Text>
               </View>
             ) : (
-              transactions.slice(0, 10).map((tx) => (
+              [...transactions].reverse().slice(0, 10).map((tx) => (
                 <View key={tx._id} className='bg-white rounded-2xl p-4 mb-3'>
                   <View className='flex-row items-center'>
                     <View className='w-12 h-12 rounded-2xl bg-neutral-100 items-center justify-center'>

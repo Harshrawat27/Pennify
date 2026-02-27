@@ -71,3 +71,5 @@ ctx.auth is the right move.
 - why we are not adding email in DB
 
 - goal has a relation with currentbalance not with expense and income and even if there is a relation then upon deletion why are you adding that as income and not removing as expense? not doing good.
+
+- ERROR [Error: Uncaught (in promise, id: 0) Error: No native splash screen registered for given view controller. Call 'SplashScreen.show' for given view controller first.] Uncaught (in promise, id: 0) Error: No native splash screen registered for given view controller. Call 'SplashScreen.show' for given view controller first.

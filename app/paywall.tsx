@@ -1,7 +1,9 @@
 import { authClient } from '@/lib/auth-client';
+import { deleteAccount } from '@/lib/account/deleteAccount';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const FEATURES = [
@@ -34,6 +36,8 @@ const PLANS = [
 
 export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
+  const { data: session } = authClient.useSession();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   function handlePurchase(planId: string) {
     // TODO: Integrate RevenueCat purchase here
@@ -65,6 +69,41 @@ export default function PaywallScreen() {
         },
       },
     ]);
+  }
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            const userId = session?.user?.id;
+            if (!userId) return;
+            setIsDeleting(true);
+            try {
+              await deleteAccount(userId);
+              router.replace('/sign-in');
+            } catch (e) {
+              console.error('[Paywall] Delete account failed:', e);
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  if (isDeleting) {
+    return (
+      <View className='flex-1 bg-black items-center justify-center'>
+        <ActivityIndicator size='large' color='#ffffff' />
+        <Text className='text-neutral-500 text-[14px] mt-4'>Deleting account…</Text>
+      </View>
+    );
   }
 
   return (
@@ -157,6 +196,9 @@ export default function PaywallScreen() {
           </Pressable>
           <Pressable onPress={handleSignOut}>
             <Text className='text-neutral-600 text-[12px]'>Sign out</Text>
+          </Pressable>
+          <Pressable onPress={handleDeleteAccount}>
+            <Text className='text-red-800 text-[12px]'>Delete Account</Text>
           </Pressable>
         </View>
 
