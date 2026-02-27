@@ -72,4 +72,4 @@ ctx.auth is the right move.
 
 - goal has a relation with currentbalance not with expense and income and even if there is a relation then upon deletion why are you adding that as income and not removing as expense? not doing good.
 
-- ERROR [Error: Uncaught (in promise, id: 0) Error: No native splash screen registered for given view controller. Call 'SplashScreen.show' for given view controller first.] Uncaught (in promise, id: 0) Error: No native splash screen registered for given view controller. Call 'SplashScreen.show' for given view controller first.
+- user can access app first time they are creating account and can also add transactions. need to do server check too while adding transactions
