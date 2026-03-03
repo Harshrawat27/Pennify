@@ -24,9 +24,14 @@ export default function PlanScreen() {
 
   const [contributionGoalId, setContributionGoalId] = useState<string | null>(null);
   const [contributionAmount, setContributionAmount] = useState('');
+  const [historyGoalId, setHistoryGoalId] = useState<string | null>(null);
 
   const goals = useQuery(api.goals.list, userId ? { userId } : 'skip');
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const contributions = useQuery(
+    api.goals.listContributions,
+    historyGoalId ? { goalId: historyGoalId as any } : 'skip',
+  );
 
   const addContribution = useMutation(api.goals.addContribution);
   const markCompleted = useMutation(api.goals.markCompleted);
@@ -37,6 +42,7 @@ export default function PlanScreen() {
   const activeGoals = (goals ?? []).filter((g) => g.status !== 'completed');
   const completedGoals = (goals ?? []).filter((g) => g.status === 'completed');
   const selectedGoal = goals?.find((g) => g._id === contributionGoalId);
+  const historyGoal = goals?.find((g) => g._id === historyGoalId);
 
   async function handleContribute() {
     if (!userId || !contributionGoalId) return;
@@ -193,6 +199,14 @@ export default function PlanScreen() {
                       </Text>
                     </Pressable>
 
+                    {/* History */}
+                    <Pressable
+                      onPress={() => setHistoryGoalId(g._id)}
+                      className='w-10 h-10 items-center justify-center rounded-xl bg-neutral-100'
+                    >
+                      <Feather name='clock' size={14} color='#A3A3A3' />
+                    </Pressable>
+
                     {/* Delete */}
                     <Pressable
                       onPress={() => handleDelete(g)}
@@ -250,6 +264,81 @@ export default function PlanScreen() {
 
         <View className='h-32' />
       </ScrollView>
+
+      {/* History Modal */}
+      <Modal
+        visible={!!historyGoalId}
+        animationType='slide'
+        presentationStyle='pageSheet'
+        onRequestClose={() => setHistoryGoalId(null)}
+      >
+        <View className='flex-1 bg-neutral-50' style={{ paddingTop: insets.top }}>
+          <View className='px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100'>
+            <Text className='text-[18px] font-bold text-black'>Contribution History</Text>
+            <Pressable onPress={() => setHistoryGoalId(null)}>
+              <Feather name='x' size={20} color='#000' />
+            </Pressable>
+          </View>
+
+          {historyGoal && (
+            <View className='flex-row items-center gap-3 px-6 py-4 border-b border-neutral-100'>
+              <View
+                className='w-10 h-10 rounded-2xl items-center justify-center'
+                style={{ backgroundColor: historyGoal.color + '20' }}
+              >
+                <Feather name={historyGoal.icon as any} size={16} color={historyGoal.color} />
+              </View>
+              <View>
+                <Text className='text-[15px] font-semibold text-black'>{historyGoal.name}</Text>
+                <Text className='text-[12px] text-neutral-400'>
+                  {formatCurrencyCompact(historyGoal.saved, currency)} saved of {formatCurrencyCompact(historyGoal.target, currency)}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          <ScrollView
+            className='flex-1'
+            contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {contributions === undefined ? (
+              <View className='items-center py-12'>
+                <Text className='text-neutral-400 text-[14px]'>Loading...</Text>
+              </View>
+            ) : contributions.length === 0 ? (
+              <View className='items-center py-16'>
+                <View className='w-14 h-14 rounded-full bg-neutral-100 items-center justify-center mb-3'>
+                  <Feather name='clock' size={22} color='#A3A3A3' />
+                </View>
+                <Text className='text-[15px] font-semibold text-black'>No contributions yet</Text>
+                <Text className='text-neutral-400 text-[13px] mt-1'>
+                  Add money to this goal to see history
+                </Text>
+              </View>
+            ) : (
+              contributions.map((c, i) => (
+                <View
+                  key={c._id}
+                  className={`flex-row items-center justify-between py-4 ${i < contributions.length - 1 ? 'border-b border-neutral-100' : ''}`}
+                >
+                  <View className='flex-row items-center gap-3'>
+                    <View className='w-9 h-9 rounded-full bg-neutral-100 items-center justify-center'>
+                      <Feather name='arrow-up' size={14} color='#000' />
+                    </View>
+                    <Text className='text-[14px] text-neutral-500'>
+                      {formatDateShort(c.date)}
+                    </Text>
+                  </View>
+                  <Text className='text-[15px] font-bold text-black'>
+                    +{formatCurrencyCompact(c.amount, currency)}
+                  </Text>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
 
       {/* Add Contribution Modal */}
       <Modal
