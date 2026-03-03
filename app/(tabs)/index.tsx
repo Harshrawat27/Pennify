@@ -298,7 +298,11 @@ export default function HomeScreen() {
               </View>
             ) : (
               [...transactions].reverse().slice(0, 10).map((tx) => (
-                <View key={tx._id} className='bg-white rounded-2xl p-4 mb-3'>
+                <Pressable
+                  key={tx._id}
+                  onPress={() => router.push(`/transaction-detail?id=${tx._id}`)}
+                  className='bg-white rounded-2xl p-4 mb-3'
+                >
                   <View className='flex-row items-center'>
                     <View className='w-12 h-12 rounded-2xl bg-neutral-100 items-center justify-center'>
                       <Feather
@@ -357,7 +361,7 @@ export default function HomeScreen() {
                       </Text>
                     </View>
                   </View>
-                </View>
+                </Pressable>
               ))
             )}
 

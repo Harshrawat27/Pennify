@@ -205,7 +205,11 @@ export default function MonthDetailScreen() {
               </View>
             ) : (
               filteredTx.map((tx) => (
-                <View key={tx._id} className="bg-white rounded-2xl p-4 mb-2.5">
+                <Pressable
+                  key={tx._id}
+                  onPress={() => router.push(`/transaction-detail?id=${tx._id}`)}
+                  className="bg-white rounded-2xl p-4 mb-2.5"
+                >
                   <View className="flex-row items-center">
                     <View className="w-11 h-11 rounded-2xl bg-neutral-100 items-center justify-center">
                       <Feather name={tx.categoryIcon as any} size={18} color="#000" />
@@ -241,7 +245,7 @@ export default function MonthDetailScreen() {
                   {tx.note ? (
                     <Text className="text-neutral-400 text-[12px] mt-2 ml-14">{tx.note}</Text>
                   ) : null}
-                </View>
+                </Pressable>
               ))
             )}
           </View>
