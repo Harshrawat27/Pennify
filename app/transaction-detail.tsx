@@ -22,7 +22,7 @@ export default function TransactionDetailScreen() {
     id ? { id: id as any } : 'skip',
   );
   const categories = useQuery(api.categories.list, userId ? { userId } : 'skip');
-  const accounts = useQuery(api.accounts.list, userId ? { userId } : 'skip');
+  const accounts = useQuery(api.accounts.list, userId ? { userId, activeOnly: true } : 'skip');
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
 
   const updateTransaction = useMutation(api.transactions.update);

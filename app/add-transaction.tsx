@@ -14,7 +14,7 @@ export default function AddTransactionScreen() {
   const userId = session?.user?.id ?? '';
 
   const categories = useQuery(api.categories.list, userId ? { userId } : 'skip');
-  const accounts = useQuery(api.accounts.list, userId ? { userId } : 'skip');
+  const accounts = useQuery(api.accounts.list, userId ? { userId, activeOnly: true } : 'skip');
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
   const createTransaction = useMutation(api.transactions.create);
 

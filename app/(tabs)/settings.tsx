@@ -161,6 +161,11 @@ export default function SettingsScreen() {
       onPress: () => router.push('/currency-picker'),
     },
     {
+      icon: 'credit-card',
+      label: 'Accounts',
+      onPress: () => router.push('/accounts'),
+    },
+    {
       icon: 'repeat',
       label: 'Subscriptions',
       onPress: () => router.push('/subscriptions'),
