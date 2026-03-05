@@ -1,7 +1,7 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { formatCurrency, getCurrencySymbol } from '@/lib/utils/currency';
-import { currentMonth, formatMonthLabel } from '@/lib/utils/date';
+import { currentMonth, formatMonthLabel, prevMonth } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
 import { router } from 'expo-router';
@@ -23,6 +23,7 @@ export default function MonthlyBudgetScreen() {
 
   const month = currentMonth();
   const budget = useQuery(api.monthlyBudgets.getByMonth, userId ? { userId, month } : 'skip');
+  const prevBudget = useQuery(api.monthlyBudgets.getByMonth, userId ? { userId, month: prevMonth(month) } : 'skip');
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
   const upsert = useMutation(api.monthlyBudgets.upsert);
 
@@ -31,14 +32,13 @@ export default function MonthlyBudgetScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Pre-fill when current budget loads
+  // Pre-fill with current month's budget, or fall back to previous month's
   useEffect(() => {
-    if (budget?.budget != null) {
-      setAmount(String(budget.budget));
-    }
-  }, [budget?.budget]);
+    const value = budget?.budget ?? prevBudget?.budget;
+    if (value != null) setAmount(String(value));
+  }, [budget?.budget, prevBudget?.budget]);
 
-  const currentBudget = budget?.budget ?? 0;
+  const currentBudget = budget?.budget ?? prevBudget?.budget ?? 0;
   const numAmount = parseFloat(amount);
   const canSave = !isNaN(numAmount) && numAmount > 0 && numAmount !== currentBudget && !isSaving;
 

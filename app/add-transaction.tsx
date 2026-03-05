@@ -5,6 +5,7 @@ import { useCachedCategories } from '@/lib/hooks/useCachedCategories';
 import { enqueue, type QueuedTransaction } from '@/lib/offlineQueue';
 import { usePendingStore } from '@/lib/stores/usePendingStore';
 import { getCurrencySymbol } from '@/lib/utils/currency';
+import { localDateString } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
 import { router } from 'expo-router';
@@ -63,7 +64,7 @@ export default function AddTransactionScreen() {
     if (!title.trim() || isNaN(numAmount) || numAmount <= 0 || !effectiveCategoryId || !effectiveAccountId) return;
     if (!userId) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateString(); // device local date, not UTC
     const localId = Crypto.randomUUID();
 
     const selectedCategory = filteredCategories.find((c) => c._id === effectiveCategoryId);

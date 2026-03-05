@@ -8,9 +8,18 @@ const MONTH_SHORT = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-/** Returns current month as "YYYY-MM" */
+/** Returns today's date as "YYYY-MM-DD" in the device's local timezone */
+export function localDateString(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Returns current month as "YYYY-MM" in the device's local timezone */
 export function currentMonth(): string {
-  return new Date().toISOString().slice(0, 7);
+  return localDateString().slice(0, 7);
 }
 
 /** "2026-02" → "February 2026" */

@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { currentMonth } from '@/lib/utils/date';
 import { StepPager } from '@/components/onboarding/StepPager';
 import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { GetStarted } from '@/components/onboarding/GetStarted';
@@ -86,7 +87,7 @@ export default function OnboardingScreen() {
           .filter((p) => !isNaN(p.amount) && p.amount > 0),
         monthlyBudget:
           state.monthlyBudget > 0
-            ? { month: new Date().toISOString().slice(0, 7), budget: state.monthlyBudget }
+            ? { month: currentMonth(), budget: state.monthlyBudget }
             : undefined,
       });
 

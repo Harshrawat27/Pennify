@@ -34,7 +34,8 @@ export default function AddBudgetScreen() {
 
     setIsSaving(true);
     try {
-      const currentMonth = new Date().toISOString().slice(0, 7);
+      const d = new Date();
+      const currentMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       await createBudget({
         userId,
         categoryId: effectiveCategoryId,

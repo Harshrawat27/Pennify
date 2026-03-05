@@ -7,6 +7,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { formatCurrency, getCurrencySymbol } from '@/lib/utils/currency';
+import { prevMonth } from '@/lib/utils/date';
 
 const PERIOD_TABS = ['Week', 'Month', 'Year'];
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -37,10 +38,13 @@ function getCurrentWeekRange() {
   monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
-  return {
-    start: monday.toISOString().split('T')[0],
-    end: sunday.toISOString().split('T')[0],
+  const fmt = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   };
+  return { start: fmt(monday), end: fmt(sunday) };
 }
 
 export default function ReportScreen() {
@@ -50,7 +54,7 @@ export default function ReportScreen() {
   const userId = session?.user?.id;
 
   const today = new Date();
-  const currentMonth = today.toISOString().slice(0, 7);
+  const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const currentYear = today.getFullYear().toString();
   const currentMonthIdx = today.getMonth(); // 0-based
   const { start: weekStart, end: weekEnd } = getCurrentWeekRange();
@@ -63,6 +67,7 @@ export default function ReportScreen() {
   const categoryBreakdown = useQuery(api.transactions.getCategoryBreakdown, userId ? { userId, month: currentMonth } : 'skip');
   const dailySpending = useQuery(api.transactions.getDailySpending, userId ? { userId, month: currentMonth } : 'skip');
   const monthlyBudget = useQuery(api.monthlyBudgets.getByMonth, userId ? { userId, month: currentMonth } : 'skip');
+  const prevMonthBudget = useQuery(api.monthlyBudgets.getByMonth, userId ? { userId, month: prevMonth(currentMonth) } : 'skip');
 
   // Week
   const weekStats = useQuery(api.transactions.getStatsForPeriod, userId ? { userId, startDate: weekStart, endDate: weekEnd } : 'skip');
@@ -76,7 +81,7 @@ export default function ReportScreen() {
   // ── Month derived data ──
   const monthIncome = monthlyStats?.income ?? 0;
   const monthExpenses = monthlyStats?.expenses ?? 0;
-  const budget = monthlyBudget?.budget ?? 0;
+  const budget = monthlyBudget?.budget ?? prevMonthBudget?.budget ?? 0;
   const spentPercent = budget > 0 ? Math.round((monthExpenses / budget) * 100) : 0;
   const leftAmount = Math.max(budget - monthExpenses, 0);
   const weeklyBars = groupByWeek(dailySpending ?? []);
