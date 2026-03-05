@@ -171,6 +171,11 @@ export default function SettingsScreen() {
       onPress: () => router.push('/subscriptions'),
     },
     {
+      icon: 'sliders',
+      label: 'Monthly Budget',
+      onPress: () => router.push('/monthly-budget'),
+    },
+    {
       icon: 'trending-up',
       label: 'Track Income',
       toggle: true,

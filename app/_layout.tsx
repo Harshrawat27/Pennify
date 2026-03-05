@@ -109,6 +109,7 @@ function RootLayoutNav() {
         <Stack.Screen name='accounts' />
         <Stack.Screen name='transaction-detail' options={{ presentation: 'modal' }} />
         <Stack.Screen name='subscriptions' />
+        <Stack.Screen name='monthly-budget' />
       </Stack>
       <StatusBar style={statusStyle} />
     </>
