@@ -17,6 +17,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+function monthsUntil(dateStr: string): number {
+  const today = new Date();
+  const due = new Date(dateStr);
+  const months =
+    (due.getFullYear() - today.getFullYear()) * 12 +
+    (due.getMonth() - today.getMonth());
+  return Math.max(months, 0);
+}
+
 export default function PlanScreen() {
   const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
@@ -35,6 +44,7 @@ export default function PlanScreen() {
 
   const addContribution = useMutation(api.goals.addContribution);
   const markCompleted = useMutation(api.goals.markCompleted);
+  const markPaid = useMutation(api.goals.markPaid);
   const removeGoal = useMutation(api.goals.remove);
 
   const currency = prefs?.currency ?? 'INR';
@@ -65,6 +75,21 @@ export default function PlanScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: () => removeGoal({ id: goal._id, userId: userId! }),
+        },
+      ]
+    );
+  }
+
+  function handleMarkPaid(goal: any) {
+    if (!userId) return;
+    Alert.alert(
+      'Mark as Paid',
+      `This will create a transaction for ${formatCurrencyCompact(goal.target, currency)} tagged "Paid from Goal" and reset the goal savings to ₹0 for next year.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark as Paid',
+          onPress: () => markPaid({ id: goal._id, userId }),
         },
       ]
     );
@@ -125,8 +150,25 @@ export default function PlanScreen() {
               const pct = g.target > 0 ? Math.round((g.saved / g.target) * 100) : 0;
               const isComplete = pct >= 100;
 
+              // Monthly needed calc for sinking fund goals
+              const remaining = g.target - g.saved;
+              const months = g.nextDue ? monthsUntil(g.nextDue) : 0;
+              const monthlyNeeded = months > 0 ? Math.ceil(remaining / months) : null;
+              const isPaymentDue = g.paymentDue === true;
+              const isSinkingFund = g.isRecurring === true;
+
               return (
                 <View key={g._id} className='bg-white rounded-2xl p-5 mb-3'>
+                  {/* Payment due warning */}
+                  {isPaymentDue && (
+                    <View className='bg-red-50 rounded-xl px-3 py-2.5 mb-4 flex-row items-center gap-2'>
+                      <Feather name='alert-circle' size={14} color='#EF4444' />
+                      <Text className='flex-1 text-[12px] text-red-500 font-medium'>
+                        Payment due — top up your goal and mark as paid
+                      </Text>
+                    </View>
+                  )}
+
                   {/* Goal info row */}
                   <View className='flex-row items-center gap-3'>
                     <View
@@ -136,11 +178,16 @@ export default function PlanScreen() {
                       <Feather name={g.icon as any} size={20} color={g.color} />
                     </View>
                     <View className='flex-1'>
-                      <Text className='text-[15px] font-semibold text-black'>
-                        {g.name}
-                      </Text>
+                      <View className='flex-row items-center gap-2'>
+                        <Text className='text-[15px] font-semibold text-black'>{g.name}</Text>
+                        {isSinkingFund && (
+                          <View className='bg-neutral-100 px-2 py-0.5 rounded-full'>
+                            <Text className='text-[10px] font-medium text-neutral-400'>Yearly</Text>
+                          </View>
+                        )}
+                      </View>
                       <Text className='text-[12px] text-neutral-400 mt-0.5'>
-                        {pct}% complete
+                        {pct}% saved
                       </Text>
                     </View>
                     <View className='items-end'>
@@ -159,45 +206,95 @@ export default function PlanScreen() {
                       className='h-1.5 rounded-full'
                       style={{
                         width: `${Math.min(pct, 100)}%`,
-                        backgroundColor: g.color,
+                        backgroundColor: isPaymentDue ? '#EF4444' : g.color,
                       }}
                     />
                   </View>
 
+                  {/* Monthly needed hint for sinking fund goals */}
+                  {isSinkingFund && !isPaymentDue && monthlyNeeded !== null && remaining > 0 && (
+                    <View className='mt-3 flex-row items-center gap-1.5'>
+                      <Feather name='trending-up' size={12} color='#A3A3A3' />
+                      <Text className='text-[12px] text-neutral-400'>
+                        Save{' '}
+                        <Text className='font-semibold text-black'>
+                          {formatCurrencyCompact(monthlyNeeded, currency)}/mo
+                        </Text>
+                        {months > 0 ? ` for ${months} month${months !== 1 ? 's' : ''}` : ''} to hit your target
+                      </Text>
+                    </View>
+                  )}
+
+                  {isSinkingFund && !isPaymentDue && remaining <= 0 && (
+                    <View className='mt-3 flex-row items-center gap-1.5'>
+                      <Feather name='check-circle' size={12} color='#059669' />
+                      <Text className='text-[12px] text-emerald-600 font-medium'>
+                        Fully funded — ready to pay
+                      </Text>
+                    </View>
+                  )}
+
                   {/* Action buttons */}
                   <View className='flex-row gap-2 mt-4'>
-                    {/* Add money */}
-                    <Pressable
-                      onPress={() => {
-                        setContributionGoalId(g._id);
-                        setContributionAmount('');
-                      }}
-                      className='flex-1 flex-row items-center justify-center bg-black rounded-xl py-2.5 gap-1.5'
-                    >
-                      <Feather name='plus' size={14} color='#fff' />
-                      <Text className='text-white text-[13px] font-semibold'>
-                        Add money
-                      </Text>
-                    </Pressable>
-
-                    {/* Mark complete — faded until 100% */}
-                    <Pressable
-                      onPress={() => handleMarkComplete(g)}
-                      className='flex-1 flex-row items-center justify-center rounded-xl py-2.5 gap-1.5'
-                      style={{ backgroundColor: isComplete ? g.color + '20' : '#F5F5F5' }}
-                    >
-                      <Feather
-                        name='check-circle'
-                        size={14}
-                        color={isComplete ? g.color : '#D4D4D4'}
-                      />
-                      <Text
-                        className='text-[13px] font-semibold'
-                        style={{ color: isComplete ? g.color : '#D4D4D4' }}
+                    {/* Mark as Paid — sinking fund only */}
+                    {isPaymentDue ? (
+                      <Pressable
+                        onPress={() => handleMarkPaid(g)}
+                        className='flex-1 flex-row items-center justify-center bg-red-500 rounded-xl py-2.5 gap-1.5'
                       >
-                        Complete
-                      </Text>
-                    </Pressable>
+                        <Feather name='check' size={14} color='#fff' />
+                        <Text className='text-white text-[13px] font-semibold'>Mark as Paid</Text>
+                      </Pressable>
+                    ) : (
+                      <>
+                        {/* Add money */}
+                        <Pressable
+                          onPress={() => {
+                            setContributionGoalId(g._id);
+                            setContributionAmount('');
+                          }}
+                          className='flex-1 flex-row items-center justify-center bg-black rounded-xl py-2.5 gap-1.5'
+                        >
+                          <Feather name='plus' size={14} color='#fff' />
+                          <Text className='text-white text-[13px] font-semibold'>Add money</Text>
+                        </Pressable>
+
+                        {/* Mark complete — only for non-sinking-fund goals */}
+                        {!isSinkingFund && (
+                          <Pressable
+                            onPress={() => handleMarkComplete(g)}
+                            className='flex-1 flex-row items-center justify-center rounded-xl py-2.5 gap-1.5'
+                            style={{ backgroundColor: isComplete ? g.color + '20' : '#F5F5F5' }}
+                          >
+                            <Feather
+                              name='check-circle'
+                              size={14}
+                              color={isComplete ? g.color : '#D4D4D4'}
+                            />
+                            <Text
+                              className='text-[13px] font-semibold'
+                              style={{ color: isComplete ? g.color : '#D4D4D4' }}
+                            >
+                              Complete
+                            </Text>
+                          </Pressable>
+                        )}
+
+                        {/* Mark as Paid early — sinking fund fully funded */}
+                        {isSinkingFund && remaining <= 0 && (
+                          <Pressable
+                            onPress={() => handleMarkPaid(g)}
+                            className='flex-1 flex-row items-center justify-center rounded-xl py-2.5 gap-1.5'
+                            style={{ backgroundColor: g.color + '20' }}
+                          >
+                            <Feather name='check' size={14} color={g.color} />
+                            <Text className='text-[13px] font-semibold' style={{ color: g.color }}>
+                              Pay Now
+                            </Text>
+                          </Pressable>
+                        )}
+                      </>
+                    )}
 
                     {/* History */}
                     <Pressable

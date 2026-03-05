@@ -1,7 +1,7 @@
 import { authClient } from '@/lib/auth-client';
 import { deleteAccount } from '@/lib/account/deleteAccount';
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,7 +37,16 @@ const PLANS = [
 export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
+  const navigation = useNavigation();
   const [isDeleting, setIsDeleting] = useState(false);
+
+  function handleMaybeLater() {
+    if (navigation.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  }
 
   function handlePurchase(planId: string) {
     // TODO: Integrate RevenueCat purchase here
@@ -193,6 +202,9 @@ export default function PaywallScreen() {
             <Text className='text-neutral-500 text-[13px] font-medium'>
               Restore Purchase
             </Text>
+          </Pressable>
+          <Pressable onPress={handleMaybeLater}>
+            <Text className='text-neutral-600 text-[13px]'>Maybe later</Text>
           </Pressable>
           <Pressable onPress={handleSignOut}>
             <Text className='text-neutral-600 text-[12px]'>Sign out</Text>

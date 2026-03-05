@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useQuery, useMutation } from 'convex/react';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ACCOUNT_TYPES: { type: string; icon: string; label: string }[] = [
@@ -42,138 +42,156 @@ export default function AccountsScreen() {
     void toggleActive({ id: id as any, isActive: nextValue });
   };
 
+  function resetModal() {
+    setNewName('');
+    setNewType('bank');
+    setShowAdd(false);
+  }
+
   const handleAdd = async () => {
     if (!userId || !newName.trim() || isSaving) return;
     const typeInfo = ACCOUNT_TYPES.find((t) => t.type === newType)!;
     setIsSaving(true);
     try {
       await createAccount({ userId, name: newName.trim(), type: newType, icon: typeInfo.icon });
-      setNewName('');
-      setNewType('bank');
-      setShowAdd(false);
+      resetModal();
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      className='flex-1 bg-neutral-50'
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ paddingTop: insets.top }}
-    >
-      {/* Header */}
-      <View className='px-6 pt-4 pb-4 flex-row items-center justify-between'>
-        <View className='flex-row items-center gap-4'>
+    <>
+      <View className='flex-1 bg-neutral-50' style={{ paddingTop: insets.top }}>
+        {/* Header */}
+        <View className='px-6 pt-4 pb-4 flex-row items-center justify-between'>
+          <View className='flex-row items-center gap-4'>
+            <Pressable
+              onPress={() => router.back()}
+              className='w-10 h-10 rounded-full bg-white items-center justify-center'
+            >
+              <Feather name='arrow-left' size={20} color='#000' />
+            </Pressable>
+            <Text className='text-[20px] font-bold text-black'>Accounts</Text>
+          </View>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => setShowAdd(true)}
             className='w-10 h-10 rounded-full bg-white items-center justify-center'
           >
-            <Feather name='arrow-left' size={20} color='#000' />
+            <Feather name='plus' size={20} color='#000' />
           </Pressable>
-          <Text className='text-[20px] font-bold text-black'>Accounts</Text>
         </View>
-        <Pressable
-          onPress={() => { setShowAdd(true); setNewName(''); setNewType('bank'); }}
-          className='w-10 h-10 rounded-full bg-white items-center justify-center'
-        >
-          <Feather name='plus' size={20} color='#000' />
-        </Pressable>
+
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Info banner */}
+          <View className='mx-6 mb-4 bg-neutral-100 rounded-2xl px-4 py-3 flex-row items-start gap-3'>
+            <Feather name='info' size={14} color='#A3A3A3' style={{ marginTop: 1 }} />
+            <Text className='flex-1 text-[12px] text-neutral-400 leading-5'>
+              Inactive accounts won't appear when adding transactions but all past transactions remain unchanged.
+            </Text>
+          </View>
+
+          {/* Accounts list */}
+          <View className='mx-6 bg-white rounded-2xl px-4'>
+            {accounts === undefined ? (
+              <View className='py-8 items-center'>
+                <Text className='text-neutral-400 text-[14px]'>Loading...</Text>
+              </View>
+            ) : accounts.length === 0 ? (
+              <View className='py-10 items-center'>
+                <Feather name='credit-card' size={28} color='#D4D4D4' />
+                <Text className='text-neutral-400 text-[14px] mt-3'>No accounts yet</Text>
+              </View>
+            ) : (
+              accounts.map((account, i) => {
+                const isActive = account.isActive !== false;
+                const typeLabel = TYPE_LABEL[account.type] ?? account.type;
+                return (
+                  <View
+                    key={account._id}
+                    className={`flex-row items-center py-4 ${i < accounts.length - 1 ? 'border-b border-neutral-100' : ''}`}
+                  >
+                    <View
+                      className='w-10 h-10 rounded-xl items-center justify-center'
+                      style={{ backgroundColor: isActive ? '#F5F5F5' : '#FAFAFA' }}
+                    >
+                      <Feather
+                        name={account.icon as any}
+                        size={17}
+                        color={isActive ? '#000' : '#D4D4D4'}
+                      />
+                    </View>
+                    <View className='flex-1 ml-3'>
+                      <Text
+                        className='text-[14px] font-semibold'
+                        style={{ color: isActive ? '#000' : '#A3A3A3' }}
+                      >
+                        {account.name}
+                      </Text>
+                      <Text className='text-[12px] text-neutral-400 mt-0.5'>{typeLabel}</Text>
+                    </View>
+                    <View className='flex-row items-center gap-3'>
+                      {!isActive && (
+                        <View className='bg-neutral-100 px-2.5 py-1 rounded-full'>
+                          <Text className='text-[11px] text-neutral-400 font-medium'>Inactive</Text>
+                        </View>
+                      )}
+                      <Switch
+                        value={isActive}
+                        onValueChange={() => handleToggle(account._id, account.isActive)}
+                        trackColor={{ false: '#E5E5E5', true: '#000000' }}
+                        thumbColor='#FFFFFF'
+                      />
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
+
+          <View className='h-16' />
+        </ScrollView>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps='handled'>
-        {/* Info banner */}
-        <View className='mx-6 mb-4 bg-neutral-100 rounded-2xl px-4 py-3 flex-row items-start gap-3'>
-          <Feather name='info' size={14} color='#A3A3A3' style={{ marginTop: 1 }} />
-          <Text className='flex-1 text-[12px] text-neutral-400 leading-5'>
-            Inactive accounts won't appear when adding transactions but all past transactions remain unchanged.
-          </Text>
-        </View>
+      {/* Add Account Modal */}
+      <Modal
+        visible={showAdd}
+        animationType='slide'
+        presentationStyle='pageSheet'
+        onRequestClose={resetModal}
+      >
+        <View className='flex-1 bg-neutral-50' style={{ paddingTop: insets.top }}>
+          <View className='px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100'>
+            <Text className='text-[18px] font-bold text-black'>Add Account</Text>
+            <Pressable onPress={resetModal}>
+              <Feather name='x' size={20} color='#000' />
+            </Pressable>
+          </View>
 
-        {/* Accounts list */}
-        <View className='mx-6 bg-white rounded-2xl px-4'>
-          {accounts === undefined ? (
-            <View className='py-8 items-center'>
-              <Text className='text-neutral-400 text-[14px]'>Loading...</Text>
+          <View className='px-6 pt-6'>
+            {/* Name */}
+            <Text className='text-[13px] font-medium text-neutral-500 mb-2'>Account Name</Text>
+            <View className='bg-white rounded-2xl px-4 py-3.5 mb-5'>
+              <TextInput
+                value={newName}
+                onChangeText={setNewName}
+                placeholder='e.g. HDFC Bank, Paytm...'
+                placeholderTextColor='#D4D4D4'
+                className='text-[16px] text-black'
+                autoFocus
+                returnKeyType='done'
+              />
             </View>
-          ) : accounts.length === 0 ? (
-            <View className='py-10 items-center'>
-              <Feather name='credit-card' size={28} color='#D4D4D4' />
-              <Text className='text-neutral-400 text-[14px] mt-3'>No accounts yet</Text>
-            </View>
-          ) : (
-            accounts.map((account, i) => {
-              const isActive = account.isActive !== false;
-              const typeLabel = TYPE_LABEL[account.type] ?? account.type;
-              return (
-                <View
-                  key={account._id}
-                  className={`flex-row items-center py-4 ${i < accounts.length - 1 ? 'border-b border-neutral-100' : ''}`}
-                >
-                  <View
-                    className='w-10 h-10 rounded-xl items-center justify-center'
-                    style={{ backgroundColor: isActive ? '#F5F5F5' : '#FAFAFA' }}
-                  >
-                    <Feather
-                      name={account.icon as any}
-                      size={17}
-                      color={isActive ? '#000' : '#D4D4D4'}
-                    />
-                  </View>
-                  <View className='flex-1 ml-3'>
-                    <Text
-                      className='text-[14px] font-semibold'
-                      style={{ color: isActive ? '#000' : '#A3A3A3' }}
-                    >
-                      {account.name}
-                    </Text>
-                    <Text className='text-[12px] text-neutral-400 mt-0.5'>{typeLabel}</Text>
-                  </View>
-                  <View className='flex-row items-center gap-3'>
-                    {!isActive && (
-                      <View className='bg-neutral-100 px-2.5 py-1 rounded-full'>
-                        <Text className='text-[11px] text-neutral-400 font-medium'>Inactive</Text>
-                      </View>
-                    )}
-                    <Switch
-                      value={isActive}
-                      onValueChange={() => handleToggle(account._id, account.isActive)}
-                      trackColor={{ false: '#E5E5E5', true: '#000000' }}
-                      thumbColor='#FFFFFF'
-                    />
-                  </View>
-                </View>
-              );
-            })
-          )}
-        </View>
 
-        {/* Inline Add form */}
-        {showAdd && (
-          <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
-            <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
-              Account Name
-            </Text>
-            <TextInput
-              value={newName}
-              onChangeText={setNewName}
-              placeholder='e.g. HDFC Bank, Paytm...'
-              placeholderTextColor='#D4D4D4'
-              className='text-[16px] text-black mb-5'
-              autoFocus
-              returnKeyType='done'
-            />
-
-            <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
-              Type
-            </Text>
-            <View className='flex-row flex-wrap gap-2 mb-5'>
+            {/* Type */}
+            <Text className='text-[13px] font-medium text-neutral-500 mb-2'>Type</Text>
+            <View className='flex-row flex-wrap gap-2 mb-8'>
               {ACCOUNT_TYPES.map((t) => (
                 <Pressable
                   key={t.type}
                   onPress={() => setNewType(t.type)}
                   className={`flex-row items-center gap-2 px-4 py-2.5 rounded-xl ${
-                    newType === t.type ? 'bg-black' : 'bg-neutral-100'
+                    newType === t.type ? 'bg-black' : 'bg-white'
                   }`}
                 >
                   <Feather
@@ -192,39 +210,20 @@ export default function AccountsScreen() {
               ))}
             </View>
 
-            <View className='flex-row gap-3'>
-              <Pressable
-                onPress={() => { setShowAdd(false); setNewName(''); }}
-                className='flex-1 py-3 rounded-xl items-center bg-neutral-100'
-              >
-                <Text className='text-[14px] font-semibold text-neutral-500'>Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleAdd}
-                disabled={!newName.trim() || isSaving}
-                className={`flex-1 py-3 rounded-xl items-center ${newName.trim() && !isSaving ? 'bg-black' : 'bg-neutral-300'}`}
-              >
-                <Text className='text-[14px] font-semibold text-white'>
-                  {isSaving ? 'Adding...' : 'Add'}
-                </Text>
-              </Pressable>
-            </View>
+            <Pressable
+              onPress={handleAdd}
+              disabled={!newName.trim() || isSaving}
+              className={`py-4 rounded-2xl items-center ${
+                newName.trim() && !isSaving ? 'bg-black' : 'bg-neutral-300'
+              }`}
+            >
+              <Text className='text-white text-[15px] font-bold'>
+                {isSaving ? 'Adding...' : 'Add Account'}
+              </Text>
+            </Pressable>
           </View>
-        )}
-
-        {/* Add button shortcut when form is hidden */}
-        {!showAdd && (
-          <Pressable
-            onPress={() => { setShowAdd(true); setNewName(''); setNewType('bank'); }}
-            className='mx-6 mt-4 bg-white rounded-2xl p-4 flex-row items-center justify-center gap-2'
-          >
-            <Feather name='plus' size={16} color='#A3A3A3' />
-            <Text className='text-[14px] font-medium text-neutral-400'>Add Account</Text>
-          </Pressable>
-        )}
-
-        <View className='h-16' />
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </View>
+      </Modal>
+    </>
   );
 }

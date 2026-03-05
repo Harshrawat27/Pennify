@@ -22,6 +22,7 @@ function RootLayoutNav() {
   const prevUserId = useRef<string | undefined>(undefined);
   const prevSubStatus = useRef<string | undefined>(undefined);
   const splashHidden = useRef(false);
+  // prevSubStatus tracks changes after initial routing to re-route on purchase
 
   // Hide splash as soon as auth state is known (only once)
   useEffect(() => {
@@ -31,18 +32,16 @@ function RootLayoutNav() {
     }
   }, [isPending]);
 
-  // Re-route instantly when subscription status changes (e.g. after RevenueCat purchase)
+  // Re-route to tabs when subscription is activated (e.g. after RevenueCat purchase on paywall)
   useEffect(() => {
     if (!hasRouted.current) return;
     const status = prefs?.subscriptionStatus;
     if (status === prevSubStatus.current) return;
     prevSubStatus.current = status;
-    const isPremium = status === 'monthly' || status === 'yearly';
-    if (isPremium) {
+    if (status === 'monthly' || status === 'yearly') {
       router.replace('/(tabs)');
-    } else if (status === 'expired' || status === 'none') {
-      router.replace('/paywall');
     }
+    // Expiry is handled silently — user stays in tabs but + button shows paywall
   }, [prefs?.subscriptionStatus]);
 
   useEffect(() => {
@@ -80,17 +79,10 @@ function RootLayoutNav() {
       return;
     }
 
-    const isPremium =
-      prefs.subscriptionStatus === 'monthly' ||
-      prefs.subscriptionStatus === 'yearly';
-
-    if (isPremium) {
-      console.log('[Layout] Premium user → /(tabs)');
-      router.replace('/(tabs)');
-    } else {
-      console.log('[Layout] No subscription → /paywall');
-      router.replace('/paywall');
-    }
+    // Prefs exist — go to tabs regardless of subscription status.
+    // The + button gates transaction creation behind the paywall check.
+    console.log('[Layout] Has prefs → /(tabs)');
+    router.replace('/(tabs)');
   }, [session, isPending, prefs, userId]);
 
   const statusStyle = !session ? 'light' : 'dark';

@@ -1,3 +1,4 @@
+import { useSubscription } from '@/lib/hooks/useSubscription';
 import { Feather } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Tabs, router } from 'expo-router';
@@ -43,6 +44,7 @@ function getCupPath(w: number, h: number) {
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { isPremium, isLoading } = useSubscription();
   const bottomPad = Math.max(insets.bottom, 12);
   const barContentH = 56;
   const barHeight = barContentH + bottomPad;
@@ -109,6 +111,11 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       >
         <Pressable
           onPress={() => {
+            if (isLoading) return;
+            if (!isPremium) {
+              router.push('/paywall');
+              return;
+            }
             router.push('/add-transaction');
           }}
         >

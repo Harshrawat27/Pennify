@@ -101,7 +101,7 @@ export default function OnboardingScreen() {
       // Reset onboarding store
       useOnboardingStore.getState().reset();
 
-      router.replace('/(tabs)');
+      router.replace('/paywall');
     } catch (e) {
       console.error('[Onboarding] commitAll failed:', e);
       setIsCommitting(false);
