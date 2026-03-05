@@ -1,4 +1,5 @@
 import { useSubscription } from '@/lib/hooks/useSubscription';
+import { useSyncQueue } from '@/lib/hooks/useSyncQueue';
 import { Feather } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Tabs, router } from 'expo-router';
@@ -45,6 +46,7 @@ function getCupPath(w: number, h: number) {
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { isPremium, isLoading } = useSubscription();
+  useSyncQueue(); // mounts the NetInfo listener + queue hydration
   const bottomPad = Math.max(insets.bottom, 12);
   const barContentH = 56;
   const barHeight = barContentH + bottomPad;
