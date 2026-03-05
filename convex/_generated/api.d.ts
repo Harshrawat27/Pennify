@@ -11,6 +11,7 @@
 import type * as accounts from '../accounts.js';
 import type * as budgets from '../budgets.js';
 import type * as categories from '../categories.js';
+import type * as categorize from '../categorize.js';
 import type * as crons from '../crons.js';
 import type * as goals from '../goals.js';
 import type * as http from '../http.js';
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   accounts: typeof accounts;
   budgets: typeof budgets;
   categories: typeof categories;
+  categorize: typeof categorize;
   crons: typeof crons;
   goals: typeof goals;
   http: typeof http;

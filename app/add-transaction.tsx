@@ -1,7 +1,6 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useCachedAccounts } from '@/lib/hooks/useCachedAccounts';
-import { useCachedCategories } from '@/lib/hooks/useCachedCategories';
 import { enqueue, type QueuedTransaction } from '@/lib/offlineQueue';
 import { usePendingStore } from '@/lib/stores/usePendingStore';
 import { getCurrencySymbol } from '@/lib/utils/currency';
@@ -29,7 +28,6 @@ export default function AddTransactionScreen() {
 
   // Cached: loads instantly from AsyncStorage, syncs with Convex in background
   const accounts = useCachedAccounts();
-  const allCategories = useCachedCategories();
 
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
   const currency = prefs?.currency ?? 'INR';
@@ -42,17 +40,7 @@ export default function AddTransactionScreen() {
   const [amount, setAmount] = useState('');
   const [isExpense, setIsExpense] = useState(true);
   const [note, setNote] = useState('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
-
-  const filteredCategories = allCategories.filter((c) =>
-    isExpense ? c.type === 'expense' : c.type === 'income'
-  );
-
-  const effectiveCategoryId =
-    selectedCategoryId && filteredCategories.find((c) => c._id === selectedCategoryId)
-      ? selectedCategoryId
-      : filteredCategories[0]?._id ?? '';
 
   const effectiveAccountId =
     selectedAccountId && accounts.find((a) => a._id === selectedAccountId)
@@ -61,13 +49,12 @@ export default function AddTransactionScreen() {
 
   const handleSave = async () => {
     const numAmount = parseFloat(amount);
-    if (!title.trim() || isNaN(numAmount) || numAmount <= 0 || !effectiveCategoryId || !effectiveAccountId) return;
+    if (!title.trim() || isNaN(numAmount) || numAmount <= 0 || !effectiveAccountId) return;
     if (!userId) return;
 
     const today = localDateString(); // device local date, not UTC
     const localId = Crypto.randomUUID();
 
-    const selectedCategory = filteredCategories.find((c) => c._id === effectiveCategoryId);
     const selectedAccount = accounts.find((a) => a._id === effectiveAccountId);
 
     const pending: QueuedTransaction = {
@@ -77,10 +64,10 @@ export default function AddTransactionScreen() {
       amount: isExpense ? -numAmount : numAmount,
       note: note.trim(),
       date: today,
-      categoryId: effectiveCategoryId,
+      categoryId: '',            // set server-side by OpenAI after sync
       accountId: effectiveAccountId,
-      categoryName: selectedCategory?.name ?? '',
-      categoryIcon: selectedCategory?.icon ?? 'tag',
+      categoryName: 'Categorizing…',
+      categoryIcon: 'tag',
       accountName: selectedAccount?.name ?? '',
       accountIcon: selectedAccount?.icon ?? 'credit-card',
       createdAt: new Date().toISOString(),
@@ -97,7 +84,7 @@ export default function AddTransactionScreen() {
     requestSync();
   };
 
-  const canSave = !!title.trim() && !!amount;
+  const canSave = !!title.trim() && !!amount && !!effectiveAccountId;
 
   return (
     <KeyboardAvoidingView
@@ -169,39 +156,6 @@ export default function AddTransactionScreen() {
           />
         </View>
 
-        {/* Category Picker */}
-        <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
-          <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Category</Text>
-          {filteredCategories.length === 0 ? (
-            <Text className="text-neutral-300 text-[14px]">Loading categories…</Text>
-          ) : (
-            <View className="flex-row flex-wrap gap-2">
-              {filteredCategories.map((cat) => (
-                <Pressable
-                  key={cat._id}
-                  onPress={() => setSelectedCategoryId(cat._id)}
-                  className={`flex-row items-center gap-2 px-4 py-2.5 rounded-xl ${
-                    effectiveCategoryId === cat._id ? 'bg-black' : 'bg-neutral-100'
-                  }`}
-                >
-                  <Feather
-                    name={cat.icon as any}
-                    size={14}
-                    color={effectiveCategoryId === cat._id ? '#fff' : '#000'}
-                  />
-                  <Text
-                    className={`text-[13px] font-medium ${
-                      effectiveCategoryId === cat._id ? 'text-white' : 'text-black'
-                    }`}
-                  >
-                    {cat.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </View>
-
         {/* Account Picker */}
         <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
           <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Account</Text>
@@ -246,6 +200,14 @@ export default function AddTransactionScreen() {
             className="text-[16px] text-black"
             multiline
           />
+        </View>
+
+        {/* Auto-categorize hint */}
+        <View className="mx-6 mt-3 flex-row items-center gap-2">
+          <Feather name="zap" size={12} color="#A3A3A3" />
+          <Text className="text-[12px] text-neutral-400">
+            Category will be assigned automatically using AI
+          </Text>
         </View>
 
         {/* Save Button */}
