@@ -5,8 +5,6 @@ import { useQuery, useMutation } from 'convex/react';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 const ACCOUNT_TYPES: { type: string; icon: string; label: string }[] = [
   { type: 'cash',   icon: 'dollar-sign',  label: 'Cash' },
   { type: 'bank',   icon: 'home',         label: 'Bank' },
@@ -24,7 +22,6 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default function AccountsScreen() {
-  const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
@@ -62,7 +59,7 @@ export default function AccountsScreen() {
 
   return (
     <>
-      <View className='flex-1 bg-neutral-50' style={{ paddingTop: insets.top }}>
+      <View className='flex-1 bg-neutral-50'>
         {/* Header */}
         <View className='px-6 pt-4 pb-4 flex-row items-center justify-between'>
           <View className='flex-row items-center gap-4'>
@@ -160,7 +157,7 @@ export default function AccountsScreen() {
         presentationStyle='pageSheet'
         onRequestClose={resetModal}
       >
-        <View className='flex-1 bg-neutral-50' style={{ paddingTop: insets.top }}>
+        <View className='flex-1 bg-neutral-50'>
           <View className='px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100'>
             <Text className='text-[18px] font-bold text-black'>Add Account</Text>
             <Pressable onPress={resetModal}>

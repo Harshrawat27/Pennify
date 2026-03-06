@@ -116,7 +116,7 @@ export default function PaywallScreen() {
   }
 
   return (
-    <View className='flex-1 bg-black' style={{ paddingTop: insets.top }}>
+    <View className='flex-1 bg-black'>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}

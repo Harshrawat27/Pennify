@@ -2,10 +2,11 @@ import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { ConvexAuthSetup } from '@/lib/auth/ConvexAuthSetup';
 import { useQuery } from 'convex/react';
-import { Stack, router } from 'expo-router';
+import { Stack, router, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import '../global.css';
 
 // Keep the splash screen visible until we manually hide it
@@ -85,11 +86,22 @@ function RootLayoutNav() {
     router.replace('/(tabs)');
   }, [session, isPending, prefs, userId]);
 
-  const statusStyle = !session ? 'light' : 'dark';
+  const pathname = usePathname();
+  const isHome = pathname === '/';
+  const statusBarAreaBg = isHome ? 'black' : '#fafafa';
+  const statusStyle = (isHome || !session) ? 'light' : 'dark';
 
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }}>
+    <SafeAreaView
+      edges={['top']}
+      style={{ flex: 1, backgroundColor: statusBarAreaBg }}
+    >
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: '#fafafa' },
+        }}
+      >
         <Stack.Screen name='onboarding' />
         <Stack.Screen name='paywall' />
         <Stack.Screen name='sign-in' />
@@ -107,12 +119,15 @@ function RootLayoutNav() {
         />
         <Stack.Screen name='month-detail' />
         <Stack.Screen name='accounts' />
-        <Stack.Screen name='transaction-detail' options={{ presentation: 'modal' }} />
+        <Stack.Screen
+          name='transaction-detail'
+          options={{ presentation: 'modal' }}
+        />
         <Stack.Screen name='subscriptions' />
         <Stack.Screen name='monthly-budget' />
       </Stack>
       <StatusBar style={statusStyle} />
-    </>
+    </SafeAreaView>
   );
 }
 

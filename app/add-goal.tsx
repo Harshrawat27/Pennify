@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
@@ -23,7 +22,6 @@ const GOAL_ICONS: { icon: FeatherIcon; label: string }[] = [
 const GOAL_COLORS = ['#000000', '#525252', '#A3A3A3', '#059669', '#2563EB', '#DC2626'];
 
 export default function AddGoalScreen() {
-  const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id ?? '';
 
@@ -65,7 +63,7 @@ export default function AddGoalScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

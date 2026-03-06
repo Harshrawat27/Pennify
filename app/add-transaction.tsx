@@ -18,11 +18,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from 'convex/react'; // still needed for prefs (currency, trackIncome)
 
 export default function AddTransactionScreen() {
-  const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id ?? '';
 
@@ -93,7 +91,7 @@ export default function AddTransactionScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

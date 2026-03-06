@@ -39,7 +39,7 @@ export default function SignInScreen() {
   return (
     <View
       className="flex-1 bg-black justify-between px-8"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom + 40 }}
+      style={{ paddingBottom: insets.bottom + 40 }}
     >
       {/* Top: Branding */}
       <View className="items-center mt-20">

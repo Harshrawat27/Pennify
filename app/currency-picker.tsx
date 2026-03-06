@@ -1,5 +1,4 @@
 import { View, Text, Pressable, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
@@ -10,7 +9,6 @@ import { CURRENCIES } from '@/lib/utils/currency';
 const currencyList = Object.values(CURRENCIES);
 
 export default function CurrencyPickerScreen() {
-  const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
@@ -28,7 +26,7 @@ export default function CurrencyPickerScreen() {
   return (
     <ScrollView
       className="flex-1 bg-neutral-50"
-      contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }}
+      contentContainerStyle={{ paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}

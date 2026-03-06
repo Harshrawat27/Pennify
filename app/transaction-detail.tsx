@@ -3,7 +3,6 @@ import {
   View, Text, TextInput, Pressable, ScrollView,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
@@ -12,7 +11,6 @@ import { authClient } from '@/lib/auth-client';
 import { getCurrencySymbol } from '@/lib/utils/currency';
 
 export default function TransactionDetailScreen() {
-  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id ?? '';
@@ -116,7 +114,7 @@ export default function TransactionDetailScreen() {
 
   if (tx === undefined) {
     return (
-      <View className='flex-1 bg-neutral-50 items-center justify-center' style={{ paddingTop: insets.top }}>
+      <View className='flex-1 bg-neutral-50 items-center justify-center'>
         <ActivityIndicator size='large' color='#000' />
       </View>
     );
@@ -124,7 +122,7 @@ export default function TransactionDetailScreen() {
 
   if (tx === null) {
     return (
-      <View className='flex-1 bg-neutral-50 items-center justify-center' style={{ paddingTop: insets.top }}>
+      <View className='flex-1 bg-neutral-50 items-center justify-center'>
         <Text className='text-neutral-400 text-[15px]'>Transaction not found.</Text>
         <Pressable onPress={() => router.back()} className='mt-4'>
           <Text className='text-black font-semibold'>Go back</Text>
@@ -142,7 +140,7 @@ export default function TransactionDetailScreen() {
     >
       <ScrollView
         className='flex-1'
-        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps='handled'
       >

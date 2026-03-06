@@ -177,7 +177,7 @@ export default function SubscriptionsScreen() {
     <>
       <ScrollView
         className='flex-1 bg-neutral-50'
-        contentContainerStyle={{ paddingTop: insets.top }}
+        contentContainerStyle={{}}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -262,7 +262,7 @@ export default function SubscriptionsScreen() {
       >
         <ScrollView
           className='flex-1 bg-neutral-50'
-          contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps='handled'
           showsVerticalScrollIndicator={false}
         >

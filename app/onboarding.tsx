@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { ActivityIndicator, View, Text } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { useMutation } from 'convex/react';
@@ -26,7 +25,6 @@ import { scheduleDailyReminder, scheduleWeeklyReport, cancelAllNotifications } f
 const TOTAL_STEPS = 11;
 
 export default function OnboardingScreen() {
-  const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
   const [isCommitting, setIsCommitting] = useState(false);
 
@@ -133,7 +131,7 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <View className="flex-1 bg-neutral-50" style={{ paddingTop: insets.top }}>
+    <View className="flex-1 bg-neutral-50">
       <View className="pt-4 pb-4">
         <ProgressBar current={step - 1} total={TOTAL_STEPS - 1} />
       </View>

@@ -14,10 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 export default function MonthlyBudgetScreen() {
-  const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
@@ -59,7 +56,7 @@ export default function MonthlyBudgetScreen() {
       className="flex-1 bg-neutral-50"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={{ paddingTop: insets.top }} className="flex-1">
+      <View className="flex-1">
         {/* Header */}
         <View className="px-6 pt-4 pb-4 flex-row items-center gap-4">
           <Pressable

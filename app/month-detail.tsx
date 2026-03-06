@@ -3,7 +3,6 @@ import {
   View, Text, ScrollView, Pressable,
   TextInput, Modal, FlatList, ActivityIndicator,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from 'convex/react';
@@ -16,7 +15,6 @@ import {
 } from '@/lib/utils/date';
 
 export default function MonthDetailScreen() {
-  const insets = useSafeAreaInsets();
   const { month: paramMonth } = useLocalSearchParams<{ month: string }>();
   const [month, setMonth] = useState(paramMonth ?? currentMonth());
   const [search, setSearch] = useState('');
@@ -56,7 +54,7 @@ export default function MonthDetailScreen() {
   const isFuture = month > currentMonth();
 
   return (
-    <View className="flex-1 bg-neutral-50" style={{ paddingTop: insets.top }}>
+    <View className="flex-1 bg-neutral-50">
 
       {/* ── Header ── */}
       <View className="px-4 pt-4 pb-3 flex-row items-center gap-3">
@@ -261,7 +259,7 @@ export default function MonthDetailScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowPicker(false)}
       >
-        <View className="flex-1 bg-neutral-50" style={{ paddingTop: insets.top }}>
+        <View className="flex-1 bg-neutral-50">
           <View className="px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100">
             <Text className="text-[18px] font-bold text-black">Select Month</Text>
             <Pressable onPress={() => setShowPicker(false)}>

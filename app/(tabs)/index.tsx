@@ -8,8 +8,6 @@ import { useQuery } from 'convex/react';
 import { router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, ScrollView, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 function SkeletonBox({
   width,
   height,
@@ -76,7 +74,6 @@ function TransactionSkeleton() {
 }
 
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
@@ -115,7 +112,7 @@ export default function HomeScreen() {
         bounces={false}
       >
         {/* ===== BLACK HERO AREA ===== */}
-        <View style={{ paddingTop: insets.top }}>
+        <View>
           {/* Header */}
           <View className='px-6 pt-4 flex-row justify-between items-center'>
             <View className='w-12 h-12 rounded-full bg-white/15 items-center justify-center'>

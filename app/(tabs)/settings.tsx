@@ -9,8 +9,6 @@ import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 type SettingRow = {
   icon: React.ComponentProps<typeof Feather>['name'];
   label: string;
@@ -99,7 +97,6 @@ function SettingGroup({ title, items }: { title: string; items: SettingRow[] }) 
 }
 
 export default function SettingsScreen() {
-  const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
@@ -217,7 +214,7 @@ export default function SettingsScreen() {
   return (
     <ScrollView
       className='flex-1 bg-neutral-50'
-      contentContainerStyle={{ paddingTop: insets.top }}
+      contentContainerStyle={{}}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}

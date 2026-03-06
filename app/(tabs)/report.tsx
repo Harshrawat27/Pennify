@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { useQuery } from 'convex/react';
@@ -48,7 +47,6 @@ function getCurrentWeekRange() {
 }
 
 export default function ReportScreen() {
-  const insets = useSafeAreaInsets();
   const [period, setPeriod] = useState(1); // 0=Week 1=Month 2=Year
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
@@ -172,7 +170,7 @@ export default function ReportScreen() {
   return (
     <ScrollView
       className="flex-1 bg-neutral-50"
-      contentContainerStyle={{ paddingTop: insets.top }}
+      contentContainerStyle={{}}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}

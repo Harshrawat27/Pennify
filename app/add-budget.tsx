@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
@@ -9,7 +8,6 @@ import { authClient } from '@/lib/auth-client';
 import { getCurrencySymbol } from '@/lib/utils/currency';
 
 export default function AddBudgetScreen() {
-  const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id ?? '';
 
@@ -56,7 +54,7 @@ export default function AddBudgetScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

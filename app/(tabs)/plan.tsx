@@ -15,8 +15,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 function monthsUntil(dateStr: string): number {
   const today = new Date();
   const due = new Date(dateStr);
@@ -27,7 +25,6 @@ function monthsUntil(dateStr: string): number {
 }
 
 export default function PlanScreen() {
-  const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
@@ -115,7 +112,7 @@ export default function PlanScreen() {
     <>
       <ScrollView
         className='flex-1 bg-neutral-50'
-        contentContainerStyle={{ paddingTop: insets.top }}
+        contentContainerStyle={{}}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -369,7 +366,7 @@ export default function PlanScreen() {
         presentationStyle='pageSheet'
         onRequestClose={() => setHistoryGoalId(null)}
       >
-        <View className='flex-1 bg-neutral-50' style={{ paddingTop: insets.top }}>
+        <View className='flex-1 bg-neutral-50'>
           <View className='px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100'>
             <Text className='text-[18px] font-bold text-black'>Contribution History</Text>
             <Pressable onPress={() => setHistoryGoalId(null)}>
@@ -444,7 +441,7 @@ export default function PlanScreen() {
         presentationStyle='pageSheet'
         onRequestClose={() => setContributionGoalId(null)}
       >
-        <View className='flex-1 bg-neutral-50' style={{ paddingTop: insets.top }}>
+        <View className='flex-1 bg-neutral-50'>
           <View className='px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100'>
             <Text className='text-[18px] font-bold text-black'>Add Money</Text>
             <Pressable onPress={() => setContributionGoalId(null)}>
