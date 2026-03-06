@@ -3,7 +3,7 @@ import { dequeue, getQueue, incrementRetry } from '@/lib/offlineQueue';
 import { usePendingStore } from '@/lib/stores/usePendingStore';
 import NetInfo from '@react-native-community/netinfo';
 import { useAction, useMutation } from 'convex/react';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 const MAX_RETRIES = 3;
 
@@ -17,6 +17,7 @@ export function useSyncQueue() {
   const createTransaction = useMutation(api.transactions.create);
   const categorize = useAction(api.categorize.categorizeTransactions);
   const { remove: removePending, hydrate, syncTrigger } = usePendingStore();
+  const isProcessingRef = useRef(false);
 
   // Hydrate in-memory store from persisted queue on app start
   useEffect(() => {
@@ -24,15 +25,20 @@ export function useSyncQueue() {
   }, [hydrate]);
 
   const processQueue = useCallback(async () => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    try {
     const queue = await getQueue();
+    console.log('[SyncQueue] processQueue called, queue length:', queue.length, 'items:', queue.map(q => q.title));
     if (queue.length === 0) return;
 
-    const synced: Array<{ id: string; title: string; userId: string }> = [];
+    const synced: Array<{ id: string; title: string; userId: string; isExpense: boolean }> = [];
 
     for (const item of queue) {
       if (item.retries >= MAX_RETRIES) continue; // permanently failed, skip
 
       try {
+        console.log('[SyncQueue] creating transaction:', item.title, 'localId:', item.localId);
         const id = await createTransaction({
           userId: item.userId,
           title: item.title,
@@ -42,30 +48,39 @@ export function useSyncQueue() {
           accountId: item.accountId as any,
           // categoryId intentionally omitted — auto-categorized by OpenAI after sync
         });
-        synced.push({ id: id as string, title: item.title, userId: item.userId });
+        console.log('[SyncQueue] created OK:', item.title, '→ convexId:', id);
+        synced.push({ id: id as string, title: item.title, userId: item.userId, isExpense: item.amount < 0 });
         // Success — remove from queue and pending UI
         await dequeue(item.localId);
         removePending(item.localId);
-      } catch {
+      } catch (e) {
+        console.log('[SyncQueue] create FAILED:', item.title, e);
         // Network or server error — increment retry, keep in queue
         await incrementRetry(item.localId);
       }
     }
 
+    console.log('[SyncQueue] synced batch:', synced.map(s => `${s.title}→${s.id}`));
     // Fire-and-forget: bulk categorize all synced transactions via OpenAI
     if (synced.length > 0) {
       const userId = synced[0].userId;
+      console.log('[SyncQueue] calling categorize with', synced.length, 'items');
       void categorize({
         userId,
-        transactions: synced.map(({ id, title }) => ({ id, title })),
-      });
+        transactions: synced.map(({ id, title, isExpense }) => ({ id, title, isExpense })),
+      }).then(() => console.log('[SyncQueue] categorize done'))
+        .catch((e) => console.log('[SyncQueue] categorize FAILED:', e));
+    }
+    } finally {
+      isProcessingRef.current = false;
     }
   }, [createTransaction, categorize, removePending]);
 
   // Auto-flush when connectivity is (re)established
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
-      if (state.isConnected && state.isInternetReachable !== false) {
+      console.log('[SyncQueue] NetInfo event:', state.isConnected, state.isInternetReachable);
+      if (state.isConnected && state.isInternetReachable === true) {
         void processQueue();
       }
     });
@@ -74,6 +89,7 @@ export function useSyncQueue() {
 
   // Attempt on mount (handles normal online open with stale queue items)
   useEffect(() => {
+    console.log('[SyncQueue] mount effect → processQueue');
     void processQueue();
   }, [processQueue]);
 
