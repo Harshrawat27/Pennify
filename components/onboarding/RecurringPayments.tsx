@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useOnboardingStore, type RecurringPayment } from '@/lib/stores/useOnboardingStore';
 import { getCurrencySymbol } from '@/lib/utils/currency';
+import { BillingDayPicker } from '@/components/BillingDayPicker';
 
 const COMMON_PAYMENTS = [
   'Netflix', 'Spotify', 'YouTube Premium', 'Gym',
@@ -22,16 +23,21 @@ export function RecurringPayments({ onNext, onBack }: RecurringPaymentsProps) {
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newFreq, setNewFreq] = useState<'monthly' | 'yearly'>('monthly');
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const addPayment = () => {
     if (!newName.trim() || !newAmount.trim()) return;
+    const billingDay = selectedDate ? Number(selectedDate.slice(8, 10)) : undefined;
     setPayments([
       ...payments,
-      { name: newName.trim(), amount: newAmount.trim(), frequency: newFreq },
+      { name: newName.trim(), amount: newAmount.trim(), frequency: newFreq, billingDay, purchasedAt: selectedDate ?? undefined },
     ]);
     setNewName('');
     setNewAmount('');
     setNewFreq('monthly');
+    setSelectedDate(null);
+    setShowCalendar(false);
     setShowAdd(false);
   };
 
@@ -40,6 +46,8 @@ export function RecurringPayments({ onNext, onBack }: RecurringPaymentsProps) {
     setNewName(name);
     setNewAmount('');
     setNewFreq('monthly');
+    setSelectedDate(null);
+    setShowCalendar(false);
     setShowAdd(true);
   };
 
@@ -88,6 +96,7 @@ export function RecurringPayments({ onNext, onBack }: RecurringPaymentsProps) {
                 <Text className="text-[15px] font-semibold text-black">{p.name}</Text>
                 <Text className="text-[12px] text-neutral-400 mt-0.5">
                   {p.amount ? `${getCurrencySymbol(currency)}${p.amount}` : 'No amount set'} · {p.frequency}
+                  {p.billingDay ? ` · ${p.billingDay}th` : ''}
                 </Text>
               </View>
               <Pressable onPress={() => removePayment(i)} className="p-2">
@@ -138,9 +147,36 @@ export function RecurringPayments({ onNext, onBack }: RecurringPaymentsProps) {
               </Pressable>
             </View>
 
+            {/* Billing date */}
+            <Pressable
+              onPress={() => setShowCalendar(!showCalendar)}
+              className="flex-row items-center gap-2 mb-3 py-1"
+            >
+              <Feather name={showCalendar ? 'chevron-up' : 'calendar'} size={14} color='#A3A3A3' />
+              <Text className="text-[13px] text-neutral-400">
+                {selectedDate
+                  ? `Purchased / renews on ${selectedDate.slice(8, 10)}/${selectedDate.slice(5, 7)}/${selectedDate.slice(0, 4)}`
+                  : 'Set purchase or renewal date (optional)'}
+              </Text>
+            </Pressable>
+            {!showCalendar && (
+              <Text className="text-[11px] text-neutral-300 mb-3 -mt-1">
+                Pick when you bought it or just the day it renews each month
+              </Text>
+            )}
+            {showCalendar && (
+              <View className="mb-4">
+                <BillingDayPicker
+                  selectedDate={selectedDate}
+                  onSelect={(d) => setSelectedDate(d)}
+                  onClear={() => setSelectedDate(null)}
+                />
+              </View>
+            )}
+
             <View className="flex-row gap-3">
               <Pressable
-                onPress={() => { setShowAdd(false); setNewName(''); setNewAmount(''); }}
+                onPress={() => { setShowAdd(false); setNewName(''); setNewAmount(''); setSelectedDate(null); setShowCalendar(false); }}
                 className="flex-1 py-3 rounded-xl items-center bg-neutral-100"
               >
                 <Text className="text-[14px] font-semibold text-neutral-500">Cancel</Text>

@@ -2,6 +2,8 @@ import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { formatCurrency } from '@/lib/utils/currency';
 import { formatDateShort } from '@/lib/utils/date';
+import { scheduleRecurringReminder, cancelRecurringReminder } from '@/lib/utils/notifications';
+import { BillingDayPicker } from '@/components/BillingDayPicker';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMutation, useQuery } from 'convex/react';
@@ -41,6 +43,8 @@ export default function SubscriptionsScreen() {
   const [newName, setNewName] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newFreq, setNewFreq] = useState<'monthly' | 'yearly'>('monthly');
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // Sinking fund options (only for yearly)
   const [isSinkingFund, setIsSinkingFund] = useState(false);
   const [goalIcon, setGoalIcon] = useState<FeatherIcon>('target');
@@ -66,6 +70,8 @@ export default function SubscriptionsScreen() {
     setIsSinkingFund(false);
     setGoalIcon('target');
     setGoalColor('#000000');
+    setShowCalendar(false);
+    setSelectedDate(null);
     setShowAdd(false);
   }
 
@@ -74,16 +80,17 @@ export default function SubscriptionsScreen() {
     const amount = parseFloat(newAmount);
     if (!amount || amount <= 0) return;
 
+    const billingDay = selectedDate ? Number(selectedDate.slice(8, 10)) : undefined;
+    const purchasedAt = selectedDate ?? undefined;
+
     if (newFreq === 'yearly' && isSinkingFund) {
-      await createLinkedSinkingFund({
-        userId,
-        name: newName.trim(),
-        amount,
-        goalIcon,
-        goalColor,
-      });
+      await createLinkedSinkingFund({ userId, name: newName.trim(), amount, goalIcon, goalColor });
     } else {
-      await createPayment({ userId, name: newName.trim(), amount, frequency: newFreq });
+      const id = await createPayment({ userId, name: newName.trim(), amount, frequency: newFreq, billingDay, purchasedAt });
+      // Schedule local reminder notification 1 day before billing day
+      if (billingDay && id) {
+        void scheduleRecurringReminder(String(id), newName.trim(), billingDay);
+      }
     }
     resetModal();
   }
@@ -99,7 +106,10 @@ export default function SubscriptionsScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => removePayment({ id: payment._id }),
+          onPress: () => {
+            void cancelRecurringReminder(String(payment._id));
+            removePayment({ id: payment._id });
+          },
         },
       ]
     );
@@ -134,6 +144,7 @@ export default function SubscriptionsScreen() {
             <Text className='text-[12px] text-neutral-400 mt-0.5'>
               {payment.frequency === 'monthly' ? 'Monthly' : 'Yearly'} ·{' '}
               {isPaused ? 'Paused' : `Next: ${formatDateShort(payment.nextDue)}`}
+              {payment.billingDay ? ` · renews ${payment.billingDay}th` : ''}
             </Text>
           </View>
 
@@ -321,6 +332,33 @@ export default function SubscriptionsScreen() {
                 </Text>
               </Pressable>
             </View>
+
+            {/* Billing date */}
+            <Text className='text-[13px] font-medium text-neutral-500 mb-1'>Billing date</Text>
+            <Text className='text-[11px] text-neutral-400 mb-3'>
+              Pick when you purchased it or just the day it renews — we only use the day number for reminders
+            </Text>
+            <Pressable
+              onPress={() => setShowCalendar(!showCalendar)}
+              className='bg-white rounded-2xl px-4 py-3.5 mb-2 flex-row items-center justify-between'
+            >
+              <Text className={selectedDate ? 'text-[15px] text-black font-medium' : 'text-[15px] text-neutral-300'}>
+                {selectedDate
+                  ? `${selectedDate.slice(8, 10)}/${selectedDate.slice(5, 7)}/${selectedDate.slice(0, 4)}`
+                  : 'Select date (optional)'}
+              </Text>
+              <Feather name={showCalendar ? 'chevron-up' : 'calendar'} size={16} color='#A3A3A3' />
+            </Pressable>
+            {showCalendar && (
+              <View className='mb-5'>
+                <BillingDayPicker
+                  selectedDate={selectedDate}
+                  onSelect={(d) => { setSelectedDate(d); setShowCalendar(false); }}
+                  onClear={() => setSelectedDate(null)}
+                />
+              </View>
+            )}
+            {!showCalendar && <View className='mb-5' />}
 
             {/* Sinking fund toggle — only for yearly */}
             {newFreq === 'yearly' && (

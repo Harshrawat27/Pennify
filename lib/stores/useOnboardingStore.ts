@@ -19,6 +19,8 @@ export interface RecurringPayment {
   name: string;
   amount: string;
   frequency: 'monthly' | 'yearly';
+  billingDay?: number;
+  purchasedAt?: string; // YYYY-MM-DD — full date user picked (display only)
 }
 
 interface OnboardingState {

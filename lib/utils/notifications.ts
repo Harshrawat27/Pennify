@@ -96,6 +96,43 @@ export async function scheduleWeeklyReport(enabled: boolean): Promise<void> {
 }
 
 /**
+ * Schedule a monthly reminder the day before a recurring payment's billing day.
+ * Uses the Convex payment ID as the notification identifier so it can be cancelled later.
+ */
+export async function scheduleRecurringReminder(paymentId: string, name: string, billingDay: number): Promise<void> {
+  const reminderDay = Math.max(1, billingDay - 1);
+  const clampedDay = Math.min(reminderDay, 28); // clamp so it fires in Feb too
+
+  await Notifications.scheduleNotificationAsync({
+    identifier: `recurring_${paymentId}`,
+    content: {
+      title: `${name} renews tomorrow`,
+      body: `Your ${name} subscription will be charged tomorrow.`,
+      data: { type: 'recurring_reminder', paymentId },
+      ...(Platform.OS === 'android' && { channelId: 'reminders' }),
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      day: clampedDay,
+      hour: 9,
+      minute: 0,
+      repeats: true,
+    },
+  });
+}
+
+/**
+ * Cancel a recurring payment's reminder notification.
+ */
+export async function cancelRecurringReminder(paymentId: string): Promise<void> {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(`recurring_${paymentId}`);
+  } catch {
+    // ignore if not found
+  }
+}
+
+/**
  * Cancel all scheduled notifications (when user turns off master toggle).
  */
 export async function cancelAllNotifications(): Promise<void> {
