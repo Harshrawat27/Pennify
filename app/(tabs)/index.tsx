@@ -307,12 +307,6 @@ export default function HomeScreen() {
                       <View className='flex-1 ml-3.5'>
                         <Text className='text-black font-bold text-[15px]'>{tx.title}</Text>
                         <View className='flex-row items-center mt-1.5 gap-2.5'>
-                          {tx.note ? (
-                            <View className='flex-row items-center gap-1'>
-                              <Feather name='corner-down-right' size={10} color='#A3A3A3' />
-                              <Text className='text-neutral-400 text-[11px]'>{tx.note}</Text>
-                            </View>
-                          ) : null}
                           <View className='flex-row items-center gap-1'>
                             <Feather name='tag' size={10} color='#A3A3A3' />
                             <Text className='text-neutral-400 text-[11px]'>{tx.categoryName}</Text>
@@ -330,6 +324,9 @@ export default function HomeScreen() {
                         </View>
                       </View>
                     </View>
+                    {tx.note ? (
+                      <Text className='text-neutral-400 text-[12px] mt-2 ml-[62px]'>{tx.note}</Text>
+                    ) : null}
                   </View>
                 ))}
 
@@ -347,12 +344,6 @@ export default function HomeScreen() {
                       <View className='flex-1 ml-3.5'>
                         <Text className='text-black font-bold text-[15px]'>{tx.title}</Text>
                         <View className='flex-row items-center mt-1.5 gap-2.5'>
-                          {tx.note ? (
-                            <View className='flex-row items-center gap-1'>
-                              <Feather name='corner-down-right' size={10} color='#A3A3A3' />
-                              <Text className='text-neutral-400 text-[11px]'>{tx.note}</Text>
-                            </View>
-                          ) : null}
                           <View className='flex-row items-center gap-1'>
                             <Feather name='tag' size={10} color='#A3A3A3' />
                             <Text className='text-neutral-400 text-[11px]'>{tx.categoryName}</Text>
@@ -371,6 +362,9 @@ export default function HomeScreen() {
                         </Text>
                       </View>
                     </View>
+                    {tx.note ? (
+                      <Text className='text-neutral-400 text-[12px] mt-2 ml-[62px]'>{tx.note}</Text>
+                    ) : null}
                   </Pressable>
                 ))}
               </>

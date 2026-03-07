@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Modal, StatusBar,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
@@ -39,6 +40,7 @@ export default function TransactionDetailScreen() {
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [receiptVisible, setReceiptVisible] = useState(false);
 
   // Populate form once the transaction loads
   useEffect(() => {
@@ -160,6 +162,60 @@ export default function TransactionDetailScreen() {
             <Feather name='trash-2' size={18} color='#EF4444' />
           </Pressable>
         </View>
+
+        {/* Receipt thumbnail — only shown if transaction was scanned */}
+        {tx.receiptUrl ? (
+          <Pressable
+            onPress={() => setReceiptVisible(true)}
+            className='mx-6 mt-4 bg-white rounded-2xl p-3 flex-row items-center gap-3'
+          >
+            <Image
+              source={{ uri: tx.receiptUrl }}
+              style={{ width: 52, height: 72, borderRadius: 8 }}
+              contentFit='cover'
+            />
+            <View className='flex-1'>
+              <Text className='text-[13px] font-semibold text-black'>Receipt</Text>
+              <Text className='text-[11px] text-neutral-400 mt-0.5'>Tap to view full image</Text>
+            </View>
+            <Feather name='maximize-2' size={16} color='#A3A3A3' />
+          </Pressable>
+        ) : null}
+
+        {/* Full-screen receipt viewer modal */}
+        {tx.receiptUrl ? (
+          <Modal
+            visible={receiptVisible}
+            animationType='fade'
+            statusBarTranslucent
+            onRequestClose={() => setReceiptVisible(false)}
+          >
+            <StatusBar backgroundColor='#000' barStyle='light-content' />
+            <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+              <Image
+                source={{ uri: tx.receiptUrl }}
+                style={{ width: '100%', height: '85%' }}
+                contentFit='contain'
+              />
+              <Pressable
+                onPress={() => setReceiptVisible(false)}
+                style={{
+                  position: 'absolute',
+                  top: 56,
+                  right: 20,
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Feather name='x' size={20} color='#fff' />
+              </Pressable>
+            </View>
+          </Modal>
+        ) : null}
 
         {/* Expense / Income Toggle */}
         {trackIncome ? (
