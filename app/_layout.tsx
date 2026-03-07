@@ -80,10 +80,21 @@ function RootLayoutNav() {
       return;
     }
 
-    // Prefs exist — go to tabs regardless of subscription status.
-    // The + button gates transaction creation behind the paywall check.
-    console.log('[Layout] Has prefs → /(tabs)');
-    router.replace('/(tabs)');
+    // Only navigate to tabs if we're still on an auth screen.
+    // If the user already navigated somewhere (another tab, a modal, etc.)
+    // during the prefs-loading window, leave them there.
+    const isOnAuthScreen =
+      pathname === '/sign-in' ||
+      pathname === '/onboarding' ||
+      pathname === '/post-auth-setup' ||
+      pathname === '/paywall';
+
+    if (isOnAuthScreen) {
+      console.log('[Layout] Has prefs → /(tabs)');
+      router.replace('/(tabs)');
+    } else {
+      console.log('[Layout] Has prefs, already in app → skip replace');
+    }
   }, [session, isPending, prefs, userId]);
 
   const pathname = usePathname();
