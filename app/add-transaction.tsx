@@ -7,9 +7,15 @@ import { getCurrencySymbol } from '@/lib/utils/currency';
 import { localDateString } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
 import * as Crypto from 'expo-crypto';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImagePicker from 'expo-image-picker';
+import NetInfo from '@react-native-community/netinfo';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -19,6 +25,8 @@ import {
   View,
 } from 'react-native';
 import { useQuery } from 'convex/react'; // still needed for prefs (currency, trackIncome)
+
+const SCAN_URL = `${process.env.EXPO_PUBLIC_AUTH_URL}/api/scan-receipt`;
 
 export default function AddTransactionScreen() {
   const { data: session } = authClient.useSession();
@@ -39,11 +47,86 @@ export default function AddTransactionScreen() {
   const [isExpense, setIsExpense] = useState(true);
   const [note, setNote] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [receiptUrl, setReceiptUrl] = useState('');
+  const [receiptPreview, setReceiptPreview] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
 
   const effectiveAccountId =
     selectedAccountId && accounts.find((a) => a._id === selectedAccountId)
       ? selectedAccountId
       : accounts[0]?._id ?? '';
+
+  const handleScan = async () => {
+    // Fail fast if offline — no point going through camera flow
+    const net = await NetInfo.fetch();
+    if (!net.isConnected || !net.isInternetReachable) {
+      Alert.alert(
+        'No Internet Connection',
+        'An internet connection is required to scan receipts. Connect to the internet and try again.',
+      );
+      return;
+    }
+
+    // Request camera permissions
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Camera Permission', 'Camera access is needed to scan receipts.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+      base64: false,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    setReceiptPreview(asset.uri);
+    setIsScanning(true);
+
+    try {
+      // Compress image to reduce upload size (max 1200px wide, 70% quality)
+      const compressed = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 1200 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+
+      if (!compressed.base64) throw new Error('Compression failed');
+
+      const res = await fetch(SCAN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: compressed.base64, mimeType: 'image/jpeg' }),
+      });
+
+      if (!res.ok) throw new Error(`Scan API error ${res.status}`);
+
+      const data = await res.json() as {
+        title: string;
+        amount: number;
+        date: string | null;
+        isExpense: boolean;
+        note: string;
+        receiptUrl: string;
+      };
+
+      // Pre-fill form with AI-extracted data
+      if (data.title) setTitle(data.title);
+      if (data.amount) setAmount(String(data.amount));
+      setIsExpense(data.isExpense ?? true);
+      if (data.note) setNote(data.note);
+      if (data.receiptUrl) setReceiptUrl(data.receiptUrl);
+    } catch (err) {
+      console.error('[ScanReceipt]', err);
+      Alert.alert('Scan Failed', 'Could not read the receipt. Please fill in the details manually.');
+      setReceiptPreview('');
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   const handleSave = async () => {
     const numAmount = parseFloat(amount);
@@ -70,6 +153,7 @@ export default function AddTransactionScreen() {
       accountIcon: selectedAccount?.icon ?? 'credit-card',
       createdAt: new Date().toISOString(),
       retries: 0,
+      receiptUrl: receiptUrl || undefined,
     };
 
     // 1. Show in UI immediately
@@ -101,8 +185,44 @@ export default function AddTransactionScreen() {
             <Feather name="x" size={20} color="#000" />
           </Pressable>
           <Text className="text-[18px] font-bold text-black">Add Transaction</Text>
-          <View className="w-10" />
+          {/* Scan receipt button */}
+          <Pressable
+            onPress={handleScan}
+            disabled={isScanning}
+            className="w-10 h-10 rounded-full bg-white items-center justify-center"
+          >
+            {isScanning
+              ? <ActivityIndicator size="small" color="#000" />
+              : <Feather name="camera" size={20} color="#000" />
+            }
+          </Pressable>
         </View>
+
+        {/* Scanning overlay message */}
+        {isScanning && (
+          <View className="mx-6 mt-2 bg-black rounded-xl px-4 py-3 flex-row items-center gap-3">
+            <ActivityIndicator size="small" color="#fff" />
+            <Text className="text-white text-[13px] font-medium">Reading receipt with AI…</Text>
+          </View>
+        )}
+
+        {/* Receipt preview thumbnail (shown after scan) */}
+        {receiptPreview && !isScanning && (
+          <View className="mx-6 mt-3 bg-white rounded-2xl p-3 flex-row items-center gap-3">
+            <Image
+              source={{ uri: receiptPreview }}
+              style={{ width: 52, height: 72, borderRadius: 8 }}
+              resizeMode="cover"
+            />
+            <View className="flex-1">
+              <Text className="text-[12px] font-semibold text-black">Receipt scanned</Text>
+              <Text className="text-[11px] text-neutral-400 mt-0.5">Review and edit details below</Text>
+            </View>
+            <Pressable onPress={handleScan}>
+              <Feather name="refresh-cw" size={16} color="#A3A3A3" />
+            </Pressable>
+          </View>
+        )}
 
         {/* Expense / Income Toggle */}
         {trackIncome ? (
