@@ -39,9 +39,8 @@ interface OnboardingState {
   // Screen 6 - Track Income
   trackIncome: boolean;
 
-  // Screen 7 - Categories
-  selectedCategories: string[];
-  customCategories: string[];
+  // Screen 7 - Categories (custom only; 40 defaults are auto-created)
+  customCategories: { name: string; parentCategory?: string }[];
 
   // Screen 8 - Recurring Payments
   recurringPayments: RecurringPayment[];
@@ -60,8 +59,7 @@ interface OnboardingState {
   setOverallBalance: (balance: string) => void;
   setMonthlyBudget: (amount: number) => void;
   setTrackIncome: (track: boolean) => void;
-  setSelectedCategories: (categories: string[]) => void;
-  setCustomCategories: (categories: string[]) => void;
+  setCustomCategories: (categories: { name: string; parentCategory?: string }[]) => void;
   setRecurringPayments: (payments: RecurringPayment[]) => void;
   setGoals: (goals: OnboardingGoal[]) => void;
   setNotificationsEnabled: (enabled: boolean) => void;
@@ -76,14 +74,7 @@ const initialState = {
   overallBalance: '',
   monthlyBudget: 5000,
   trackIncome: true,
-  selectedCategories: [
-    'Food & Dining',
-    'Transport',
-    'Shopping',
-    'Bills & Utilities',
-    'Entertainment',
-  ],
-  customCategories: [] as string[],
+  customCategories: [] as { name: string; parentCategory?: string }[],
   recurringPayments: [] as RecurringPayment[],
   goals: [] as OnboardingGoal[],
   notificationsEnabled: true,
@@ -99,7 +90,6 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   setOverallBalance: (balance) => set({ overallBalance: balance }),
   setMonthlyBudget: (amount) => set({ monthlyBudget: amount }),
   setTrackIncome: (track) => set({ trackIncome: track }),
-  setSelectedCategories: (categories) => set({ selectedCategories: categories }),
   setCustomCategories: (categories) => set({ customCategories: categories }),
   setRecurringPayments: (payments) => set({ recurringPayments: payments }),
   setGoals: (goals) => set({ goals: goals }),

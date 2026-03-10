@@ -28,6 +28,11 @@ function RootLayoutNav() {
   // Hide splash as soon as auth state is known (only once)
   useEffect(() => {
     if (!isPending && !splashHidden.current) {
+      // if (
+      //   !isPending &&
+      //   (prefs !== undefined || !session) &&
+      //   !splashHidden.current
+      // ) {
       splashHidden.current = true;
       SplashScreen.hideAsync();
     }
@@ -75,8 +80,8 @@ function RootLayoutNav() {
     hasRouted.current = true;
 
     if (prefs === null) {
-      console.log('[Layout] No prefs (new user) → /onboarding');
-      router.replace('/onboarding');
+      console.log('[Layout] No prefs (new user) → /welcome');
+      router.replace('/welcome');
       return;
     }
 
@@ -85,6 +90,7 @@ function RootLayoutNav() {
     // during the prefs-loading window, leave them there.
     const isOnAuthScreen =
       pathname === '/sign-in' ||
+      pathname === '/welcome' ||
       pathname === '/onboarding' ||
       pathname === '/post-auth-setup' ||
       pathname === '/paywall';
@@ -99,8 +105,13 @@ function RootLayoutNav() {
 
   const pathname = usePathname();
   const isHome = pathname === '/';
-  const statusBarAreaBg = isHome ? 'black' : '#fafafa';
-  const statusStyle = (isHome || !session) ? 'light' : 'dark';
+  const isWelcome = pathname === '/welcome';
+  const isSignIn = pathname === '/sign-in';
+  const isPaywall = pathname === '/paywall';
+  const statusBarAreaBg =
+    isHome || isWelcome || isSignIn || isPaywall ? 'black' : '#fafafa';
+  const statusStyle =
+    isHome || isWelcome || isSignIn || !session || isPaywall ? 'light' : 'dark';
 
   return (
     <SafeAreaView
@@ -113,6 +124,7 @@ function RootLayoutNav() {
           contentStyle: { backgroundColor: '#fafafa' },
         }}
       >
+        <Stack.Screen name='welcome' />
         <Stack.Screen name='onboarding' />
         <Stack.Screen name='paywall' />
         <Stack.Screen name='sign-in' />
@@ -135,6 +147,7 @@ function RootLayoutNav() {
           options={{ presentation: 'modal' }}
         />
         <Stack.Screen name='subscriptions' />
+        <Stack.Screen name='categories' />
         <Stack.Screen name='monthly-budget' />
       </Stack>
       <StatusBar style={statusStyle} />

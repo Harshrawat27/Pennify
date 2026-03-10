@@ -1,28 +1,31 @@
-import { useState, useCallback } from 'react';
-import { ActivityIndicator, View, Text } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { authClient } from '@/lib/auth-client';
-import { currentMonth } from '@/lib/utils/date';
-import { StepPager } from '@/components/onboarding/StepPager';
-import { ProgressBar } from '@/components/onboarding/ProgressBar';
-import { GetStarted } from '@/components/onboarding/GetStarted';
-import { ChooseCurrency } from '@/components/onboarding/ChooseCurrency';
 import { AddAccounts } from '@/components/onboarding/AddAccounts';
 import { AddBalance } from '@/components/onboarding/AddBalance';
-import { SetBudget } from '@/components/onboarding/SetBudget';
-import { TrackIncome } from '@/components/onboarding/TrackIncome';
 import { ChooseCategories } from '@/components/onboarding/ChooseCategories';
-import { RecurringPayments } from '@/components/onboarding/RecurringPayments';
-import { SetGoals } from '@/components/onboarding/SetGoals';
-import { Notifications } from '@/components/onboarding/Notifications';
+import { ChooseCurrency } from '@/components/onboarding/ChooseCurrency';
 import { Motivational } from '@/components/onboarding/Motivational';
+import { Notifications } from '@/components/onboarding/Notifications';
+import { ProgressBar } from '@/components/onboarding/ProgressBar';
+import { RecurringPayments } from '@/components/onboarding/RecurringPayments';
+import { SetBudget } from '@/components/onboarding/SetBudget';
+import { SetGoals } from '@/components/onboarding/SetGoals';
+import { StepPager } from '@/components/onboarding/StepPager';
+import { TrackIncome } from '@/components/onboarding/TrackIncome';
+import { api } from '@/convex/_generated/api';
+import { authClient } from '@/lib/auth-client';
 import { useOnboardingStore } from '@/lib/stores/useOnboardingStore';
-import { scheduleDailyReminder, scheduleWeeklyReport, cancelAllNotifications } from '@/lib/utils/notifications';
+import { currentMonth } from '@/lib/utils/date';
+import {
+  cancelAllNotifications,
+  scheduleDailyReminder,
+  scheduleWeeklyReport,
+} from '@/lib/utils/notifications';
+import { useMutation } from 'convex/react';
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
 
-const TOTAL_STEPS = 11;
+const TOTAL_STEPS = 10;
 
 export default function OnboardingScreen() {
   const [step, setStep] = useState(0);
@@ -40,6 +43,8 @@ export default function OnboardingScreen() {
   const back = useCallback(() => {
     if (step > 0) {
       setStep((s) => s - 1);
+    } else {
+      router.replace('/welcome');
     }
   }, [step]);
 
@@ -75,13 +80,24 @@ export default function OnboardingScreen() {
           type: acc.type,
           icon: acc.icon as string,
         })),
-        selectedCategories: state.selectedCategories,
-        customCategories: state.customCategories,
+        customCategories: state.customCategories.map((c) => ({
+          name: c.name,
+          parentCategory: c.parentCategory,
+        })),
         goals: state.goals
-          .map((g) => ({ name: g.name, icon: g.icon as string, target: parseFloat(g.target), color: g.color }))
+          .map((g) => ({
+            name: g.name,
+            icon: g.icon as string,
+            target: parseFloat(g.target),
+            color: g.color,
+          }))
           .filter((g) => !isNaN(g.target) && g.target > 0),
         recurringPayments: state.recurringPayments
-          .map((p) => ({ name: p.name, amount: parseFloat(p.amount), frequency: p.frequency }))
+          .map((p) => ({
+            name: p.name,
+            amount: parseFloat(p.amount),
+            frequency: p.frequency,
+          }))
           .filter((p) => !isNaN(p.amount) && p.amount > 0),
         monthlyBudget:
           state.monthlyBudget > 0
@@ -107,38 +123,24 @@ export default function OnboardingScreen() {
     }
   }, [session, commitAll]);
 
-  const goToSignIn = useCallback(() => {
-    router.replace('/sign-in');
-  }, []);
-
   if (isCommitting) {
     return (
       <View className='flex-1 bg-black items-center justify-center'>
         <ActivityIndicator size='large' color='#ffffff' />
-        <Text className='text-neutral-500 text-[14px] mt-4'>Setting up your account…</Text>
+        <Text className='text-neutral-500 text-[14px] mt-4'>
+          Setting up your account…
+        </Text>
       </View>
-    );
-  }
-
-  // Screen 1 (GetStarted) is full black, no progress bar
-  if (step === 0) {
-    return (
-      <>
-        <GetStarted onNext={next} onSignIn={goToSignIn} />
-        <StatusBar style="light" />
-      </>
     );
   }
 
   return (
-    <View className="flex-1 bg-neutral-50">
-      <View className="pt-4 pb-4">
-        <ProgressBar current={step - 1} total={TOTAL_STEPS - 1} />
+    <View className='flex-1 bg-neutral-50'>
+      <View className='pt-4 pb-4'>
+        <ProgressBar current={step} total={TOTAL_STEPS - 1} />
       </View>
 
       <StepPager step={step}>
-        {/* index 0 placeholder — GetStarted is handled above */}
-        <View />
         <ChooseCurrency onNext={next} onBack={back} />
         <AddAccounts onNext={next} onBack={back} />
         <AddBalance onNext={next} onBack={back} onSkip={skipBalance} />
@@ -151,7 +153,7 @@ export default function OnboardingScreen() {
         <Motivational onFinish={finish} onBack={back} />
       </StepPager>
 
-      <StatusBar style="dark" />
+      <StatusBar style='dark' />
     </View>
   );
 }

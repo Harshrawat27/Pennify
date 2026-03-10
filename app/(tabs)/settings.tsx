@@ -168,6 +168,11 @@ export default function SettingsScreen() {
       onPress: () => router.push('/subscriptions'),
     },
     {
+      icon: 'tag',
+      label: 'Categories',
+      onPress: () => router.push('/categories'),
+    },
+    {
       icon: 'sliders',
       label: 'Monthly Budget',
       onPress: () => router.push('/monthly-budget'),
