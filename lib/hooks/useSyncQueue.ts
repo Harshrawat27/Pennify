@@ -48,6 +48,7 @@ export function useSyncQueue() {
           accountId: item.accountId as any,
           // categoryId intentionally omitted — auto-categorized by OpenAI after sync
           receiptUrl: item.receiptUrl,
+          isBookmarked: item.isBookmarked,
         });
         console.log('[SyncQueue] created OK:', item.title, '→ convexId:', id);
         synced.push({ id: id as string, title: item.title, userId: item.userId, isExpense: item.amount < 0 });

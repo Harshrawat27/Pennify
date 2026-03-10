@@ -149,6 +149,7 @@ function RootLayoutNav() {
         <Stack.Screen name='subscriptions' />
         <Stack.Screen name='categories' />
         <Stack.Screen name='monthly-budget' />
+        <Stack.Screen name='bookmarks' />
       </Stack>
       <StatusBar style={statusStyle} />
     </SafeAreaView>

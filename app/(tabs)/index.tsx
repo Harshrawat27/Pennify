@@ -281,13 +281,16 @@ export default function HomeScreen() {
                 Transactions
               </Text>
               <View className='flex-row items-center gap-4'>
-                <Pressable>
+                <Pressable onPress={() => router.push('/bookmarks')}>
                   <Feather name='bookmark' size={18} color='#A3A3A3' />
                 </Pressable>
-                <Pressable>
+                <Pressable onPress={() => router.push('/subscriptions')}>
                   <Feather name='clock' size={18} color='#A3A3A3' />
                 </Pressable>
-                <Pressable className='border border-neutral-300 rounded-full px-3.5 py-1.5'>
+                <Pressable
+                  onPress={() => router.push(`/month-detail?month=${currentMonth()}`)}
+                  className='border border-neutral-300 rounded-full px-3.5 py-1.5'
+                >
                   <Text className='text-[11px] text-neutral-500 font-medium'>
                     For the Period
                   </Text>

@@ -19,6 +19,7 @@ export interface QueuedTransaction {
   createdAt: string; // ISO timestamp
   retries: number;
   receiptUrl?: string; // Cloudflare R2 URL if scanned from receipt
+  isBookmarked?: boolean;
 }
 
 async function readQueue(): Promise<QueuedTransaction[]> {

@@ -26,6 +26,7 @@ export default function TransactionDetailScreen() {
 
   const updateTransaction = useMutation(api.transactions.update);
   const removeTransaction = useMutation(api.transactions.remove);
+  const toggleBookmark = useMutation(api.transactions.toggleBookmark);
 
   const currency = prefs?.currency ?? 'INR';
   const trackIncome = prefs?.trackIncome ?? true;
@@ -156,12 +157,20 @@ export default function TransactionDetailScreen() {
             <Feather name='arrow-left' size={20} color='#000' />
           </Pressable>
           <Text className='text-[18px] font-bold text-black'>Transaction</Text>
-          <Pressable
-            onPress={handleDelete}
-            className='w-10 h-10 rounded-full bg-red-50 items-center justify-center'
-          >
-            <Feather name='trash-2' size={18} color='#EF4444' />
-          </Pressable>
+          <View className='flex-row items-center gap-2'>
+            <Pressable
+              onPress={() => void toggleBookmark({ id: id as any })}
+              className='w-10 h-10 rounded-full bg-white items-center justify-center'
+            >
+              <Feather name='bookmark' size={18} color={tx?.isBookmarked ? '#000' : '#A3A3A3'} />
+            </Pressable>
+            <Pressable
+              onPress={handleDelete}
+              className='w-10 h-10 rounded-full bg-red-50 items-center justify-center'
+            >
+              <Feather name='trash-2' size={18} color='#EF4444' />
+            </Pressable>
+          </View>
         </View>
 
         {/* Receipt thumbnail — only shown if transaction was scanned */}

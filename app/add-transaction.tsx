@@ -50,6 +50,7 @@ export default function AddTransactionScreen() {
   const [receiptUrl, setReceiptUrl] = useState('');
   const [receiptPreview, setReceiptPreview] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   const effectiveAccountId =
     selectedAccountId && accounts.find((a) => a._id === selectedAccountId)
@@ -154,6 +155,7 @@ export default function AddTransactionScreen() {
       createdAt: new Date().toISOString(),
       retries: 0,
       receiptUrl: receiptUrl || undefined,
+      isBookmarked: isBookmarked || undefined,
     };
 
     // 1. Show in UI immediately
@@ -185,17 +187,25 @@ export default function AddTransactionScreen() {
             <Feather name="x" size={20} color="#000" />
           </Pressable>
           <Text className="text-[18px] font-bold text-black">Add Transaction</Text>
-          {/* Scan receipt button */}
-          <Pressable
-            onPress={handleScan}
-            disabled={isScanning}
-            className="w-10 h-10 rounded-full bg-white items-center justify-center"
-          >
-            {isScanning
-              ? <ActivityIndicator size="small" color="#000" />
-              : <Feather name="camera" size={20} color="#000" />
-            }
-          </Pressable>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => setIsBookmarked((v) => !v)}
+              className="w-10 h-10 rounded-full bg-white items-center justify-center"
+            >
+              <Feather name="bookmark" size={20} color={isBookmarked ? '#000' : '#A3A3A3'} />
+            </Pressable>
+            {/* Scan receipt button */}
+            <Pressable
+              onPress={handleScan}
+              disabled={isScanning}
+              className="w-10 h-10 rounded-full bg-white items-center justify-center"
+            >
+              {isScanning
+                ? <ActivityIndicator size="small" color="#000" />
+                : <Feather name="camera" size={20} color="#000" />
+              }
+            </Pressable>
+          </View>
         </View>
 
         {/* Scanning overlay message */}
