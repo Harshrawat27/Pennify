@@ -11,3 +11,5 @@
 
 2. improve some UI on how we are asking for date for recurring payments in onboarding screen.
 3. recurrning payment - there are lots of issues in it. while onboarding we are not able to set date, if date is coming in few days still duducting money for it.
+4. hide balance and edit it option.
+5. let use add claude.md like file where he can say for few recurring things under which category it should go for that don't use AI

@@ -4,9 +4,9 @@ import { usePendingStore } from '@/lib/stores/usePendingStore';
 import { formatCurrency } from '@/lib/utils/currency';
 import { currentMonth, formatMonthLabel } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { router } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, Text, View } from 'react-native';
 function SkeletonBox({
   width,
@@ -92,6 +92,23 @@ export default function HomeScreen() {
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
   const pendingTxs = usePendingStore((s) => s.transactions);
 
+  const updateHideBalance = useMutation(api.preferences.updateHideBalance);
+  // Local state for instant toggle feedback; syncs from DB on first load
+  const [localHidden, setLocalHidden] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (localHidden === null && prefs !== undefined) {
+      setLocalHidden(prefs.hideBalance ?? false);
+    }
+  }, [prefs, localHidden]);
+  const isHidden = localHidden ?? prefs?.hideBalance ?? false;
+
+  function toggleHideBalance() {
+    if (!userId) return;
+    const next = !isHidden;
+    setLocalHidden(next);
+    void updateHideBalance({ userId, hideBalance: next });
+  }
+
   const currency = prefs?.currency ?? 'INR';
   const income = monthlyStats?.income ?? 0;
   const expenses = monthlyStats?.expenses ?? 0;
@@ -146,12 +163,26 @@ export default function HomeScreen() {
 
           {/* Balance */}
           <View className='items-center pt-10 pb-16'>
-            <Text className='text-neutral-500 text-[14px] tracking-widest uppercase'>
-              Current Balance
-            </Text>
+            <Pressable
+              onPress={toggleHideBalance}
+              className='flex-row items-center gap-2'
+            >
+              <Text className='text-neutral-500 text-[14px] tracking-widest uppercase'>
+                Current Balance
+              </Text>
+              <Feather
+                name={isHidden ? 'eye-off' : 'eye'}
+                size={14}
+                color='#737373'
+              />
+            </Pressable>
             <View className='mt-2'>
               {totalBalance === undefined ? (
                 <SkeletonBox width={200} height={52} borderRadius={12} dark />
+              ) : isHidden ? (
+                <Text className='text-white text-[48px] font-bold tracking-tight leading-none'>
+                  ******
+                </Text>
               ) : (
                 <Text className='text-white text-[48px] font-bold tracking-tight leading-none'>
                   {formatCurrency(totalBalance, currency)}
@@ -285,7 +316,9 @@ export default function HomeScreen() {
                 <TransactionSkeleton />
                 <TransactionSkeleton />
               </>
-            ) : transactions !== undefined && transactions.length === 0 && pendingTxs.length === 0 ? (
+            ) : transactions !== undefined &&
+              transactions.length === 0 &&
+              pendingTxs.length === 0 ? (
               <View className='bg-white rounded-2xl p-8 items-center'>
                 <Feather name='inbox' size={32} color='#D4D4D4' />
                 <Text className='text-neutral-400 text-[14px] mt-3'>
@@ -299,74 +332,116 @@ export default function HomeScreen() {
               <>
                 {/* Pending (offline / syncing) transactions — shown first */}
                 {pendingTxs.map((tx) => (
-                  <View key={tx.localId} className='bg-white rounded-2xl p-4 mb-3'>
+                  <View
+                    key={tx.localId}
+                    className='bg-white rounded-2xl p-4 mb-3'
+                  >
                     <View className='flex-row items-center'>
                       <View className='w-12 h-12 rounded-2xl bg-neutral-100 items-center justify-center'>
-                        <Feather name={tx.categoryIcon as any} size={19} color='#A3A3A3' />
+                        <Feather
+                          name={tx.categoryIcon as any}
+                          size={19}
+                          color='#A3A3A3'
+                        />
                       </View>
                       <View className='flex-1 ml-3.5'>
-                        <Text className='text-black font-bold text-[15px]'>{tx.title}</Text>
+                        <Text className='text-black font-bold text-[15px]'>
+                          {tx.title}
+                        </Text>
                         <View className='flex-row items-center mt-1.5 gap-2.5'>
                           <View className='flex-row items-center gap-1'>
                             <Feather name='tag' size={10} color='#A3A3A3' />
-                            <Text className='text-neutral-400 text-[11px]'>{tx.categoryName}</Text>
+                            <Text className='text-neutral-400 text-[11px]'>
+                              {tx.categoryName}
+                            </Text>
                           </View>
                         </View>
                       </View>
                       <View className='items-end ml-2 gap-1'>
-                        <Text className={`font-bold text-[15px] ${tx.amount > 0 ? 'text-emerald-600' : 'text-black'}`}>
-                          {tx.amount > 0 ? '+' : '-'}{formatCurrency(Math.abs(tx.amount), currency)}
+                        <Text
+                          className={`font-bold text-[15px] ${tx.amount > 0 ? 'text-emerald-600' : 'text-black'}`}
+                        >
+                          {tx.amount > 0 ? '+' : '-'}
+                          {formatCurrency(Math.abs(tx.amount), currency)}
                         </Text>
                         {/* Sync indicator */}
                         <View className='flex-row items-center gap-1'>
                           <Feather name='cloud' size={10} color='#A3A3A3' />
-                          <Text className='text-neutral-400 text-[10px]'>Syncing</Text>
+                          <Text className='text-neutral-400 text-[10px]'>
+                            Syncing
+                          </Text>
                         </View>
                       </View>
                     </View>
                     {tx.note ? (
-                      <Text className='text-neutral-400 text-[12px] mt-2 ml-[62px]'>{tx.note}</Text>
+                      <Text className='text-neutral-400 text-[12px] mt-2 ml-[62px]'>
+                        {tx.note}
+                      </Text>
                     ) : null}
                   </View>
                 ))}
 
                 {/* Confirmed Convex transactions */}
-                {[...(transactions ?? [])].reverse().slice(0, 10).map((tx) => (
-                  <Pressable
-                    key={tx._id}
-                    onPress={() => router.push(`/transaction-detail?id=${tx._id}`)}
-                    className='bg-white rounded-2xl p-4 mb-3'
-                  >
-                    <View className='flex-row items-center'>
-                      <View className='w-12 h-12 rounded-2xl bg-neutral-100 items-center justify-center'>
-                        <Feather name={tx.categoryIcon as any} size={19} color='#000' />
-                      </View>
-                      <View className='flex-1 ml-3.5'>
-                        <Text className='text-black font-bold text-[15px]'>{tx.title}</Text>
-                        <View className='flex-row items-center mt-1.5 gap-2.5'>
-                          <View className='flex-row items-center gap-1'>
-                            <Feather name='tag' size={10} color='#A3A3A3' />
-                            <Text className='text-neutral-400 text-[11px]'>{tx.categoryName}</Text>
-                          </View>
-                          {tx.accountName ? (
+                {[...(transactions ?? [])]
+                  .reverse()
+                  .slice(0, 10)
+                  .map((tx) => (
+                    <Pressable
+                      key={tx._id}
+                      onPress={() =>
+                        router.push(`/transaction-detail?id=${tx._id}`)
+                      }
+                      className='bg-white rounded-2xl p-4 mb-3'
+                    >
+                      <View className='flex-row items-center'>
+                        <View className='w-12 h-12 rounded-2xl bg-neutral-100 items-center justify-center'>
+                          <Feather
+                            name={tx.categoryIcon as any}
+                            size={19}
+                            color='#000'
+                          />
+                        </View>
+                        <View className='flex-1 ml-3.5'>
+                          <Text className='text-black font-bold text-[15px]'>
+                            {tx.title}
+                          </Text>
+                          <View className='flex-row items-center mt-1.5 gap-2.5'>
                             <View className='flex-row items-center gap-1'>
-                              <Feather name='credit-card' size={10} color='#A3A3A3' />
-                              <Text className='text-neutral-400 text-[11px]'>{tx.accountName}</Text>
+                              <Feather name='tag' size={10} color='#A3A3A3' />
+                              <Text className='text-neutral-400 text-[11px]'>
+                                {tx.categoryName}
+                              </Text>
                             </View>
-                          ) : null}
+                            {tx.accountName ? (
+                              <View className='flex-row items-center gap-1'>
+                                <Feather
+                                  name='credit-card'
+                                  size={10}
+                                  color='#A3A3A3'
+                                />
+                                <Text className='text-neutral-400 text-[11px]'>
+                                  {tx.accountName}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
+                        </View>
+                        <View className='items-end ml-2'>
+                          <Text
+                            className={`font-bold text-[15px] ${tx.amount > 0 ? 'text-emerald-600' : 'text-black'}`}
+                          >
+                            {tx.amount > 0 ? '+' : '-'}
+                            {formatCurrency(Math.abs(tx.amount), currency)}
+                          </Text>
                         </View>
                       </View>
-                      <View className='items-end ml-2'>
-                        <Text className={`font-bold text-[15px] ${tx.amount > 0 ? 'text-emerald-600' : 'text-black'}`}>
-                          {tx.amount > 0 ? '+' : '-'}{formatCurrency(Math.abs(tx.amount), currency)}
+                      {tx.note ? (
+                        <Text className='text-neutral-400 text-[12px] mt-2 ml-[62px]'>
+                          {tx.note}
                         </Text>
-                      </View>
-                    </View>
-                    {tx.note ? (
-                      <Text className='text-neutral-400 text-[12px] mt-2 ml-[62px]'>{tx.note}</Text>
-                    ) : null}
-                  </Pressable>
-                ))}
+                      ) : null}
+                    </Pressable>
+                  ))}
               </>
             )}
 

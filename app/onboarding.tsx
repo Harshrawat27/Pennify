@@ -19,7 +19,7 @@ import {
   scheduleDailyReminder,
   scheduleWeeklyReport,
 } from '@/lib/utils/notifications';
-import { useMutation } from 'convex/react';
+import { useAction, useMutation } from 'convex/react';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
@@ -33,6 +33,7 @@ export default function OnboardingScreen() {
 
   const { data: session } = authClient.useSession();
   const commitAll = useMutation(api.onboarding.commitAll);
+  const categorizePayment = useAction(api.categorize.categorizeRecurringPayment);
 
   const next = useCallback(() => {
     if (step < TOTAL_STEPS - 1) {
@@ -65,7 +66,7 @@ export default function OnboardingScreen() {
 
     setIsCommitting(true);
     try {
-      await commitAll({
+      const result = await commitAll({
         userId: session.user.id,
         preferences: {
           currency: state.currency,
@@ -107,6 +108,11 @@ export default function OnboardingScreen() {
             : undefined,
       });
 
+      // Fire-and-forget AI categorization for each recurring payment
+      for (const { id, name } of result?.recurringPayments ?? []) {
+        void categorizePayment({ userId: session.user.id, recurringPaymentId: id, name });
+      }
+
       // Schedule notifications
       if (state.notificationsEnabled) {
         void scheduleDailyReminder(state.dailyReminder);
@@ -123,7 +129,7 @@ export default function OnboardingScreen() {
       console.error('[Onboarding] commitAll failed:', e);
       setIsCommitting(false);
     }
-  }, [session, commitAll]);
+  }, [session, commitAll, categorizePayment]);
 
   if (isCommitting) {
     return (

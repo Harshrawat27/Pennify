@@ -41,6 +41,7 @@ export default function TransactionDetailScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [receiptVisible, setReceiptVisible] = useState(false);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   // Populate form once the transaction loads
   useEffect(() => {
@@ -267,34 +268,90 @@ export default function TransactionDetailScreen() {
           />
         </View>
 
-        {/* Category Picker */}
-        <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
-          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>Category</Text>
-          <View className='flex-row flex-wrap gap-2'>
-            {filteredCategories.map((cat) => (
-              <Pressable
-                key={cat._id}
-                onPress={() => setSelectedCategoryId(cat._id)}
-                className={`flex-row items-center gap-2 px-4 py-2.5 rounded-xl ${
-                  effectiveCategoryId === cat._id ? 'bg-black' : 'bg-neutral-100'
-                }`}
-              >
-                <Feather
-                  name={cat.icon as any}
-                  size={14}
-                  color={effectiveCategoryId === cat._id ? '#fff' : '#000'}
-                />
-                <Text
-                  className={`text-[13px] font-medium ${
-                    effectiveCategoryId === cat._id ? 'text-white' : 'text-black'
-                  }`}
-                >
-                  {cat.name}
-                </Text>
+        {/* Category — tappable row */}
+        {(() => {
+          const selectedCat = filteredCategories.find((c) => c._id === effectiveCategoryId);
+          return (
+            <Pressable
+              onPress={() => setShowCategoryPicker(true)}
+              className='mx-6 mt-4 bg-white rounded-2xl p-5 flex-row items-center'
+            >
+              <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider flex-1'>Category</Text>
+              {selectedCat ? (
+                <View className='flex-row items-center gap-2'>
+                  <View
+                    className='w-7 h-7 rounded-lg items-center justify-center'
+                    style={{ backgroundColor: `${selectedCat.color}20` }}
+                  >
+                    <Feather name={selectedCat.icon as any} size={13} color={selectedCat.color} />
+                  </View>
+                  <Text className='text-[14px] font-medium text-black'>{selectedCat.name}</Text>
+                </View>
+              ) : (
+                <Text className='text-[14px] text-neutral-400'>Select</Text>
+              )}
+              <Feather name='chevron-right' size={16} color='#A3A3A3' style={{ marginLeft: 8 }} />
+            </Pressable>
+          );
+        })()}
+
+        {/* Category picker modal */}
+        <Modal
+          visible={showCategoryPicker}
+          animationType='slide'
+          presentationStyle='pageSheet'
+          onRequestClose={() => setShowCategoryPicker(false)}
+        >
+          <View className='flex-1 bg-neutral-50'>
+            <View className='px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100'>
+              <Text className='text-[18px] font-bold text-black'>Category</Text>
+              <Pressable onPress={() => setShowCategoryPicker(false)}>
+                <Feather name='x' size={20} color='#000' />
               </Pressable>
-            ))}
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View className='px-6 pt-4 pb-16'>
+                {Object.entries(
+                  filteredCategories.reduce((groups: Record<string, typeof filteredCategories>, cat) => {
+                    const key = cat.parentCategory ?? 'Other';
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(cat);
+                    return groups;
+                  }, {})
+                ).map(([parent, cats]) => (
+                  <View key={parent} className='mt-5'>
+                    <Text className='text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-2 ml-1'>
+                      {parent}
+                    </Text>
+                    <View className='bg-white rounded-2xl px-4'>
+                      {cats.map((cat, i) => (
+                        <Pressable
+                          key={cat._id}
+                          onPress={() => {
+                            setSelectedCategoryId(cat._id);
+                            setShowCategoryPicker(false);
+                          }}
+                          className={`flex-row items-center py-3.5 ${i < cats.length - 1 ? 'border-b border-neutral-100' : ''}`}
+                        >
+                          <View
+                            className='w-8 h-8 rounded-lg items-center justify-center'
+                            style={{ backgroundColor: `${cat.color}18` }}
+                          >
+                            <Feather name={cat.icon as any} size={14} color={cat.color} />
+                          </View>
+                          <Text className='flex-1 text-[14px] font-medium text-black ml-3'>{cat.name}</Text>
+                          {effectiveCategoryId === cat._id && (
+                            <Feather name='check' size={16} color='#000' />
+                          )}
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
           </View>
-        </View>
+        </Modal>
 
         {/* Account Picker */}
         <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
