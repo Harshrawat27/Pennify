@@ -97,6 +97,8 @@ export default function OnboardingScreen() {
             name: p.name,
             amount: parseFloat(p.amount),
             frequency: p.frequency,
+            billingDay: p.billingDay,
+            purchasedAt: p.purchasedAt,
           }))
           .filter((p) => !isNaN(p.amount) && p.amount > 0),
         monthlyBudget:

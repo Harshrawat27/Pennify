@@ -6,7 +6,7 @@ import { scheduleRecurringReminder, cancelRecurringReminder } from '@/lib/utils/
 import { BillingDayPicker } from '@/components/BillingDayPicker';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useMutation, useQuery } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { useState } from 'react';
 import {
   Alert,
@@ -49,14 +49,20 @@ export default function SubscriptionsScreen() {
   const [isSinkingFund, setIsSinkingFund] = useState(false);
   const [goalIcon, setGoalIcon] = useState<FeatherIcon>('target');
   const [goalColor, setGoalColor] = useState('#000000');
-
   const payments = useQuery(api.recurring.list, userId ? { userId } : 'skip');
+
+  // Category picker — store ID only, derive live object from query to avoid stale ref crash
+  const [editingCategoryPaymentId, setEditingCategoryPaymentId] = useState<string | null>(null);
+  const editingCategoryFor = (payments ?? []).find((p) => p._id === editingCategoryPaymentId) ?? null;
+  const categories = useQuery(api.categories.list, userId ? { userId } : 'skip');
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
 
   const createPayment = useMutation(api.recurring.create);
+  const categorizePayment = useAction(api.categorize.categorizeRecurringPayment);
   const createLinkedSinkingFund = useMutation(api.recurring.createLinkedSinkingFund);
   const togglePause = useMutation(api.recurring.togglePause);
   const removePayment = useMutation(api.recurring.remove);
+  const updateCategory = useMutation(api.recurring.updateCategory);
 
   const currency = prefs?.currency ?? 'INR';
 
@@ -87,9 +93,11 @@ export default function SubscriptionsScreen() {
       await createLinkedSinkingFund({ userId, name: newName.trim(), amount, goalIcon, goalColor });
     } else {
       const id = await createPayment({ userId, name: newName.trim(), amount, frequency: newFreq, billingDay, purchasedAt });
-      // Schedule local reminder notification 1 day before billing day
-      if (billingDay && id) {
-        void scheduleRecurringReminder(String(id), newName.trim(), billingDay);
+      if (id) {
+        // Schedule local reminder notification 1 day before billing day
+        if (billingDay) void scheduleRecurringReminder(String(id), newName.trim(), billingDay);
+        // Auto-categorize in background — Convex reactivity updates the card when done
+        void categorizePayment({ userId, recurringPaymentId: String(id), name: newName.trim() });
       }
     }
     resetModal();
@@ -115,9 +123,12 @@ export default function SubscriptionsScreen() {
     );
   }
 
+  const catMap = new Map((categories ?? []).map((c) => [c._id, c]));
+
   function renderCard(payment: any) {
     const isPaused = payment.isPaused === true;
     const isSinkingFundLinked = !!payment.linkedGoalId;
+    const category = payment.categoryId ? catMap.get(payment.categoryId) : undefined;
     return (
       <View key={payment._id} className='bg-white rounded-2xl p-4 mb-3'>
         <View className='flex-row items-center gap-3'>
@@ -146,6 +157,31 @@ export default function SubscriptionsScreen() {
               {isPaused ? 'Paused' : `Next: ${formatDateShort(payment.nextDue)}`}
               {payment.billingDay ? ` · renews ${payment.billingDay}th` : ''}
             </Text>
+            {/* Category chip — tappable to edit */}
+            <View className='flex-row mt-1.5'>
+              <Pressable
+                onPress={() => setEditingCategoryPaymentId(payment._id)}
+                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+              >
+                {category ? (
+                  <View
+                    className='flex-row items-center gap-1 px-2 py-0.5 rounded-full'
+                    style={{ backgroundColor: `${category.color}20` }}
+                  >
+                    <View className='w-1.5 h-1.5 rounded-full' style={{ backgroundColor: category.color }} />
+                    <Text className='text-[11px] font-medium' style={{ color: category.color }}>
+                      {category.name}
+                    </Text>
+                    <Feather name='chevron-down' size={9} color={category.color} />
+                  </View>
+                ) : (
+                  <View className='flex-row items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-100'>
+                    <Text className='text-[11px] text-neutral-400'>Categorizing…</Text>
+                    <Feather name='chevron-down' size={9} color='#A3A3A3' />
+                  </View>
+                )}
+              </Pressable>
+            </View>
           </View>
 
           <View className='items-end'>
@@ -455,6 +491,91 @@ export default function SubscriptionsScreen() {
             </Pressable>
           </View>
         </ScrollView>
+      </Modal>
+
+      {/* Category picker modal */}
+      <Modal
+        visible={!!editingCategoryPaymentId}
+        animationType='slide'
+        presentationStyle='pageSheet'
+        onRequestClose={() => setEditingCategoryPaymentId(null)}
+      >
+        <View className='flex-1 bg-neutral-50'>
+          <View className='px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100'>
+            <View>
+              <Text className='text-[18px] font-bold text-black'>Change Category</Text>
+              <Text className='text-[12px] text-neutral-400 mt-0.5'>{editingCategoryFor?.name}</Text>
+            </View>
+            <Pressable onPress={() => setEditingCategoryPaymentId(null)}>
+              <Feather name='x' size={20} color='#000' />
+            </Pressable>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View className='px-6 pt-4'>
+              {/* No category option */}
+              <Pressable
+                onPress={() => {
+                  const id = editingCategoryPaymentId;
+                  setEditingCategoryPaymentId(null);
+                  if (id) void updateCategory({ id: id as any, categoryId: undefined });
+                }}
+                className='flex-row items-center py-3.5 border-b border-neutral-100'
+              >
+                <View className='w-8 h-8 rounded-lg bg-neutral-100 items-center justify-center'>
+                  <Feather name='slash' size={14} color='#A3A3A3' />
+                </View>
+                <Text className='flex-1 text-[14px] text-neutral-400 ml-3'>No category</Text>
+                {!editingCategoryFor?.categoryId && (
+                  <Feather name='check' size={16} color='#000' />
+                )}
+              </Pressable>
+
+              {/* Expense categories grouped */}
+              {Object.entries(
+                (categories ?? [])
+                  .filter((c) => c.type === 'expense')
+                  .reduce((groups: Record<string, any[]>, cat) => {
+                    const key = cat.parentCategory ?? 'Other';
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(cat);
+                    return groups;
+                  }, {})
+              ).map(([parent, cats]) => (
+                <View key={parent} className='mt-5'>
+                  <Text className='text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-2 ml-1'>
+                    {parent}
+                  </Text>
+                  <View className='bg-white rounded-2xl px-4'>
+                    {(cats as any[]).map((cat, i) => (
+                      <Pressable
+                        key={cat._id}
+                        onPress={() => {
+                          const id = editingCategoryPaymentId;
+                          setEditingCategoryPaymentId(null);
+                          if (id) void updateCategory({ id: id as any, categoryId: cat._id });
+                        }}
+                        className={`flex-row items-center py-3.5 ${i < cats.length - 1 ? 'border-b border-neutral-100' : ''}`}
+                      >
+                        <View
+                          className='w-8 h-8 rounded-lg items-center justify-center'
+                          style={{ backgroundColor: `${cat.color}18` }}
+                        >
+                          <Feather name={cat.icon as any} size={14} color={cat.color} />
+                        </View>
+                        <Text className='flex-1 text-[14px] font-medium text-black ml-3'>{cat.name}</Text>
+                        {editingCategoryFor?.categoryId === cat._id && (
+                          <Feather name='check' size={16} color='#000' />
+                        )}
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              ))}
+              <View className='h-16' />
+            </View>
+          </ScrollView>
+        </View>
       </Modal>
     </>
   );
