@@ -5,7 +5,7 @@ import { prevMonth } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
 import { useQuery } from 'convex/react';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 
 function nextMonthStart(month: string): string {
@@ -102,6 +102,7 @@ function getCurrentWeekRange() {
 
 export default function ReportScreen() {
   const [period, setPeriod] = useState(1); // 0=Week 1=Month 2=Year
+  const [selectedParent, setSelectedParent] = useState<{ name: string; color: string; amount: number; startDate: string; endDate: string } | null>(null);
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
@@ -162,6 +163,14 @@ export default function ReportScreen() {
   const yearlyMonthly = useQuery(
     api.transactions.getYearlyMonthly,
     userId ? { userId, year: currentYear } : 'skip'
+  );
+
+  // Drill-down: sub-categories for selected parent
+  const subCats = useQuery(
+    api.transactions.getSubCategoryBreakdown,
+    userId && selectedParent
+      ? { userId, startDate: selectedParent.startDate, endDate: selectedParent.endDate, parentCategory: selectedParent.name }
+      : 'skip'
   );
 
   const currency = prefs?.currency ?? 'INR';
@@ -245,7 +254,9 @@ export default function ReportScreen() {
 
   // ── Parent category cards ──
   const renderParentCategories = (
-    cats: { name: string; color: string; amount: number; percent: number }[]
+    cats: { name: string; color: string; amount: number; percent: number }[],
+    startDate: string,
+    endDate: string,
   ) => (
     <>
       {cats.length === 0 ? (
@@ -254,8 +265,9 @@ export default function ReportScreen() {
         </View>
       ) : (
         cats.map((cat) => (
-          <View
+          <Pressable
             key={cat.name}
+            onPress={() => setSelectedParent({ ...cat, startDate, endDate })}
             className='bg-white rounded-2xl p-4 mb-3 flex-row items-center'
           >
             <View
@@ -273,9 +285,12 @@ export default function ReportScreen() {
                 <Text className='text-[14px] font-semibold text-black'>
                   {cat.name}
                 </Text>
-                <Text className='text-[14px] font-bold text-black'>
-                  {formatCurrency(cat.amount, currency)}
-                </Text>
+                <View className='flex-row items-center gap-1.5'>
+                  <Text className='text-[14px] font-bold text-black'>
+                    {formatCurrency(cat.amount, currency)}
+                  </Text>
+                  <Feather name='chevron-right' size={14} color='#D4D4D4' />
+                </View>
               </View>
               <View className='flex-row items-center gap-2'>
                 <View
@@ -295,7 +310,7 @@ export default function ReportScreen() {
                 </Text>
               </View>
             </View>
-          </View>
+          </Pressable>
         ))
       )}
     </>
@@ -339,6 +354,7 @@ export default function ReportScreen() {
   );
 
   return (
+    <>
     <ScrollView
       className='flex-1 bg-neutral-50'
       contentContainerStyle={{}}
@@ -537,7 +553,7 @@ export default function ReportScreen() {
             <Text className='text-[18px] font-bold text-black mb-3'>
               By Category
             </Text>
-            {renderParentCategories(monthParentCats ?? [])}
+            {renderParentCategories(monthParentCats ?? [], currentMonth + '-01', nextMonthStart(currentMonth))}
           </View>
 
           {/* Income vs Expense */}
@@ -700,12 +716,103 @@ export default function ReportScreen() {
             <Text className='text-[18px] font-bold text-black mb-3'>
               By Category
             </Text>
-            {renderParentCategories(yearParentCats ?? [])}
+            {renderParentCategories(yearParentCats ?? [], currentYear + '-01-01', (parseInt(currentYear) + 1) + '-01-01')}
           </View>
         </>
       )}
 
       <View className='h-32' />
     </ScrollView>
+
+    {/* ── Sub-category drill-down modal ── */}
+
+    <Modal
+      visible={selectedParent !== null}
+      animationType='slide'
+      presentationStyle='pageSheet'
+      onRequestClose={() => setSelectedParent(null)}
+    >
+      {selectedParent && (
+        <View className='flex-1 bg-neutral-50'>
+          {/* Handle */}
+          <View className='items-center pt-3 pb-1'>
+            <View className='w-10 h-1 rounded-full bg-neutral-200' />
+          </View>
+
+          {/* Header */}
+          <View className='px-6 pt-4 pb-4 flex-row items-center gap-3'>
+            <View
+              className='w-11 h-11 rounded-2xl items-center justify-center'
+              style={{ backgroundColor: `${selectedParent.color}18` }}
+            >
+              <Feather
+                name={(PARENT_CATEGORY_ICONS[selectedParent.name] ?? 'tag') as any}
+                size={18}
+                color={selectedParent.color}
+              />
+            </View>
+            <View className='flex-1'>
+              <Text className='text-[18px] font-bold text-black'>{selectedParent.name}</Text>
+              <Text className='text-[13px] text-neutral-400'>
+                {formatCurrency(selectedParent.amount, currency)} total
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => setSelectedParent(null)}
+              className='w-9 h-9 rounded-full bg-neutral-100 items-center justify-center'
+            >
+              <Feather name='x' size={18} color='#000' />
+            </Pressable>
+          </View>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
+          >
+            <Text className='text-[12px] text-neutral-400 font-semibold uppercase tracking-wider mb-3'>
+              Sub-categories
+            </Text>
+
+            {subCats === undefined ? (
+              <View className='bg-white rounded-2xl p-10 items-center'>
+                <Text className='text-neutral-400 text-[13px]'>Loading…</Text>
+              </View>
+            ) : subCats.length === 0 ? (
+              <View className='bg-white rounded-2xl p-10 items-center'>
+                <Feather name='inbox' size={28} color='#D4D4D4' />
+                <Text className='text-neutral-400 text-[13px] mt-3'>No sub-categories found</Text>
+              </View>
+            ) : (
+              subCats.map((sub, i) => (
+                <View key={sub.name} className='bg-white rounded-2xl p-4 mb-3'>
+                  <View className='flex-row items-center gap-3 mb-3'>
+                    <View
+                      className='w-10 h-10 rounded-xl items-center justify-center'
+                      style={{ backgroundColor: `${sub.color}18` }}
+                    >
+                      <Feather name={sub.icon as any} size={16} color={sub.color} />
+                    </View>
+                    <View className='flex-1'>
+                      <Text className='text-[14px] font-semibold text-black'>{sub.name}</Text>
+                      <Text className='text-[12px] text-neutral-400'>{sub.percent}% of {selectedParent.name}</Text>
+                    </View>
+                    <Text className='text-[15px] font-bold text-black'>
+                      {formatCurrency(sub.amount, currency)}
+                    </Text>
+                  </View>
+                  <View className='h-1.5 rounded-full' style={{ backgroundColor: `${sub.color}22` }}>
+                    <View
+                      className='h-1.5 rounded-full'
+                      style={{ width: `${sub.percent}%`, backgroundColor: sub.color }}
+                    />
+                  </View>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      )}
+    </Modal>
+    </>
   );
 }
