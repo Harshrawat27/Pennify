@@ -397,11 +397,14 @@ export default function HomeScreen() {
                       className='bg-white rounded-2xl p-4 mb-3'
                     >
                       <View className='flex-row items-center'>
-                        <View className='w-12 h-12 rounded-2xl bg-neutral-100 items-center justify-center'>
+                        <View
+                          className='w-12 h-12 rounded-2xl items-center justify-center'
+                          style={{ backgroundColor: `${tx.categoryColor}18` }}
+                        >
                           <Feather
                             name={tx.categoryIcon as any}
                             size={19}
-                            color='#000'
+                            color={tx.categoryColor}
                           />
                         </View>
                         <View className='flex-1 ml-3.5'>

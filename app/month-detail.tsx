@@ -209,8 +209,11 @@ export default function MonthDetailScreen() {
                   className="bg-white rounded-2xl p-4 mb-2.5"
                 >
                   <View className="flex-row items-center">
-                    <View className="w-11 h-11 rounded-2xl bg-neutral-100 items-center justify-center">
-                      <Feather name={tx.categoryIcon as any} size={18} color="#000" />
+                    <View
+                      className="w-11 h-11 rounded-2xl items-center justify-center"
+                      style={{ backgroundColor: `${(tx as any).categoryColor ?? '#A3A3A3'}18` }}
+                    >
+                      <Feather name={tx.categoryIcon as any} size={18} color={(tx as any).categoryColor ?? '#A3A3A3'} />
                     </View>
                     <View className="flex-1 ml-3">
                       <Text className="text-black font-semibold text-[14px]">{tx.title}</Text>
