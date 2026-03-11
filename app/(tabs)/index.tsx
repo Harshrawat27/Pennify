@@ -408,20 +408,18 @@ export default function HomeScreen() {
                           <Text className='text-black font-bold text-[15px]'>
                             {tx.title}
                           </Text>
-                          <View className='flex-row items-center mt-1.5 gap-2.5'>
-                            <View className='flex-row items-center gap-1'>
-                              <Feather name='tag' size={10} color='#A3A3A3' />
-                              <Text className='text-neutral-400 text-[11px]'>
+                          <View className='flex-row items-center mt-1.5 gap-2'>
+                            <View
+                              className='px-2 py-0.5 rounded-full'
+                              style={{ backgroundColor: `${tx.categoryColor}18` }}
+                            >
+                              <Text className='text-[10px] font-medium' style={{ color: tx.categoryColor }}>
                                 {tx.categoryName}
                               </Text>
                             </View>
                             {tx.accountName ? (
                               <View className='flex-row items-center gap-1'>
-                                <Feather
-                                  name='credit-card'
-                                  size={10}
-                                  color='#A3A3A3'
-                                />
+                                <Feather name='credit-card' size={10} color='#A3A3A3' />
                                 <Text className='text-neutral-400 text-[11px]'>
                                   {tx.accountName}
                                 </Text>

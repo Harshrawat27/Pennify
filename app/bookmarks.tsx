@@ -81,9 +81,13 @@ export default function BookmarksScreen() {
                     <View className='flex-1 ml-3.5'>
                       <Text className='text-black font-bold text-[15px]'>{tx!.title}</Text>
                       <View className='flex-row items-center mt-1.5 gap-2.5'>
-                        <View className='flex-row items-center gap-1'>
-                          <Feather name='tag' size={10} color='#A3A3A3' />
-                          <Text className='text-neutral-400 text-[11px]'>{tx!.categoryName}</Text>
+                        <View
+                          className='px-2 py-0.5 rounded-full'
+                          style={{ backgroundColor: `${tx!.categoryColor}18` }}
+                        >
+                          <Text className='text-[10px] font-medium' style={{ color: tx!.categoryColor }}>
+                            {tx!.categoryName}
+                          </Text>
                         </View>
                         {tx!.accountName ? (
                           <View className='flex-row items-center gap-1'>

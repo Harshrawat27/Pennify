@@ -215,9 +215,13 @@ export default function MonthDetailScreen() {
                     <View className="flex-1 ml-3">
                       <Text className="text-black font-semibold text-[14px]">{tx.title}</Text>
                       <View className="flex-row items-center gap-2 mt-1">
-                        <View className="flex-row items-center gap-1">
-                          <Feather name="tag" size={10} color="#A3A3A3" />
-                          <Text className="text-neutral-400 text-[11px]">{tx.categoryName}</Text>
+                        <View
+                          className="px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${(tx as any).categoryColor ?? '#A3A3A3'}18` }}
+                        >
+                          <Text className="text-[10px] font-medium" style={{ color: (tx as any).categoryColor ?? '#A3A3A3' }}>
+                            {tx.categoryName}
+                          </Text>
                         </View>
                         {tx.accountName ? (
                           <View className="flex-row items-center gap-1">
