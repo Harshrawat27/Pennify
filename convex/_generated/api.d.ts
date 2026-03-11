@@ -20,6 +20,7 @@ import type * as notifications from '../notifications.js';
 import type * as onboarding from '../onboarding.js';
 import type * as preferences from '../preferences.js';
 import type * as recurring from '../recurring.js';
+import type * as rules from '../rules.js';
 import type * as sync from '../sync.js';
 import type * as transactions from '../transactions.js';
 
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   onboarding: typeof onboarding;
   preferences: typeof preferences;
   recurring: typeof recurring;
+  rules: typeof rules;
   sync: typeof sync;
   transactions: typeof transactions;
 }>;

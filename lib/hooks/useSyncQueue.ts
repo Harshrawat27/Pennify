@@ -1,5 +1,7 @@
 import { api } from '@/convex/_generated/api';
 import { dequeue, getQueue, incrementRetry } from '@/lib/offlineQueue';
+import { getCachedRules } from '@/lib/localCache';
+import { matchRule } from '@/lib/utils/matchRules';
 import { usePendingStore } from '@/lib/stores/usePendingStore';
 import NetInfo from '@react-native-community/netinfo';
 import { useAction, useMutation } from 'convex/react';
@@ -34,11 +36,15 @@ export function useSyncQueue() {
 
     const synced: Array<{ id: string; title: string; userId: string; isExpense: boolean }> = [];
 
+    // Load rules once for the whole batch
+    const cachedRules = await getCachedRules();
+
     for (const item of queue) {
-      if (item.retries >= MAX_RETRIES) continue; // permanently failed, skip
+      if (item.retries >= MAX_RETRIES) continue;
 
       try {
-        console.log('[SyncQueue] creating transaction:', item.title, 'localId:', item.localId);
+        const matchedRule = matchRule(item.title, cachedRules);
+        console.log('[SyncQueue] creating transaction:', item.title, matchedRule ? `→ rule: ${matchedRule.keyword}` : '→ AI');
         const id = await createTransaction({
           userId: item.userId,
           title: item.title,
@@ -46,24 +52,25 @@ export function useSyncQueue() {
           note: item.note,
           date: item.date,
           accountId: item.accountId as any,
-          // categoryId intentionally omitted — auto-categorized by OpenAI after sync
+          categoryId: matchedRule ? (matchedRule.categoryId as any) : undefined,
           receiptUrl: item.receiptUrl,
           isBookmarked: item.isBookmarked,
         });
         console.log('[SyncQueue] created OK:', item.title, '→ convexId:', id);
-        synced.push({ id: id as string, title: item.title, userId: item.userId, isExpense: item.amount < 0 });
-        // Success — remove from queue and pending UI
+        // Only send to AI if no rule matched
+        if (!matchedRule) {
+          synced.push({ id: id as string, title: item.title, userId: item.userId, isExpense: item.amount < 0 });
+        }
         await dequeue(item.localId);
         removePending(item.localId);
       } catch (e) {
         console.log('[SyncQueue] create FAILED:', item.title, e);
-        // Network or server error — increment retry, keep in queue
         await incrementRetry(item.localId);
       }
     }
 
     console.log('[SyncQueue] synced batch:', synced.map(s => `${s.title}→${s.id}`));
-    // Fire-and-forget: bulk categorize all synced transactions via OpenAI
+    // Fire-and-forget: bulk categorize only rule-unmatched transactions via OpenAI
     if (synced.length > 0) {
       const userId = synced[0].userId;
       console.log('[SyncQueue] calling categorize with', synced.length, 'items');

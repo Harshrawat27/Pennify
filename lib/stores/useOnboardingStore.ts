@@ -53,6 +53,9 @@ interface OnboardingState {
   dailyReminder: boolean;
   weeklyReport: boolean;
 
+  // Screen 8 (new) - Smart Rules
+  smartRules: { keyword: string; categoryName: string; categoryIcon: string; categoryColor: string }[];
+
   // Actions
   setCurrency: (code: string) => void;
   setAccounts: (accounts: OnboardingAccount[]) => void;
@@ -65,6 +68,7 @@ interface OnboardingState {
   setNotificationsEnabled: (enabled: boolean) => void;
   setDailyReminder: (enabled: boolean) => void;
   setWeeklyReport: (enabled: boolean) => void;
+  setSmartRules: (rules: { keyword: string; categoryName: string; categoryIcon: string; categoryColor: string }[]) => void;
   reset: () => void;
 }
 
@@ -80,6 +84,7 @@ const initialState = {
   notificationsEnabled: true,
   dailyReminder: true,
   weeklyReport: false,
+  smartRules: [] as { keyword: string; categoryName: string; categoryIcon: string; categoryColor: string }[],
 };
 
 export const useOnboardingStore = create<OnboardingState>((set) => ({
@@ -96,5 +101,6 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
   setDailyReminder: (enabled) => set({ dailyReminder: enabled }),
   setWeeklyReport: (enabled) => set({ weeklyReport: enabled }),
+  setSmartRules: (rules) => set({ smartRules: rules }),
   reset: () => set(initialState),
 }));

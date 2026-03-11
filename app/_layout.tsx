@@ -150,6 +150,7 @@ function RootLayoutNav() {
         <Stack.Screen name='categories' />
         <Stack.Screen name='monthly-budget' />
         <Stack.Screen name='bookmarks' />
+        <Stack.Screen name='smart-rules' />
       </Stack>
       <StatusBar style={statusStyle} />
     </SafeAreaView>

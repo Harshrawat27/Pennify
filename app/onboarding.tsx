@@ -8,6 +8,7 @@ import { ProgressBar } from '@/components/onboarding/ProgressBar';
 import { RecurringPayments } from '@/components/onboarding/RecurringPayments';
 import { SetBudget } from '@/components/onboarding/SetBudget';
 import { SetGoals } from '@/components/onboarding/SetGoals';
+import { SmartRules } from '@/components/onboarding/SmartRules';
 import { StepPager } from '@/components/onboarding/StepPager';
 import { TrackIncome } from '@/components/onboarding/TrackIncome';
 import { api } from '@/convex/_generated/api';
@@ -25,7 +26,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
-const TOTAL_STEPS = 10;
+const TOTAL_STEPS = 11;
 
 export default function OnboardingScreen() {
   const [step, setStep] = useState(0);
@@ -106,6 +107,7 @@ export default function OnboardingScreen() {
           state.monthlyBudget > 0
             ? { month: currentMonth(), budget: state.monthlyBudget }
             : undefined,
+        smartRules: state.smartRules.length > 0 ? state.smartRules : undefined,
       });
 
       // Fire-and-forget AI categorization for each recurring payment
@@ -155,6 +157,7 @@ export default function OnboardingScreen() {
         <SetBudget onNext={next} onBack={back} />
         <TrackIncome onNext={next} onBack={back} />
         <ChooseCategories onNext={next} onBack={back} />
+        <SmartRules onNext={next} onBack={back} />
         <RecurringPayments onNext={next} onBack={back} />
         <SetGoals onNext={next} onBack={back} />
         <Notifications onNext={next} onBack={back} />

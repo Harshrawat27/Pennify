@@ -178,6 +178,11 @@ export default function SettingsScreen() {
       onPress: () => router.push('/monthly-budget'),
     },
     {
+      icon: 'zap',
+      label: 'Smart Rules',
+      onPress: () => router.push('/smart-rules'),
+    },
+    {
       icon: 'trending-up',
       label: 'Track Income',
       toggle: true,

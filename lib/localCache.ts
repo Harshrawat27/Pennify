@@ -2,6 +2,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ACCOUNTS_KEY = 'pennify_accounts_cache';
 const CATEGORIES_KEY = 'pennify_categories_cache';
+const RULES_KEY = 'pennify_rules_cache';
+
+export interface CachedRule {
+  _id: string;
+  keyword: string;
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  createdAt: string;
+}
 
 export interface CachedAccount {
   _id: string;
@@ -45,5 +56,20 @@ export async function getCachedCategories(): Promise<CachedCategory[]> {
 export async function setCachedCategories(categories: CachedCategory[]): Promise<void> {
   try {
     await AsyncStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+  } catch {}
+}
+
+export async function getCachedRules(): Promise<CachedRule[]> {
+  try {
+    const raw = await AsyncStorage.getItem(RULES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function setCachedRules(rules: CachedRule[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(RULES_KEY, JSON.stringify(rules));
   } catch {}
 }
