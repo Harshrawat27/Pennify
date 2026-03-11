@@ -7,7 +7,14 @@ import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  Animated,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 function SkeletonBox({
   width,
   height,
@@ -92,6 +99,7 @@ export default function HomeScreen() {
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
   const pendingTxs = usePendingStore((s) => s.transactions);
 
+  const [showProfile, setShowProfile] = useState(false);
   const updateHideBalance = useMutation(api.preferences.updateHideBalance);
   // Local state for instant toggle feedback; syncs from DB on first load
   const [localHidden, setLocalHidden] = useState<boolean | null>(null);
@@ -132,9 +140,23 @@ export default function HomeScreen() {
         <View>
           {/* Header */}
           <View className='px-6 pt-4 flex-row justify-between items-center'>
-            <View className='w-12 h-12 rounded-full bg-white/15 items-center justify-center'>
-              <Feather name='user' size={20} color='#fff' />
-            </View>
+            <Pressable
+              onPress={() => setShowProfile(true)}
+              className='w-12 h-12 rounded-full bg-white/15 items-center justify-center'
+            >
+              {session?.user?.name ? (
+                <Text className='text-white font-bold text-[16px]'>
+                  {session.user.name
+                    .split(' ')
+                    .map((w: string) => w[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase()}
+                </Text>
+              ) : (
+                <Feather name='user' size={20} color='#fff' />
+              )}
+            </Pressable>
 
             <Pressable
               onPress={() =>
@@ -203,7 +225,10 @@ export default function HomeScreen() {
                 </Text>
                 <Feather name='info' size={15} color='#D4D4D4' />
               </View>
-              <Pressable className='flex-row items-center gap-1'>
+              <Pressable
+                onPress={() => router.push('/(tabs)/report')}
+                className='flex-row items-center gap-1'
+              >
                 <Text className='text-[13px] text-neutral-400 font-medium'>
                   Details
                 </Text>
@@ -288,7 +313,9 @@ export default function HomeScreen() {
                   <Feather name='clock' size={18} color='#A3A3A3' />
                 </Pressable>
                 <Pressable
-                  onPress={() => router.push(`/month-detail?month=${currentMonth()}`)}
+                  onPress={() =>
+                    router.push(`/month-detail?month=${currentMonth()}`)
+                  }
                   className='border border-neutral-300 rounded-full px-3.5 py-1.5'
                 >
                   <Text className='text-[11px] text-neutral-500 font-medium'>
@@ -411,15 +438,24 @@ export default function HomeScreen() {
                           <View className='flex-row items-center mt-1.5 gap-2'>
                             <View
                               className='px-2 py-0.5 rounded-full'
-                              style={{ backgroundColor: `${tx.categoryColor}18` }}
+                              style={{
+                                backgroundColor: `${tx.categoryColor}18`,
+                              }}
                             >
-                              <Text className='text-[10px] font-medium' style={{ color: tx.categoryColor }}>
+                              <Text
+                                className='text-[10px] font-medium'
+                                style={{ color: tx.categoryColor }}
+                              >
                                 {tx.categoryName}
                               </Text>
                             </View>
                             {tx.accountName ? (
                               <View className='flex-row items-center gap-1'>
-                                <Feather name='credit-card' size={10} color='#A3A3A3' />
+                                <Feather
+                                  name='credit-card'
+                                  size={10}
+                                  color='#A3A3A3'
+                                />
                                 <Text className='text-neutral-400 text-[11px]'>
                                   {tx.accountName}
                                 </Text>
@@ -464,6 +500,86 @@ export default function HomeScreen() {
           <View className='h-32' />
         </View>
       </ScrollView>
+
+      {/* Profile bottom sheet */}
+      <Modal
+        visible={showProfile}
+        animationType='slide'
+        presentationStyle='pageSheet'
+        onRequestClose={() => setShowProfile(false)}
+      >
+        <View className='flex-1 bg-neutral-50'>
+          {/* Handle + close */}
+          <View className='items-center pt-3 pb-1'>
+            <View className='w-10 h-1 rounded-full bg-neutral-200' />
+          </View>
+          <View className='px-6 pt-4 pb-4 flex-row justify-between items-center'>
+            <Text className='text-[20px] font-bold text-black'>Profile</Text>
+            <Pressable
+              onPress={() => setShowProfile(false)}
+              className='w-9 h-9 rounded-full bg-neutral-100 items-center justify-center'
+            >
+              <Feather name='x' size={18} color='#000' />
+            </Pressable>
+          </View>
+
+          {/* Avatar + name + email */}
+          <View className='items-center pt-6 pb-8'>
+            <View className='w-20 h-20 rounded-full bg-black items-center justify-center mb-4'>
+              <Text className='text-white font-bold text-[28px]'>
+                {session?.user?.name
+                  ? session.user.name
+                      .split(' ')
+                      .map((w: string) => w[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase()
+                  : '?'}
+              </Text>
+            </View>
+            <Text className='text-[20px] font-bold text-black'>
+              {session?.user?.name ?? '—'}
+            </Text>
+            <Text className='text-[13px] text-neutral-400 mt-1'>
+              {session?.user?.email ?? '—'}
+            </Text>
+          </View>
+
+          {/* Actions */}
+          <View className='mx-6 bg-white rounded-2xl overflow-hidden'>
+            <Pressable
+              onPress={() => {
+                setShowProfile(false);
+                router.push('/(tabs)/settings');
+              }}
+              className='flex-row items-center px-5 py-4 border-b border-neutral-100'
+            >
+              <View className='w-8 h-8 rounded-lg bg-neutral-100 items-center justify-center mr-3'>
+                <Feather name='settings' size={16} color='#000' />
+              </View>
+              <Text className='flex-1 text-[15px] font-medium text-black'>
+                Settings
+              </Text>
+              <Feather name='chevron-right' size={16} color='#A3A3A3' />
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setShowProfile(false);
+                router.push('/accounts');
+              }}
+              className='flex-row items-center px-5 py-4'
+            >
+              <View className='w-8 h-8 rounded-lg bg-neutral-100 items-center justify-center mr-3'>
+                <Feather name='credit-card' size={16} color='#000' />
+              </View>
+              <Text className='flex-1 text-[15px] font-medium text-black'>
+                Accounts
+              </Text>
+              <Feather name='chevron-right' size={16} color='#A3A3A3' />
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }

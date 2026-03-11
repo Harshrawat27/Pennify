@@ -245,25 +245,36 @@ export default function SettingsScreen() {
         </Pressable>
       </View>
 
-      {/* Subscription Banner */}
-      <View className='mx-6 mt-4 bg-black rounded-2xl p-5 flex-row items-center justify-between'>
-        <View className='flex-row items-center gap-3'>
-          <View className='w-10 h-10 rounded-xl bg-white/15 items-center justify-center'>
-            <Feather name='zap' size={18} color='#fff' />
+      {/* Subscription Banner — hidden for yearly, upgrade prompt for monthly, go pro for none/expired */}
+      {prefs?.subscriptionStatus !== 'yearly' && (
+        <Pressable
+          onPress={() => router.push('/paywall')}
+          className='mx-6 mt-4 bg-black rounded-2xl p-5 flex-row items-center justify-between'
+        >
+          <View className='flex-row items-center gap-3'>
+            <View className='w-10 h-10 rounded-xl bg-white/15 items-center justify-center'>
+              <Feather name='zap' size={18} color='#fff' />
+            </View>
+            <View>
+              <Text className='text-white font-bold text-[14px]'>
+                {prefs?.subscriptionStatus === 'monthly'
+                  ? 'Switch to Yearly'
+                  : 'Upgrade to Pro'}
+              </Text>
+              <Text className='text-neutral-500 text-[12px] mt-0.5'>
+                {prefs?.subscriptionStatus === 'monthly'
+                  ? 'Save 33% with an annual plan'
+                  : 'Unlimited budgets & insights'}
+              </Text>
+            </View>
           </View>
-          <View>
-            <Text className='text-white font-bold text-[14px]'>
-              Upgrade to Pro
-            </Text>
-            <Text className='text-neutral-500 text-[12px] mt-0.5'>
-              Unlimited budgets & insights
+          <View className='bg-white rounded-full px-4 py-2'>
+            <Text className='text-black text-[12px] font-bold'>
+              {prefs?.subscriptionStatus === 'monthly' ? 'Save 33%' : 'Go Pro'}
             </Text>
           </View>
-        </View>
-        <Pressable className='bg-white rounded-full px-4 py-2'>
-          <Text className='text-black text-[12px] font-bold'>Go Pro</Text>
         </Pressable>
-      </View>
+      )}
 
       <SettingGroup title='General' items={generalSettings} />
       <SettingGroup title='Data' items={DATA_SETTINGS} />
