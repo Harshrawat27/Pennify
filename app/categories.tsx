@@ -100,63 +100,19 @@ export default function CategoriesScreen() {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Custom categories */}
-          <View className='mx-6 mb-5'>
-            <Text className='text-[12px] text-neutral-400 font-semibold uppercase tracking-wider mb-2 ml-1'>
-              Your Categories
-            </Text>
-            <View className='bg-white rounded-2xl px-4'>
-              {customCategories.length === 0 ? (
-                <View className='py-6 items-center'>
-                  <Feather name='tag' size={22} color='#D4D4D4' />
-                  <Text className='text-neutral-400 text-[13px] mt-2 text-center'>
-                    No custom categories yet.{'\n'}Tap + to add one.
-                  </Text>
-                </View>
-              ) : (
-                customCategories.map((cat, i) => (
-                  <View
-                    key={cat._id}
-                    className={`flex-row items-center py-3.5 ${
-                      i < customCategories.length - 1
-                        ? 'border-b border-neutral-100'
-                        : ''
-                    }`}
-                  >
-                    <View className='w-8 h-8 rounded-lg bg-neutral-100 items-center justify-center'>
-                      <Feather
-                        name={cat.icon as FeatherIcon}
-                        size={14}
-                        color='#6B7280'
-                      />
-                    </View>
-                    <Text className='flex-1 text-[14px] font-medium text-black ml-3'>
-                      {cat.name}
-                    </Text>
-                    <Pressable
-                      onPress={() => handleDelete(cat._id, cat.name)}
-                      className='w-8 h-8 items-center justify-center'
-                    >
-                      <Feather name='trash-2' size={15} color='#EF4444' />
-                    </Pressable>
-                  </View>
-                ))
-              )}
-            </View>
-          </View>
-
-          {/* Default categories grouped by parent */}
-          <View className='mx-6 mb-2'>
-            <Text className='text-[12px] text-neutral-400 font-semibold uppercase tracking-wider mb-2 ml-1'>
-              Default Categories
-            </Text>
-          </View>
-
+          {/* Categories grouped by parent — defaults + custom inline */}
           {PARENT_CATEGORIES.map((parent) => {
-            const cats = DEFAULT_EXPENSE_CATEGORIES.filter(
+            const defaultCats = DEFAULT_EXPENSE_CATEGORIES.filter(
+              (c) => c.parentCategory === parent
+            );
+            const customInGroup = customCategories.filter(
               (c) => c.parentCategory === parent
             );
             const color = PARENT_CATEGORY_COLORS[parent];
+            const allCats = [
+              ...defaultCats.map((c) => ({ ...c, isCustom: false })),
+              ...customInGroup.map((c) => ({ ...c, isCustom: true })),
+            ];
             return (
               <View key={parent} className='mx-6 mb-4'>
                 <View className='flex-row items-center gap-2 mb-2 ml-1'>
@@ -169,11 +125,13 @@ export default function CategoriesScreen() {
                   </Text>
                 </View>
                 <View className='bg-white rounded-2xl px-4'>
-                  {cats.map((cat, i) => (
+                  {allCats.map((cat, i) => (
                     <View
                       key={cat.name}
                       className={`flex-row items-center py-3 ${
-                        i < cats.length - 1 ? 'border-b border-neutral-100' : ''
+                        i < allCats.length - 1
+                          ? 'border-b border-neutral-100'
+                          : ''
                       }`}
                     >
                       <View
@@ -189,17 +147,86 @@ export default function CategoriesScreen() {
                       <Text className='flex-1 text-[14px] font-medium text-black ml-3'>
                         {cat.name}
                       </Text>
-                      <View className='bg-neutral-100 px-2.5 py-1 rounded-full'>
-                        <Text className='text-[10px] text-neutral-400 font-medium'>
-                          Default
-                        </Text>
-                      </View>
+                      {cat.isCustom ? (
+                        <View className='flex-row items-center gap-2'>
+                          <View className='bg-black px-2.5 py-1 rounded-full'>
+                            <Text className='text-[10px] text-white font-medium'>
+                              Custom
+                            </Text>
+                          </View>
+                          <Pressable
+                            onPress={() =>
+                              handleDelete((cat as any)._id, cat.name)
+                            }
+                            className='w-7 h-7 items-center justify-center'
+                          >
+                            <Feather name='trash-2' size={14} color='#EF4444' />
+                          </Pressable>
+                        </View>
+                      ) : (
+                        <View className='bg-neutral-100 px-2.5 py-1 rounded-full'>
+                          <Text className='text-[10px] text-neutral-400 font-medium'>
+                            Default
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   ))}
                 </View>
               </View>
             );
           })}
+
+          {/* Standalone custom categories (no parent group) */}
+          {customCategories.filter((c) => !c.parentCategory).length > 0 && (
+            <View className='mx-6 mb-4'>
+              <View className='flex-row items-center gap-2 mb-2 ml-1'>
+                <View className='w-2 h-2 rounded-full bg-neutral-400' />
+                <Text className='text-[11px] font-semibold text-neutral-400 uppercase tracking-wider'>
+                  My Categories
+                </Text>
+              </View>
+              <View className='bg-white rounded-2xl px-4'>
+                {customCategories
+                  .filter((c) => !c.parentCategory)
+                  .map((cat, i, arr) => (
+                    <View
+                      key={cat._id}
+                      className={`flex-row items-center py-3 ${
+                        i < arr.length - 1 ? 'border-b border-neutral-100' : ''
+                      }`}
+                    >
+                      <View
+                        className='w-8 h-8 rounded-lg items-center justify-center'
+                        style={{ backgroundColor: `${cat.color}18` }}
+                      >
+                        <Feather
+                          name={cat.icon as FeatherIcon}
+                          size={14}
+                          color={cat.color}
+                        />
+                      </View>
+                      <Text className='flex-1 text-[14px] font-medium text-black ml-3'>
+                        {cat.name}
+                      </Text>
+                      <View className='flex-row items-center gap-2'>
+                        <View className='bg-black px-2.5 py-1 rounded-full'>
+                          <Text className='text-[10px] text-white font-medium'>
+                            Custom
+                          </Text>
+                        </View>
+                        <Pressable
+                          onPress={() => handleDelete(cat._id, cat.name)}
+                          className='w-7 h-7 items-center justify-center'
+                        >
+                          <Feather name='trash-2' size={14} color='#EF4444' />
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+              </View>
+            </View>
+          )}
 
           <View className='h-16' />
         </ScrollView>
@@ -212,12 +239,21 @@ export default function CategoriesScreen() {
         presentationStyle='pageSheet'
         onRequestClose={() => setShowAdd(false)}
       >
-        <ScrollView className='flex-1 bg-neutral-50' keyboardShouldPersistTaps='handled'>
+        <ScrollView
+          className='flex-1 bg-neutral-50'
+          keyboardShouldPersistTaps='handled'
+        >
           <View className='px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100'>
             <Text className='text-[18px] font-bold text-black'>
               Add Category
             </Text>
-            <Pressable onPress={() => { setShowAdd(false); setNewName(''); setParentCategory(null); }}>
+            <Pressable
+              onPress={() => {
+                setShowAdd(false);
+                setNewName('');
+                setParentCategory(null);
+              }}
+            >
               <Feather name='x' size={20} color='#000' />
             </Pressable>
           </View>
@@ -254,10 +290,18 @@ export default function CategoriesScreen() {
 
             {/* Why it matters */}
             <View className='bg-blue-50 rounded-2xl px-4 py-3 flex-row items-start gap-3 mb-3'>
-              <Feather name='pie-chart' size={14} color='#3B82F6' style={{ marginTop: 1 }} />
+              <Feather
+                name='pie-chart'
+                size={14}
+                color='#3B82F6'
+                style={{ marginTop: 1 }}
+              />
               <Text className='flex-1 text-[12px] text-blue-500 leading-5'>
-                Grouping lets your spending reports roll up correctly — e.g. "Boba Tea" under Food & Drink shows in the same pie slice as Groceries and Restaurants.{' '}
-                <Text className='font-semibold'>Skip it</Text> and this becomes its own standalone group.
+                Grouping lets your spending reports roll up correctly — e.g.
+                "Boba Tea" under Food & Drink shows in the same pie slice as
+                Groceries and Restaurants.{' '}
+                <Text className='font-semibold'>Skip it</Text> and this becomes
+                its own standalone group.
               </Text>
             </View>
 
