@@ -1,7 +1,7 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { formatCurrencyCompact } from '@/lib/utils/currency';
-import { formatDateShort } from '@/lib/utils/date';
+import { currentMonth, formatDateShort } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMutation, useQuery } from 'convex/react';
@@ -32,8 +32,11 @@ export default function PlanScreen() {
   const [contributionAmount, setContributionAmount] = useState('');
   const [historyGoalId, setHistoryGoalId] = useState<string | null>(null);
 
+  const month = currentMonth();
   const goals = useQuery(api.goals.list, userId ? { userId } : 'skip');
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const budgets = useQuery(api.budgets.listByMonthWithComparison, userId ? { userId, month } : 'skip');
+  const spendingInsights = useQuery(api.transactions.getCategorySpendingInsights, userId ? { userId, month } : 'skip');
   const contributions = useQuery(
     api.goals.listContributions,
     historyGoalId ? { goalId: historyGoalId as any } : 'skip',
@@ -116,22 +119,168 @@ export default function PlanScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View className='px-6 pt-4 pb-2 flex-row justify-between items-center'>
-          <Text className='text-[22px] font-bold text-black tracking-tight'>
-            Goals
-          </Text>
+        <View className='px-6 pt-4 pb-2'>
+          <Text className='text-[22px] font-bold text-black tracking-tight'>Plan</Text>
+        </View>
+
+        {/* ── BUDGETS SECTION ── */}
+        <View className='px-6 mt-4'>
+          <View className='flex-row items-center justify-between mb-3'>
+            <Text className='text-[17px] font-bold text-black'>Budgets</Text>
+            <Pressable
+              onPress={() => router.push('/add-budget')}
+              className='w-8 h-8 rounded-full bg-white items-center justify-center'
+            >
+              <Feather name='plus' size={16} color='#000' />
+            </Pressable>
+          </View>
+
+          {budgets === undefined ? null : budgets.length === 0 ? (
+            <View className='bg-white rounded-2xl p-5 items-center'>
+              <View className='w-12 h-12 rounded-full bg-neutral-100 items-center justify-center mb-3'>
+                <Feather name='sliders' size={20} color='#A3A3A3' />
+              </View>
+              <Text className='text-[14px] font-semibold text-black'>No budgets set</Text>
+              <Text className='text-neutral-400 text-[12px] mt-1 text-center'>
+                Tap + to set a spending limit per category
+              </Text>
+            </View>
+          ) : (
+            budgets.map((b) => {
+              const pct = b.limitAmount > 0 ? Math.min((b.spent / b.limitAmount) * 100, 100) : 0;
+              const isOver = b.spent > b.limitAmount;
+              const isWarning = !isOver && pct >= 80;
+              const barColor = isOver ? '#EF4444' : isWarning ? '#F97316' : '#000';
+              const hasLastMonth = b.lastMonthSpent > 0;
+              const delta = hasLastMonth
+                ? Math.round(((b.spent - b.lastMonthSpent) / b.lastMonthSpent) * 100)
+                : null;
+
+              return (
+                <View key={b._id} className='bg-white rounded-2xl p-4 mb-3'>
+                  <View className='flex-row items-center gap-3 mb-3'>
+                    <View
+                      className='w-10 h-10 rounded-xl items-center justify-center'
+                      style={{ backgroundColor: `${b.categoryColor}18` }}
+                    >
+                      <Feather name={b.categoryIcon as any} size={16} color={b.categoryColor} />
+                    </View>
+                    <View className='flex-1'>
+                      <Text className='text-[14px] font-semibold text-black'>{b.categoryName}</Text>
+                      {delta !== null && (
+                        <View className='flex-row items-center gap-1 mt-0.5'>
+                          <Feather
+                            name={delta > 0 ? 'arrow-up' : 'arrow-down'}
+                            size={10}
+                            color={delta > 0 ? '#EF4444' : '#16A34A'}
+                          />
+                          <Text
+                            className='text-[11px] font-medium'
+                            style={{ color: delta > 0 ? '#EF4444' : '#16A34A' }}
+                          >
+                            {Math.abs(delta)}% vs last month
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <View className='items-end'>
+                      <Text className='text-[14px] font-bold text-black'>
+                        {formatCurrencyCompact(b.spent, currency)}
+                      </Text>
+                      <Text className='text-[11px] text-neutral-400'>
+                        of {formatCurrencyCompact(b.limitAmount, currency)}
+                      </Text>
+                    </View>
+                  </View>
+                  <View className='h-1.5 bg-neutral-100 rounded-full'>
+                    <View
+                      className='h-1.5 rounded-full'
+                      style={{ width: `${pct}%`, backgroundColor: barColor }}
+                    />
+                  </View>
+                  {isOver && (
+                    <Text className='text-[11px] text-red-500 font-medium mt-1.5'>
+                      Over budget by {formatCurrencyCompact(b.spent - b.limitAmount, currency)}
+                    </Text>
+                  )}
+                </View>
+              );
+            })
+          )}
+        </View>
+
+        {/* ── SPENDING INSIGHTS SECTION ── */}
+        {spendingInsights && spendingInsights.length > 0 && (
+          <View className='px-6 mt-6'>
+            <Text className='text-[17px] font-bold text-black mb-3'>This Month</Text>
+            <View className='bg-white rounded-2xl px-4'>
+              {spendingInsights.map((s, i) => {
+                const budgeted = (budgets ?? []).some((b) => b.categoryId === s.categoryId);
+                const hasLast = s.lastMonth > 0;
+                const delta = hasLast
+                  ? Math.round(((s.thisMonth - s.lastMonth) / s.lastMonth) * 100)
+                  : null;
+                return (
+                  <View
+                    key={s.categoryId}
+                    className={`flex-row items-center py-3.5 ${i < spendingInsights.length - 1 ? 'border-b border-neutral-100' : ''}`}
+                  >
+                    <View
+                      className='w-9 h-9 rounded-xl items-center justify-center mr-3'
+                      style={{ backgroundColor: `${s.categoryColor}18` }}
+                    >
+                      <Feather name={s.categoryIcon as any} size={15} color={s.categoryColor} />
+                    </View>
+                    <View className='flex-1'>
+                      <Text className='text-[14px] font-medium text-black'>{s.categoryName}</Text>
+                      {delta !== null && (
+                        <View className='flex-row items-center gap-1 mt-0.5'>
+                          <Feather
+                            name={delta > 0 ? 'arrow-up' : 'arrow-down'}
+                            size={10}
+                            color={delta > 0 ? '#EF4444' : '#16A34A'}
+                          />
+                          <Text
+                            className='text-[11px]'
+                            style={{ color: delta > 0 ? '#EF4444' : '#16A34A' }}
+                          >
+                            {Math.abs(delta)}% vs last month
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <View className='items-end gap-1'>
+                      <Text className='text-[14px] font-semibold text-black'>
+                        {formatCurrencyCompact(s.thisMonth, currency)}
+                      </Text>
+                      {!budgeted && (
+                        <Pressable onPress={() => router.push('/add-budget')}>
+                          <Text className='text-[11px] text-neutral-400 underline'>Set limit</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* ── GOALS SECTION ── */}
+        <View className='px-6 mt-6 flex-row justify-between items-center mb-2'>
+          <Text className='text-[17px] font-bold text-black'>Goals</Text>
           <Pressable
             onPress={() => router.push('/add-goal')}
-            className='w-10 h-10 rounded-full bg-white items-center justify-center'
+            className='w-8 h-8 rounded-full bg-white items-center justify-center'
           >
-            <Feather name='plus' size={18} color='#000' />
+            <Feather name='plus' size={16} color='#000' />
           </Pressable>
         </View>
 
         {/* Active Goals */}
-        <View className='px-6 mt-4'>
+        <View className='px-6'>
           {activeGoals.length === 0 && completedGoals.length === 0 ? (
-            <View className='bg-white rounded-2xl p-10 items-center mt-4'>
+            <View className='bg-white rounded-2xl p-8 items-center'>
               <View className='w-16 h-16 rounded-full bg-neutral-100 items-center justify-center mb-4'>
                 <Feather name='target' size={28} color='#A3A3A3' />
               </View>
