@@ -51,6 +51,9 @@ Things that WILL cause rejection right now
    Service and Privacy Policy" but they're not tappable links. Apple requires these to
    be actual URLs they can visit during review.
 
+4. Replace support@pennify.app with your actual support email in both pages 2. The domain pennify.app — make sure pennifyweb is actually deployed there,
+   otherwise the links won't work
+
 ---
 
 Things to double-check before submission
