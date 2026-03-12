@@ -1,7 +1,7 @@
 import { authClient } from '@/lib/auth-client';
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SignInScreen() {
@@ -78,8 +78,20 @@ export default function SignInScreen() {
         </Pressable>
 
         <Text className='text-neutral-600 text-[12px] text-center leading-5'>
-          By continuing, you agree to our{'\n'}Terms of Service and Privacy
-          Policy
+          By continuing, you agree to our{'\n'}
+          <Text
+            className='text-neutral-400 underline'
+            onPress={() => Linking.openURL('https://pennify.app/terms')}
+          >
+            Terms of Service
+          </Text>
+          {' '}and{' '}
+          <Text
+            className='text-neutral-400 underline'
+            onPress={() => Linking.openURL('https://pennify.app/privacy')}
+          >
+            Privacy Policy
+          </Text>
         </Text>
       </View>
     </View>

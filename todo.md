@@ -67,3 +67,5 @@ Summary
 Fix those 3 things — RevenueCat integration, Sign in with Apple, and real privacy
 policy/ToS URLs — and your chances of first-attempt approval are high. The app itself
 is solid.
+
+based on pricing model update privacy and terms
