@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useOnboardingStore, type RecurringPayment } from '@/lib/stores/useOnboardingStore';
 import { getCurrencySymbol } from '@/lib/utils/currency';
@@ -33,6 +33,10 @@ export function RecurringPayments({ onNext, onBack }: RecurringPaymentsProps) {
       ...payments,
       { name: newName.trim(), amount: newAmount.trim(), frequency: newFreq, billingDay, purchasedAt: selectedDate ?? undefined },
     ]);
+    closeForm();
+  };
+
+  const closeForm = () => {
     setNewName('');
     setNewAmount('');
     setNewFreq('monthly');
@@ -71,7 +75,7 @@ export function RecurringPayments({ onNext, onBack }: RecurringPaymentsProps) {
           </Text>
         </View>
 
-        {/* Quick add */}
+        {/* Quick add chips */}
         <View className="px-6 flex-row flex-wrap gap-2 mb-4">
           {COMMON_PAYMENTS.filter((p) => !payments.find((x) => x.name === p)).map((name) => (
             <Pressable
@@ -106,99 +110,14 @@ export function RecurringPayments({ onNext, onBack }: RecurringPaymentsProps) {
           ))}
         </View>
 
-        {/* Add custom */}
-        {showAdd ? (
-          <View className="mx-6 mt-3 bg-white rounded-2xl p-5">
-            <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Name</Text>
-            <TextInput
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="e.g. Netflix, Rent..."
-              placeholderTextColor="#D4D4D4"
-              className="text-[16px] text-black mb-4"
-              autoFocus
-            />
-
-            <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Amount</Text>
-            <View className="flex-row items-center mb-4">
-              <Text className="text-[20px] font-bold text-black mr-1">{getCurrencySymbol(currency)}</Text>
-              <TextInput
-                value={newAmount}
-                onChangeText={setNewAmount}
-                placeholder="0"
-                placeholderTextColor="#D4D4D4"
-                keyboardType="decimal-pad"
-                className="flex-1 text-[20px] font-bold text-black"
-              />
-            </View>
-
-            <View className="flex-row gap-2 mb-4">
-              <Pressable
-                onPress={() => setNewFreq('monthly')}
-                className={`flex-1 py-2.5 rounded-xl items-center ${newFreq === 'monthly' ? 'bg-black' : 'bg-neutral-100'}`}
-              >
-                <Text className={`text-[13px] font-medium ${newFreq === 'monthly' ? 'text-white' : 'text-black'}`}>Monthly</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setNewFreq('yearly')}
-                className={`flex-1 py-2.5 rounded-xl items-center ${newFreq === 'yearly' ? 'bg-black' : 'bg-neutral-100'}`}
-              >
-                <Text className={`text-[13px] font-medium ${newFreq === 'yearly' ? 'text-white' : 'text-black'}`}>Yearly</Text>
-              </Pressable>
-            </View>
-
-            {/* Billing date */}
-            <Pressable
-              onPress={() => setShowCalendar(!showCalendar)}
-              className="flex-row items-center gap-2 mb-3 py-1"
-            >
-              <Feather name={showCalendar ? 'chevron-up' : 'calendar'} size={14} color='#A3A3A3' />
-              <Text className="text-[13px] text-neutral-400">
-                {selectedDate
-                  ? `Purchased / renews on ${selectedDate.slice(8, 10)}/${selectedDate.slice(5, 7)}/${selectedDate.slice(0, 4)}`
-                  : 'Set purchase or renewal date (optional)'}
-              </Text>
-            </Pressable>
-            {!showCalendar && (
-              <Text className="text-[11px] text-neutral-300 mb-3 -mt-1">
-                Pick when you bought it or just the day it renews each month
-              </Text>
-            )}
-            {showCalendar && (
-              <View className="mb-4">
-                <BillingDayPicker
-                  selectedDate={selectedDate}
-                  onSelect={(d) => setSelectedDate(d)}
-                  onClear={() => setSelectedDate(null)}
-                />
-              </View>
-            )}
-
-            <View className="flex-row gap-3">
-              <Pressable
-                onPress={() => { setShowAdd(false); setNewName(''); setNewAmount(''); setSelectedDate(null); setShowCalendar(false); }}
-                className="flex-1 py-3 rounded-xl items-center bg-neutral-100"
-              >
-                <Text className="text-[14px] font-semibold text-neutral-500">Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={addPayment}
-                className={`flex-1 py-3 rounded-xl items-center ${newName.trim() ? 'bg-black' : 'bg-neutral-300'}`}
-                disabled={!newName.trim()}
-              >
-                <Text className="text-[14px] font-semibold text-white">Add</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : (
-          <Pressable
-            onPress={() => setShowAdd(true)}
-            className="mx-6 mt-3 bg-white rounded-2xl p-4 flex-row items-center justify-center gap-2"
-          >
-            <Feather name="plus" size={18} color="#A3A3A3" />
-            <Text className="text-[14px] font-medium text-neutral-400">Add Payment</Text>
-          </Pressable>
-        )}
+        {/* Add button */}
+        <Pressable
+          onPress={() => setShowAdd(true)}
+          className="mx-6 mt-3 bg-white rounded-2xl p-4 flex-row items-center justify-center gap-2"
+        >
+          <Feather name="plus" size={18} color="#A3A3A3" />
+          <Text className="text-[14px] font-medium text-neutral-400">Add Payment</Text>
+        </Pressable>
 
         <View className="h-32" />
       </ScrollView>
@@ -215,6 +134,127 @@ export function RecurringPayments({ onNext, onBack }: RecurringPaymentsProps) {
           </Text>
         </Pressable>
       </View>
+
+      {/* Add Payment Modal */}
+      <Modal
+        visible={showAdd}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeForm}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={30}
+        >
+          <View className="flex-1 bg-neutral-50">
+            {/* Handle + header */}
+            <View className="items-center pt-3 pb-1">
+              <View className="w-10 h-1 rounded-full bg-neutral-300" />
+            </View>
+            <View className="flex-row items-center justify-between px-6 py-4">
+              <Text className="text-[20px] font-bold text-black">Add Payment</Text>
+              <Pressable onPress={closeForm} className="w-9 h-9 rounded-full bg-white items-center justify-center">
+                <Feather name="x" size={18} color="#000" />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              className="flex-1 px-6"
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Name */}
+              <Text className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-3">Name</Text>
+              <View className="bg-white rounded-xl px-4 py-3 mb-5">
+                <TextInput
+                  value={newName}
+                  onChangeText={setNewName}
+                  placeholder="e.g. Netflix, Rent..."
+                  placeholderTextColor="#D4D4D4"
+                  className="text-[16px] text-black"
+                  autoFocus
+                />
+              </View>
+
+              {/* Amount */}
+              <Text className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-3">Amount</Text>
+              <View className="flex-row items-center bg-white rounded-xl px-4 py-3 mb-5 gap-1">
+                <Text className="text-[20px] font-bold text-black">{getCurrencySymbol(currency)}</Text>
+                <TextInput
+                  value={newAmount}
+                  onChangeText={setNewAmount}
+                  placeholder="0"
+                  placeholderTextColor="#D4D4D4"
+                  keyboardType="decimal-pad"
+                  className="flex-1 text-[20px] font-bold text-black"
+                />
+              </View>
+
+              {/* Frequency */}
+              <Text className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-3">Frequency</Text>
+              <View className="flex-row gap-2 mb-5">
+                <Pressable
+                  onPress={() => setNewFreq('monthly')}
+                  className={`flex-1 py-3 rounded-xl items-center ${newFreq === 'monthly' ? 'bg-black' : 'bg-white'}`}
+                >
+                  <Text className={`text-[13px] font-medium ${newFreq === 'monthly' ? 'text-white' : 'text-black'}`}>Monthly</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setNewFreq('yearly')}
+                  className={`flex-1 py-3 rounded-xl items-center ${newFreq === 'yearly' ? 'bg-black' : 'bg-white'}`}
+                >
+                  <Text className={`text-[13px] font-medium ${newFreq === 'yearly' ? 'text-white' : 'text-black'}`}>Yearly</Text>
+                </Pressable>
+              </View>
+
+              {/* Billing date */}
+              <Pressable
+                onPress={() => setShowCalendar(!showCalendar)}
+                className="flex-row items-center gap-2 mb-2 py-1"
+              >
+                <Feather name={showCalendar ? 'chevron-up' : 'calendar'} size={14} color='#A3A3A3' />
+                <Text className="text-[13px] text-neutral-400">
+                  {selectedDate
+                    ? `Purchased / renews on ${selectedDate.slice(8, 10)}/${selectedDate.slice(5, 7)}/${selectedDate.slice(0, 4)}`
+                    : 'Set purchase or renewal date (optional)'}
+                </Text>
+              </Pressable>
+              {!showCalendar && (
+                <Text className="text-[11px] text-neutral-300 mb-3">
+                  Pick when you bought it or just the day it renews each month
+                </Text>
+              )}
+              {showCalendar && (
+                <View className="mb-4">
+                  <BillingDayPicker
+                    selectedDate={selectedDate}
+                    onSelect={(d) => setSelectedDate(d)}
+                    onClear={() => setSelectedDate(null)}
+                  />
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Actions */}
+            <View className="px-6 pb-10 pt-3 flex-row gap-3">
+              <Pressable
+                onPress={closeForm}
+                className="flex-1 py-3.5 rounded-2xl items-center bg-neutral-200"
+              >
+                <Text className="text-neutral-600 font-semibold text-[15px]">Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={addPayment}
+                disabled={!newName.trim() || !newAmount.trim()}
+                className={`flex-1 py-3.5 rounded-2xl items-center ${newName.trim() && newAmount.trim() ? 'bg-black' : 'bg-neutral-300'}`}
+              >
+                <Text className="text-[15px] font-bold text-white">Add</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }

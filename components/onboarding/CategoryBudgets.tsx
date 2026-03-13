@@ -1,10 +1,22 @@
-import { Feather } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Keyboard, LayoutAnimation, Platform, Pressable, ScrollView, Text, TextInput, UIManager, View } from 'react-native';
 import { DEFAULT_PARENT_CATEGORIES } from '@/lib/constants/categories';
+import type { FeatherIcon } from '@/lib/models/types';
 import { useOnboardingStore } from '@/lib/stores/useOnboardingStore';
 import { getCurrencySymbol } from '@/lib/utils/currency';
-import type { FeatherIcon } from '@/lib/models/types';
+import { Feather } from '@expo/vector-icons';
+import { useState } from 'react';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  LayoutAnimation,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  UIManager,
+  View,
+} from 'react-native';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -22,7 +34,9 @@ export function CategoryBudgets({ onNext, onBack }: CategoryBudgetsProps) {
   const monthlyBudget = useOnboardingStore((s) => s.monthlyBudget);
 
   const [showForm, setShowForm] = useState(false);
-  const [selectedParent, setSelectedParent] = useState<(typeof DEFAULT_PARENT_CATEGORIES)[0] | null>(null);
+  const [selectedParent, setSelectedParent] = useState<
+    (typeof DEFAULT_PARENT_CATEGORIES)[0] | null
+  >(null);
   const [amount, setAmount] = useState('');
 
   const currencySymbol = getCurrencySymbol(currency);
@@ -32,15 +46,22 @@ export function CategoryBudgets({ onNext, onBack }: CategoryBudgetsProps) {
     if (!selectedParent || !amount.trim()) return;
     const num = parseFloat(amount);
     if (isNaN(num) || num <= 0) return;
-    const exists = categoryBudgets.some((b) => b.parentCategoryName === selectedParent.name);
+    const exists = categoryBudgets.some(
+      (b) => b.parentCategoryName === selectedParent.name
+    );
     if (exists) {
       setCategoryBudgets(
         categoryBudgets.map((b) =>
-          b.parentCategoryName === selectedParent.name ? { ...b, limitAmount: num } : b
+          b.parentCategoryName === selectedParent.name
+            ? { ...b, limitAmount: num }
+            : b
         )
       );
     } else {
-      setCategoryBudgets([...categoryBudgets, { parentCategoryName: selectedParent.name, limitAmount: num }]);
+      setCategoryBudgets([
+        ...categoryBudgets,
+        { parentCategoryName: selectedParent.name, limitAmount: num },
+      ]);
     }
     setSelectedParent(null);
     setAmount('');
@@ -50,11 +71,20 @@ export function CategoryBudgets({ onNext, onBack }: CategoryBudgetsProps) {
 
   const removeBudget = (name: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setCategoryBudgets(categoryBudgets.filter((b) => b.parentCategoryName !== name));
+    setCategoryBudgets(
+      categoryBudgets.filter((b) => b.parentCategoryName !== name)
+    );
   };
 
   const getParentMeta = (name: string) =>
     DEFAULT_PARENT_CATEGORIES.find((p) => p.name === name);
+
+  const closeForm = () => {
+    setShowForm(false);
+    setSelectedParent(null);
+    setAmount('');
+    Keyboard.dismiss();
+  };
 
   return (
     <View className='flex-1'>
@@ -71,7 +101,9 @@ export function CategoryBudgets({ onNext, onBack }: CategoryBudgetsProps) {
           >
             <Feather name='arrow-left' size={20} color='#000' />
           </Pressable>
-          <Text className='text-[28px] font-bold text-black'>Category Budgets</Text>
+          <Text className='text-[28px] font-bold text-black'>
+            Category Budgets
+          </Text>
           <Text className='text-neutral-400 text-[15px] mt-2'>
             Set spending limits per category group. Optional — add more later.
           </Text>
@@ -83,12 +115,16 @@ export function CategoryBudgets({ onNext, onBack }: CategoryBudgetsProps) {
             <Feather name='pie-chart' size={15} color='#A3A3A3' />
             <View className='flex-1'>
               <Text className='text-[12px] text-neutral-400'>
-                {currencySymbol}{totalAllocated.toLocaleString()} allocated of {currencySymbol}{monthlyBudget.toLocaleString()} monthly budget
+                {currencySymbol}
+                {totalAllocated.toLocaleString()} allocated of {currencySymbol}
+                {monthlyBudget.toLocaleString()} monthly budget
               </Text>
               <View className='h-1 bg-neutral-100 rounded-full mt-1.5'>
                 <View
                   className='h-1 rounded-full bg-black'
-                  style={{ width: `${Math.min((totalAllocated / monthlyBudget) * 100, 100)}%` }}
+                  style={{
+                    width: `${Math.min((totalAllocated / monthlyBudget) * 100, 100)}%`,
+                  }}
                 />
               </View>
             </View>
@@ -102,22 +138,33 @@ export function CategoryBudgets({ onNext, onBack }: CategoryBudgetsProps) {
               const meta = getParentMeta(b.parentCategoryName);
               const color = meta?.color ?? '#6B7280';
               return (
-                <View key={b.parentCategoryName} className='bg-white rounded-2xl px-4 py-3.5 flex-row items-center gap-3'>
+                <View
+                  key={b.parentCategoryName}
+                  className='bg-white rounded-2xl px-4 py-3.5 flex-row items-center gap-3'
+                >
                   <View
                     className='w-9 h-9 rounded-xl items-center justify-center'
                     style={{ backgroundColor: `${color}18` }}
                   >
-                    <Feather name={(meta?.icon ?? 'tag') as FeatherIcon} size={15} color={color} />
+                    <Feather
+                      name={(meta?.icon ?? 'tag') as FeatherIcon}
+                      size={15}
+                      color={color}
+                    />
                   </View>
                   <View className='flex-1'>
-                    <Text className='text-[14px] font-semibold text-black'>{b.parentCategoryName}</Text>
-                    <Text className='text-[12px] text-neutral-400'>{currencySymbol}{b.limitAmount.toLocaleString()}/mo</Text>
+                    <Text className='text-[14px] font-semibold text-black'>
+                      {b.parentCategoryName}
+                    </Text>
+                    <Text className='text-[12px] text-neutral-400'>
+                      {currencySymbol}
+                      {b.limitAmount.toLocaleString()}/mo
+                    </Text>
                   </View>
                   <Pressable
                     onPress={() => {
                       setSelectedParent(meta ?? null);
                       setAmount(String(b.limitAmount));
-                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                       setShowForm(true);
                     }}
                     className='w-8 h-8 rounded-full bg-neutral-100 items-center justify-center mr-1'
@@ -136,81 +183,17 @@ export function CategoryBudgets({ onNext, onBack }: CategoryBudgetsProps) {
           </View>
         )}
 
-        {/* Add form */}
+        {/* Add button */}
         <View className='px-6'>
-          {showForm ? (
-            <View className='bg-white rounded-2xl p-4 gap-3'>
-              {/* Parent category grid */}
-              <Text className='text-[11px] font-semibold text-neutral-400 uppercase tracking-wider'>
-                Category Group
-              </Text>
-              <View className='flex-row flex-wrap gap-2'>
-                {DEFAULT_PARENT_CATEGORIES.map((parent) => {
-                  const selected = selectedParent?.name === parent.name;
-                  const alreadySet = !selected && categoryBudgets.some((b) => b.parentCategoryName === parent.name);
-                  return (
-                    <Pressable
-                      key={parent.name}
-                      onPress={() => setSelectedParent(parent)}
-                      className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl ${selected ? 'bg-black' : 'bg-neutral-100'}`}
-                    >
-                      <Feather
-                        name={parent.icon as FeatherIcon}
-                        size={11}
-                        color={selected ? '#fff' : parent.color}
-                      />
-                      <Text className={`text-[12px] font-medium ${selected ? 'text-white' : 'text-black'}`}>
-                        {parent.name}
-                      </Text>
-                      {alreadySet && <Feather name='check' size={10} color={selected ? '#fff' : '#A3A3A3'} />}
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              {/* Amount input */}
-              <View className='flex-row items-center bg-neutral-50 rounded-xl px-4 py-3 gap-2'>
-                <Text className='text-[18px] font-bold text-neutral-300'>{currencySymbol}</Text>
-                <TextInput
-                  value={amount}
-                  onChangeText={setAmount}
-                  placeholder='Monthly limit'
-                  placeholderTextColor='#D4D4D4'
-                  keyboardType='number-pad'
-                  className='flex-1 text-[18px] font-bold text-black'
-                  autoFocus={!!selectedParent}
-                />
-              </View>
-
-              <View className='flex-row gap-2'>
-                <Pressable
-                  onPress={addBudget}
-                  disabled={!selectedParent || !amount.trim()}
-                  className='flex-1 py-3 rounded-xl items-center bg-black'
-                  style={{ opacity: !selectedParent || !amount.trim() ? 0.35 : 1 }}
-                >
-                  <Text className='text-white font-bold text-[14px]'>Save</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => { setShowForm(false); setSelectedParent(null); setAmount(''); Keyboard.dismiss(); }}
-                  className='flex-1 py-3 rounded-xl items-center bg-neutral-100'
-                >
-                  <Text className='text-neutral-500 font-medium text-[14px]'>Cancel</Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Pressable
-              onPress={() => {
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                setShowForm(true);
-              }}
-              className='flex-row items-center gap-2 px-3 py-2.5 rounded-xl bg-white border border-dashed border-neutral-300 self-start'
-            >
-              <Feather name='plus' size={14} color='#A3A3A3' />
-              <Text className='text-[13px] font-medium text-neutral-400'>Add category budget</Text>
-            </Pressable>
-          )}
+          <Pressable
+            onPress={() => setShowForm(true)}
+            className='flex-row items-center gap-2 px-3 py-2.5 rounded-xl bg-white border border-dashed border-neutral-300 self-start'
+          >
+            <Feather name='plus' size={14} color='#A3A3A3' />
+            <Text className='text-[13px] font-medium text-neutral-400'>
+              Add category budget
+            </Text>
+          </Pressable>
         </View>
 
         <View className='h-32' />
@@ -228,6 +211,130 @@ export function CategoryBudgets({ onNext, onBack }: CategoryBudgetsProps) {
           </Text>
         </Pressable>
       </View>
+
+      {/* Add / Edit Modal */}
+      <Modal
+        visible={showForm}
+        animationType='slide'
+        presentationStyle='pageSheet'
+        onRequestClose={closeForm}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={30}
+        >
+          <View className='flex-1 bg-neutral-50'>
+            {/* Handle + header */}
+            <View className='items-center pt-3 pb-1'>
+              <View className='w-10 h-1 rounded-full bg-neutral-300' />
+            </View>
+            <View className='flex-row items-center justify-between px-6 py-4'>
+              <Text className='text-[20px] font-bold text-black'>
+                {selectedParent &&
+                categoryBudgets.some(
+                  (b) => b.parentCategoryName === selectedParent.name
+                )
+                  ? 'Edit Budget'
+                  : 'Add Category Budget'}
+              </Text>
+              <Pressable
+                onPress={closeForm}
+                className='w-9 h-9 rounded-full bg-white items-center justify-center'
+              >
+                <Feather name='x' size={18} color='#000' />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              className='flex-1 px-6'
+              keyboardShouldPersistTaps='handled'
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Parent category grid */}
+              <Text className='text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-3'>
+                Category Group
+              </Text>
+              <View className='flex-row flex-wrap gap-2 mb-5'>
+                {DEFAULT_PARENT_CATEGORIES.map((parent) => {
+                  const selected = selectedParent?.name === parent.name;
+                  const alreadySet =
+                    !selected &&
+                    categoryBudgets.some(
+                      (b) => b.parentCategoryName === parent.name
+                    );
+                  return (
+                    <Pressable
+                      key={parent.name}
+                      onPress={() => setSelectedParent(parent)}
+                      className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl ${selected ? 'bg-black' : 'bg-white'}`}
+                    >
+                      <Feather
+                        name={parent.icon as FeatherIcon}
+                        size={11}
+                        color={selected ? '#fff' : parent.color}
+                      />
+                      <Text
+                        className={`text-[12px] font-medium ${selected ? 'text-white' : 'text-black'}`}
+                      >
+                        {parent.name}
+                      </Text>
+                      {alreadySet && (
+                        <Feather
+                          name='check'
+                          size={10}
+                          color={selected ? '#fff' : '#A3A3A3'}
+                        />
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* Amount input */}
+              <Text className='text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-3'>
+                Monthly Limit
+              </Text>
+              <View className='flex-row items-center bg-white rounded-xl px-4 py-3 gap-2 mb-6'>
+                <Text className='text-[18px] font-bold text-neutral-300'>
+                  {currencySymbol}
+                </Text>
+                <TextInput
+                  value={amount}
+                  onChangeText={setAmount}
+                  placeholder='0'
+                  placeholderTextColor='#D4D4D4'
+                  keyboardType='number-pad'
+                  className='flex-1 text-[18px] font-bold text-black'
+                  autoFocus={!!selectedParent}
+                />
+              </View>
+            </ScrollView>
+
+            {/* Actions */}
+            <View className='px-6 pb-10 pt-3 flex-row gap-3'>
+              <Pressable
+                onPress={closeForm}
+                className='flex-1 py-3.5 rounded-2xl items-center bg-neutral-200'
+              >
+                <Text className='text-neutral-600 font-semibold text-[15px]'>
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={addBudget}
+                disabled={!selectedParent || !amount.trim()}
+                className='flex-1 py-3.5 rounded-2xl items-center bg-black'
+                style={{
+                  opacity: !selectedParent || !amount.trim() ? 0.35 : 1,
+                }}
+              >
+                <Text className='text-white font-bold text-[15px]'>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }

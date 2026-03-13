@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useOnboardingStore } from '@/lib/stores/useOnboardingStore';
 import { DEFAULT_EXPENSE_CATEGORIES, PARENT_CATEGORIES, PARENT_CATEGORY_COLORS } from '@/lib/constants/categories';
@@ -105,23 +105,76 @@ export function ChooseCategories({ onNext, onBack }: ChooseCategoriesProps) {
             </View>
           )}
 
-          {/* Add form */}
-          {showForm ? (
-            <View className="bg-white rounded-2xl p-4 gap-3">
+          {/* Add button */}
+          <Pressable
+            onPress={() => setShowForm(true)}
+            className="flex-row items-center gap-2 px-3 py-2 rounded-xl bg-white border border-dashed border-neutral-300 self-start"
+          >
+            <Feather name="plus" size={13} color="#A3A3A3" />
+            <Text className="text-[12px] font-medium text-neutral-400">Add category</Text>
+          </Pressable>
+        </View>
+
+        <View className="h-32" />
+      </ScrollView>
+
+      {/* Continue */}
+      <View className="px-6 pb-10 pt-4 bg-neutral-50">
+        <Pressable
+          onPress={onNext}
+          className="py-4 rounded-2xl items-center bg-black"
+          style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+        >
+          <Text className="text-white font-bold text-[16px]">Continue</Text>
+        </Pressable>
+      </View>
+
+      {/* Add Category Modal */}
+      <Modal
+        visible={showForm}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={resetForm}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={30}
+        >
+          <View className="flex-1 bg-neutral-50">
+            {/* Handle + header */}
+            <View className="items-center pt-3 pb-1">
+              <View className="w-10 h-1 rounded-full bg-neutral-300" />
+            </View>
+            <View className="flex-row items-center justify-between px-6 py-4">
+              <Text className="text-[20px] font-bold text-black">Add Category</Text>
+              <Pressable onPress={resetForm} className="w-9 h-9 rounded-full bg-white items-center justify-center">
+                <Feather name="x" size={18} color="#000" />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              className="flex-1 px-6"
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
               {/* Name input */}
-              <TextInput
-                value={inputName}
-                onChangeText={setInputName}
-                placeholder="Category name"
-                placeholderTextColor="#A3A3A3"
-                className="text-[14px] text-black border-b border-neutral-100 pb-2"
-                autoFocus
-                returnKeyType="done"
-                onSubmitEditing={addCustom}
-              />
+              <Text className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-3">Name</Text>
+              <View className="bg-white rounded-xl px-4 py-3 mb-5">
+                <TextInput
+                  value={inputName}
+                  onChangeText={setInputName}
+                  placeholder="Category name"
+                  placeholderTextColor="#A3A3A3"
+                  className="text-[16px] text-black"
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={addCustom}
+                />
+              </View>
 
               {/* Group picker */}
-              <View className="gap-2">
+              <View className="gap-3 mb-4">
                 <View className="flex-row items-center gap-2">
                   <Text className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
                     Group
@@ -150,7 +203,7 @@ export function ChooseCategories({ onNext, onBack }: ChooseCategoriesProps) {
                       <Pressable
                         key={parent}
                         onPress={() => setSelectedParent(selected ? null : parent)}
-                        className={`flex-row items-center gap-1 px-2.5 py-1.5 rounded-lg ${selected ? 'bg-black' : 'bg-neutral-100'}`}
+                        className={`flex-row items-center gap-1 px-2.5 py-1.5 rounded-lg ${selected ? 'bg-black' : 'bg-white'}`}
                       >
                         <View
                           className="w-1.5 h-1.5 rounded-full"
@@ -164,47 +217,29 @@ export function ChooseCategories({ onNext, onBack }: ChooseCategoriesProps) {
                   })}
                 </View>
               </View>
+            </ScrollView>
 
-              {/* Actions */}
-              <View className="flex-row gap-2 pt-1">
-                <Pressable
-                  onPress={addCustom}
-                  disabled={!inputName.trim()}
-                  className={`flex-1 py-2.5 rounded-xl items-center ${inputName.trim() ? 'bg-black' : 'bg-neutral-200'}`}
-                >
-                  <Text className={`text-[13px] font-semibold ${inputName.trim() ? 'text-white' : 'text-neutral-400'}`}>
-                    Add
-                  </Text>
-                </Pressable>
-                <Pressable onPress={resetForm} className="flex-1 py-2.5 rounded-xl items-center bg-neutral-100">
-                  <Text className="text-[13px] font-medium text-neutral-500">Cancel</Text>
-                </Pressable>
-              </View>
+            {/* Actions */}
+            <View className="px-6 pb-10 pt-3 flex-row gap-3">
+              <Pressable
+                onPress={resetForm}
+                className="flex-1 py-3.5 rounded-2xl items-center bg-neutral-200"
+              >
+                <Text className="text-neutral-600 font-semibold text-[15px]">Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={addCustom}
+                disabled={!inputName.trim()}
+                className={`flex-1 py-3.5 rounded-2xl items-center ${inputName.trim() ? 'bg-black' : 'bg-neutral-200'}`}
+              >
+                <Text className={`text-[15px] font-semibold ${inputName.trim() ? 'text-white' : 'text-neutral-400'}`}>
+                  Add
+                </Text>
+              </Pressable>
             </View>
-          ) : (
-            <Pressable
-              onPress={() => setShowForm(true)}
-              className="flex-row items-center gap-2 px-3 py-2 rounded-xl bg-white border border-dashed border-neutral-300 self-start"
-            >
-              <Feather name="plus" size={13} color="#A3A3A3" />
-              <Text className="text-[12px] font-medium text-neutral-400">Add category</Text>
-            </Pressable>
-          )}
-        </View>
-
-        <View className="h-32" />
-      </ScrollView>
-
-      {/* Continue */}
-      <View className="px-6 pb-10 pt-4 bg-neutral-50">
-        <Pressable
-          onPress={onNext}
-          className="py-4 rounded-2xl items-center bg-black"
-          style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-        >
-          <Text className="text-white font-bold text-[16px]">Continue</Text>
-        </Pressable>
-      </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
