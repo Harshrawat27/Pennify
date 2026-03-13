@@ -9,10 +9,13 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 function SkeletonBox({
@@ -101,6 +104,9 @@ export default function HomeScreen() {
 
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showEditBalance, setShowEditBalance] = useState(false);
+  const [balanceInput, setBalanceInput] = useState('');
+  const [isSavingBalance, setIsSavingBalance] = useState(false);
 
   const notifications = useQuery(
     api.notifications.getNotifications,
@@ -108,6 +114,7 @@ export default function HomeScreen() {
   );
   const hasAlerts = (notifications?.length ?? 0) > 0;
   const updateHideBalance = useMutation(api.preferences.updateHideBalance);
+  const updateBalance = useMutation(api.preferences.updateBalance);
   // Local state for instant toggle feedback; syncs from DB on first load
   const [localHidden, setLocalHidden] = useState<boolean | null>(null);
   useEffect(() => {
@@ -116,6 +123,20 @@ export default function HomeScreen() {
     }
   }, [prefs, localHidden]);
   const isHidden = localHidden ?? prefs?.hideBalance ?? false;
+
+  async function handleSaveBalance() {
+    if (!userId) return;
+    const desired = parseFloat(balanceInput);
+    if (isNaN(desired)) return;
+    setIsSavingBalance(true);
+    try {
+      await updateBalance({ userId, desiredBalance: desired });
+      setShowEditBalance(false);
+      setBalanceInput('');
+    } finally {
+      setIsSavingBalance(false);
+    }
+  }
 
   function toggleHideBalance() {
     if (!userId) return;
@@ -197,19 +218,30 @@ export default function HomeScreen() {
 
           {/* Balance */}
           <View className='items-center pt-10 pb-16'>
-            <Pressable
-              onPress={toggleHideBalance}
-              className='flex-row items-center gap-2'
-            >
-              <Text className='text-neutral-500 text-[14px] tracking-widest uppercase'>
-                Current Balance
-              </Text>
-              <Feather
-                name={isHidden ? 'eye-off' : 'eye'}
-                size={14}
-                color='#737373'
-              />
-            </Pressable>
+            <View className='flex-row items-center gap-2'>
+              <Pressable
+                onPress={toggleHideBalance}
+                className='flex-row items-center gap-2'
+              >
+                <Text className='text-neutral-500 text-[14px] tracking-widest uppercase'>
+                  Current Balance
+                </Text>
+                <Feather
+                  name={isHidden ? 'eye-off' : 'eye'}
+                  size={14}
+                  color='#737373'
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setBalanceInput(totalBalance !== undefined ? String(Math.round(totalBalance)) : '');
+                  setShowEditBalance(true);
+                }}
+                className='w-6 h-6 rounded-full bg-white/15 items-center justify-center'
+              >
+                <Feather name='edit-2' size={11} color='#737373' />
+              </Pressable>
+            </View>
             <View className='mt-2'>
               {totalBalance === undefined ? (
                 <SkeletonBox width={200} height={52} borderRadius={12} dark />
@@ -512,6 +544,71 @@ export default function HomeScreen() {
           <View className='h-32' />
         </View>
       </ScrollView>
+
+      {/* Edit Balance Modal */}
+      <Modal
+        visible={showEditBalance}
+        animationType='slide'
+        presentationStyle='pageSheet'
+        onRequestClose={() => setShowEditBalance(false)}
+      >
+        <KeyboardAvoidingView
+          className='flex-1 bg-neutral-50'
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View className='items-center pt-3 pb-1'>
+            <View className='w-10 h-1 rounded-full bg-neutral-200' />
+          </View>
+          <View className='px-6 pt-4 pb-4 flex-row justify-between items-center'>
+            <Text className='text-[20px] font-bold text-black'>Edit Balance</Text>
+            <Pressable
+              onPress={() => setShowEditBalance(false)}
+              className='w-9 h-9 rounded-full bg-neutral-100 items-center justify-center'
+            >
+              <Feather name='x' size={18} color='#000' />
+            </Pressable>
+          </View>
+
+          <View className='mx-6 mt-2 bg-white rounded-2xl p-5'>
+            <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+              What should your balance show?
+            </Text>
+            <View className='flex-row items-center'>
+              <Text className='text-[32px] font-bold text-black mr-1'>
+                {currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency}
+              </Text>
+              <TextInput
+                value={balanceInput}
+                onChangeText={setBalanceInput}
+                placeholder='0'
+                placeholderTextColor='#D4D4D4'
+                keyboardType='decimal-pad'
+                className='flex-1 text-[32px] font-bold text-black'
+                autoFocus
+              />
+            </View>
+          </View>
+
+          <View className='mx-6 mt-3 bg-neutral-100 rounded-2xl px-4 py-3 flex-row items-start gap-2'>
+            <Feather name='info' size={13} color='#A3A3A3' style={{ marginTop: 2 }} />
+            <Text className='flex-1 text-[12px] text-neutral-400 leading-relaxed'>
+              This sets what your balance displays as right now. Your existing transactions stay untouched — we'll adjust the offset automatically.
+            </Text>
+          </View>
+
+          <View className='mx-6 mt-6'>
+            <Pressable
+              onPress={handleSaveBalance}
+              disabled={isSavingBalance || !balanceInput}
+              className={`py-4 rounded-2xl items-center ${balanceInput && !isSavingBalance ? 'bg-black' : 'bg-neutral-300'}`}
+            >
+              <Text className='text-white font-bold text-[16px]'>
+                {isSavingBalance ? 'Saving...' : 'Update Balance'}
+              </Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Notifications bottom sheet */}
       <Modal
