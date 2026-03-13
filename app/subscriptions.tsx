@@ -536,7 +536,7 @@ export default function SubscriptionsScreen() {
                 (categories ?? [])
                   .filter((c) => c.type === 'expense')
                   .reduce((groups: Record<string, any[]>, cat) => {
-                    const key = cat.parentCategory ?? 'Other';
+                    const key = (cat as any).parentCategoryName ?? 'Other';
                     if (!groups[key]) groups[key] = [];
                     groups[key].push(cat);
                     return groups;

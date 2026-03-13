@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ACCOUNTS_KEY = 'pennify_accounts_cache';
 const CATEGORIES_KEY = 'pennify_categories_cache';
+const PARENT_CATEGORIES_KEY = 'pennify_parent_categories_cache';
 const RULES_KEY = 'pennify_rules_cache';
 
 export interface CachedRule {
@@ -22,11 +23,24 @@ export interface CachedAccount {
   isActive?: boolean;
 }
 
+export interface CachedParentCategory {
+  _id: string;
+  name: string;
+  icon: string;
+  color: string;
+  isDefault?: boolean;
+}
+
 export interface CachedCategory {
   _id: string;
   name: string;
   icon: string;
+  color: string;
   type: string; // 'expense' | 'income'
+  parentCategoryId?: string;
+  parentCategoryName?: string;
+  parentCategoryColor?: string;
+  isDefault?: boolean;
 }
 
 export async function getCachedAccounts(): Promise<CachedAccount[]> {
@@ -56,6 +70,21 @@ export async function getCachedCategories(): Promise<CachedCategory[]> {
 export async function setCachedCategories(categories: CachedCategory[]): Promise<void> {
   try {
     await AsyncStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+  } catch {}
+}
+
+export async function getCachedParentCategories(): Promise<CachedParentCategory[]> {
+  try {
+    const raw = await AsyncStorage.getItem(PARENT_CATEGORIES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function setCachedParentCategories(categories: CachedParentCategory[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(PARENT_CATEGORIES_KEY, JSON.stringify(categories));
   } catch {}
 }
 

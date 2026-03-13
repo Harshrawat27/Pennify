@@ -9,7 +9,7 @@ import { useQuery } from 'convex/react';
 import { useEffect, useState } from 'react';
 
 /**
- * Returns all categories.
+ * Returns all categories enriched with parent info.
  * - Reads from AsyncStorage cache immediately (zero latency on subsequent opens)
  * - Convex query runs in background and writes through to cache when resolved
  */

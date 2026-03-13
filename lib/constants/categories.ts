@@ -7,6 +7,25 @@ export interface DefaultCategory {
   parentCategory: string;
 }
 
+export interface DefaultParentCategory {
+  name: string;
+  icon: FeatherIcon;
+  color: string;
+}
+
+export const DEFAULT_PARENT_CATEGORIES: DefaultParentCategory[] = [
+  { name: 'Food & Drink', icon: 'coffee', color: '#F97316' },
+  { name: 'Transport', icon: 'navigation', color: '#3B82F6' },
+  { name: 'Shopping', icon: 'shopping-bag', color: '#8B5CF6' },
+  { name: 'Bills & Utilities', icon: 'home', color: '#CA8A04' },
+  { name: 'Health & Wellness', icon: 'activity', color: '#16A34A' },
+  { name: 'Entertainment', icon: 'film', color: '#DB2777' },
+  { name: 'Personal Care', icon: 'scissors', color: '#E11D48' },
+  { name: 'Education', icon: 'book-open', color: '#4F46E5' },
+  { name: 'Travel', icon: 'send', color: '#0D9488' },
+  { name: 'Other', icon: 'more-horizontal', color: '#6B7280' },
+];
+
 export const PARENT_CATEGORY_COLORS: Record<string, string> = {
   'Food & Drink': '#F97316',
   Transport: '#3B82F6',

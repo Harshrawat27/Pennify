@@ -322,7 +322,7 @@ export default function TransactionDetailScreen() {
               <View className='px-6 pt-4 pb-16'>
                 {Object.entries(
                   filteredCategories.reduce((groups: Record<string, typeof filteredCategories>, cat) => {
-                    const key = cat.parentCategory ?? 'Other';
+                    const key = (cat as any).parentCategoryName ?? 'Other';
                     if (!groups[key]) groups[key] = [];
                     groups[key].push(cat);
                     return groups;

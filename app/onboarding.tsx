@@ -109,7 +109,9 @@ export default function OnboardingScreen() {
             ? { month: currentMonth(), budget: state.monthlyBudget }
             : undefined,
         smartRules: state.smartRules.length > 0 ? state.smartRules : undefined,
-        categoryBudgets: state.categoryBudgets.length > 0 ? state.categoryBudgets : undefined,
+        categoryBudgets: state.categoryBudgets.length > 0
+          ? state.categoryBudgets.map((b) => ({ parentCategoryName: b.parentCategoryName, limitAmount: b.limitAmount }))
+          : undefined,
       });
 
       // Fire-and-forget AI categorization for each recurring payment

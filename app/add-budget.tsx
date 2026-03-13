@@ -2,33 +2,35 @@ import { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useQuery, useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { getCurrencySymbol } from '@/lib/utils/currency';
+import { useCachedParentCategories } from '@/lib/hooks/useCachedParentCategories';
+import type { FeatherIcon } from '@/lib/models/types';
 
 export default function AddBudgetScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id ?? '';
 
-  const categories = useQuery(api.categories.listByType, userId ? { userId, type: 'expense' } : 'skip');
+  const parentCategories = useCachedParentCategories();
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
   const createBudget = useMutation(api.budgets.create);
 
   const currency = prefs?.currency ?? 'INR';
 
   const [limit, setLimit] = useState('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedParentId, setSelectedParentId] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const effectiveCategoryId =
-    selectedCategoryId && (categories ?? []).find((c) => c._id === selectedCategoryId)
-      ? selectedCategoryId
-      : (categories ?? [])[0]?._id ?? '';
+  const effectiveParentId =
+    selectedParentId && parentCategories.find((p) => p._id === selectedParentId)
+      ? selectedParentId
+      : parentCategories[0]?._id ?? '';
 
   const handleSave = async () => {
     const numLimit = parseFloat(limit);
-    if (isNaN(numLimit) || numLimit <= 0 || !effectiveCategoryId) return;
+    if (isNaN(numLimit) || numLimit <= 0 || !effectiveParentId) return;
 
     setIsSaving(true);
     try {
@@ -36,7 +38,7 @@ export default function AddBudgetScreen() {
       const currentMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       await createBudget({
         userId,
-        categoryId: effectiveCategoryId,
+        parentCategoryId: effectiveParentId as any,
         limitAmount: numLimit,
         month: currentMonth,
       });
@@ -79,36 +81,34 @@ export default function AddBudgetScreen() {
               placeholderTextColor="#D4D4D4"
               keyboardType="decimal-pad"
               className="flex-1 text-[32px] font-bold text-black"
+              autoFocus
             />
           </View>
         </View>
 
-        {/* Category Picker */}
+        {/* Category Group Picker */}
         <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
-          <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Category</Text>
+          <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Category Group</Text>
           <View className="flex-row flex-wrap gap-2">
-            {(categories ?? []).map((cat) => (
-              <Pressable
-                key={cat._id}
-                onPress={() => setSelectedCategoryId(cat._id)}
-                className={`flex-row items-center gap-2 px-4 py-2.5 rounded-xl ${
-                  effectiveCategoryId === cat._id ? 'bg-black' : 'bg-neutral-100'
-                }`}
-              >
-                <Feather
-                  name={cat.icon as any}
-                  size={14}
-                  color={effectiveCategoryId === cat._id ? '#fff' : '#000'}
-                />
-                <Text
-                  className={`text-[13px] font-medium ${
-                    effectiveCategoryId === cat._id ? 'text-white' : 'text-black'
-                  }`}
+            {parentCategories.map((parent) => {
+              const selected = effectiveParentId === parent._id;
+              return (
+                <Pressable
+                  key={parent._id}
+                  onPress={() => setSelectedParentId(parent._id)}
+                  className={`flex-row items-center gap-2 px-3 py-2.5 rounded-xl ${selected ? 'bg-black' : 'bg-neutral-100'}`}
                 >
-                  {cat.name}
-                </Text>
-              </Pressable>
-            ))}
+                  <Feather
+                    name={parent.icon as FeatherIcon}
+                    size={13}
+                    color={selected ? '#fff' : parent.color}
+                  />
+                  <Text className={`text-[13px] font-medium ${selected ? 'text-white' : 'text-black'}`}>
+                    {parent.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 

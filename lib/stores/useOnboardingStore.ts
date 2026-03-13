@@ -53,8 +53,8 @@ interface OnboardingState {
   dailyReminder: boolean;
   weeklyReport: boolean;
 
-  // Screen 5 (new) - Category Budgets
-  categoryBudgets: { categoryName: string; limitAmount: number }[];
+  // Screen 5 (new) - Category Budgets (keyed by parent category name)
+  categoryBudgets: { parentCategoryName: string; limitAmount: number }[];
 
   // Screen 8 (new) - Smart Rules
   smartRules: { keyword: string; categoryName: string; categoryIcon: string; categoryColor: string }[];
@@ -71,7 +71,7 @@ interface OnboardingState {
   setNotificationsEnabled: (enabled: boolean) => void;
   setDailyReminder: (enabled: boolean) => void;
   setWeeklyReport: (enabled: boolean) => void;
-  setCategoryBudgets: (budgets: { categoryName: string; limitAmount: number }[]) => void;
+  setCategoryBudgets: (budgets: { parentCategoryName: string; limitAmount: number }[]) => void;
   setSmartRules: (rules: { keyword: string; categoryName: string; categoryIcon: string; categoryColor: string }[]) => void;
   reset: () => void;
 }
@@ -88,7 +88,7 @@ const initialState = {
   notificationsEnabled: true,
   dailyReminder: true,
   weeklyReport: false,
-  categoryBudgets: [] as { categoryName: string; limitAmount: number }[],
+  categoryBudgets: [] as { parentCategoryName: string; limitAmount: number }[],
   smartRules: [] as { keyword: string; categoryName: string; categoryIcon: string; categoryColor: string }[],
 };
 

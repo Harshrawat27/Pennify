@@ -151,22 +151,25 @@ export default function PlanScreen() {
               const isOver = b.spent > b.limitAmount;
               const isWarning = !isOver && pct >= 80;
               const barColor = isOver ? '#EF4444' : isWarning ? '#F97316' : '#000';
-              const hasLastMonth = b.lastMonthSpent > 0;
+              const hasLastMonth = (b as any).lastMonthSpent > 0;
               const delta = hasLastMonth
-                ? Math.round(((b.spent - b.lastMonthSpent) / b.lastMonthSpent) * 100)
+                ? Math.round(((b.spent - (b as any).lastMonthSpent) / (b as any).lastMonthSpent) * 100)
                 : null;
+              const parentColor = (b as any).parentColor ?? '#6B7280';
+              const parentIcon = (b as any).parentIcon ?? 'tag';
+              const parentName = (b as any).parentName ?? 'Unknown';
 
               return (
                 <View key={b._id} className='bg-white rounded-2xl p-4 mb-3'>
                   <View className='flex-row items-center gap-3 mb-3'>
                     <View
                       className='w-10 h-10 rounded-xl items-center justify-center'
-                      style={{ backgroundColor: `${b.categoryColor}18` }}
+                      style={{ backgroundColor: `${parentColor}18` }}
                     >
-                      <Feather name={b.categoryIcon as any} size={16} color={b.categoryColor} />
+                      <Feather name={parentIcon as any} size={16} color={parentColor} />
                     </View>
                     <View className='flex-1'>
-                      <Text className='text-[14px] font-semibold text-black'>{b.categoryName}</Text>
+                      <Text className='text-[14px] font-semibold text-black'>{parentName}</Text>
                       {delta !== null && (
                         <View className='flex-row items-center gap-1 mt-0.5'>
                           <Feather
@@ -215,7 +218,7 @@ export default function PlanScreen() {
             <Text className='text-[17px] font-bold text-black mb-3'>This Month</Text>
             <View className='bg-white rounded-2xl px-4'>
               {spendingInsights.map((s, i) => {
-                const budgeted = (budgets ?? []).some((b) => b.categoryId === s.categoryId);
+                const budgeted = false; // budgets are at parent level — tracked separately
                 const hasLast = s.lastMonth > 0;
                 const delta = hasLast
                   ? Math.round(((s.thisMonth - s.lastMonth) / s.lastMonth) * 100)

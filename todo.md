@@ -72,3 +72,5 @@ policy/ToS URLs — and your chances of first-attempt approval are high. The app
 is solid.
 
 based on pricing model update privacy and terms
+
+------##### give a way to edit overall balance#####------------

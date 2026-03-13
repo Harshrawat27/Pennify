@@ -102,7 +102,7 @@ function getCurrentWeekRange() {
 
 export default function ReportScreen() {
   const [period, setPeriod] = useState(1); // 0=Week 1=Month 2=Year
-  const [selectedParent, setSelectedParent] = useState<{ name: string; color: string; amount: number; startDate: string; endDate: string } | null>(null);
+  const [selectedParent, setSelectedParent] = useState<{ id: string; name: string; icon: string; color: string; amount: number; startDate: string; endDate: string } | null>(null);
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
@@ -169,7 +169,7 @@ export default function ReportScreen() {
   const subCats = useQuery(
     api.transactions.getSubCategoryBreakdown,
     userId && selectedParent
-      ? { userId, startDate: selectedParent.startDate, endDate: selectedParent.endDate, parentCategory: selectedParent.name }
+      ? { userId, startDate: selectedParent.startDate, endDate: selectedParent.endDate, parentCategoryId: selectedParent.id as any }
       : 'skip'
   );
 
@@ -267,7 +267,7 @@ export default function ReportScreen() {
         cats.map((cat) => (
           <Pressable
             key={cat.name}
-            onPress={() => setSelectedParent({ ...cat, startDate, endDate })}
+            onPress={() => setSelectedParent({ id: (cat as any).id ?? cat.name, ...cat, startDate, endDate })}
             className='bg-white rounded-2xl p-4 mb-3 flex-row items-center'
           >
             <View
@@ -275,7 +275,7 @@ export default function ReportScreen() {
               style={{ backgroundColor: `${cat.color}18` }}
             >
               <Feather
-                name={(PARENT_CATEGORY_ICONS[cat.name] ?? 'tag') as any}
+                name={((cat as any).icon ?? PARENT_CATEGORY_ICONS[cat.name] ?? 'tag') as any}
                 size={18}
                 color={cat.color}
               />

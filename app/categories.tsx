@@ -1,10 +1,6 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
-import {
-  DEFAULT_EXPENSE_CATEGORIES,
-  PARENT_CATEGORIES,
-  PARENT_CATEGORY_COLORS,
-} from '@/lib/constants/categories';
+import { useCachedParentCategories } from '@/lib/hooks/useCachedParentCategories';
 import type { FeatherIcon } from '@/lib/models/types';
 import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
@@ -30,32 +26,32 @@ export default function CategoriesScreen() {
   );
   const createCategory = useMutation(api.categories.create);
   const removeCategory = useMutation(api.categories.remove);
+  const parentCategoriesFromHook = useCachedParentCategories();
 
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
-  const [parentCategory, setParentCategory] = useState<string | null>(null);
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const customCategories = categories?.filter((c) => !c.isDefault) ?? [];
+  const customCategories = (categories ?? []).filter((c) => !c.isDefault);
 
   const handleAdd = async () => {
     const trimmed = newName.trim();
     if (!userId || !trimmed || isSaving) return;
     setIsSaving(true);
     try {
-      const color = parentCategory
-        ? PARENT_CATEGORY_COLORS[parentCategory]
-        : '#6B7280';
+      const parent = parentCategoriesFromHook.find((p) => p._id === selectedParentId);
+      const color = parent?.color ?? '#6B7280';
       await createCategory({
         userId,
         name: trimmed,
         icon: 'tag',
         type: 'expense',
         color,
-        parentCategory: parentCategory ?? undefined,
+        parentCategoryId: selectedParentId ? (selectedParentId as any) : undefined,
       });
       setNewName('');
-      setParentCategory(null);
+      setSelectedParentId(null);
       setShowAdd(false);
     } finally {
       setIsSaving(false);
@@ -100,36 +96,30 @@ export default function CategoriesScreen() {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Categories grouped by parent — defaults + custom inline */}
-          {PARENT_CATEGORIES.map((parent) => {
-            const defaultCats = DEFAULT_EXPENSE_CATEGORIES.filter(
-              (c) => c.parentCategory === parent
+          {/* Categories grouped by parent from DB */}
+          {parentCategoriesFromHook.map((parent) => {
+            const subCats = (categories ?? []).filter(
+              (c) => (c as any).parentCategoryId === parent._id
             );
-            const customInGroup = customCategories.filter(
-              (c) => c.parentCategory === parent
-            );
-            const color = PARENT_CATEGORY_COLORS[parent];
-            const allCats = [
-              ...defaultCats.map((c) => ({ ...c, isCustom: false })),
-              ...customInGroup.map((c) => ({ ...c, isCustom: true })),
-            ];
+            if (subCats.length === 0) return null;
+            const color = parent.color;
             return (
-              <View key={parent} className='mx-6 mb-4'>
+              <View key={parent._id} className='mx-6 mb-4'>
                 <View className='flex-row items-center gap-2 mb-2 ml-1'>
                   <View
                     className='w-2 h-2 rounded-full'
                     style={{ backgroundColor: color }}
                   />
                   <Text className='text-[11px] font-semibold text-neutral-400 uppercase tracking-wider'>
-                    {parent}
+                    {parent.name}
                   </Text>
                 </View>
                 <View className='bg-white rounded-2xl px-4'>
-                  {allCats.map((cat, i) => (
+                  {subCats.map((cat, i) => (
                     <View
-                      key={cat.name}
+                      key={cat._id}
                       className={`flex-row items-center py-3 ${
-                        i < allCats.length - 1
+                        i < subCats.length - 1
                           ? 'border-b border-neutral-100'
                           : ''
                       }`}
@@ -147,7 +137,7 @@ export default function CategoriesScreen() {
                       <Text className='flex-1 text-[14px] font-medium text-black ml-3'>
                         {cat.name}
                       </Text>
-                      {cat.isCustom ? (
+                      {!cat.isDefault ? (
                         <View className='flex-row items-center gap-2'>
                           <View className='bg-black px-2.5 py-1 rounded-full'>
                             <Text className='text-[10px] text-white font-medium'>
@@ -155,9 +145,7 @@ export default function CategoriesScreen() {
                             </Text>
                           </View>
                           <Pressable
-                            onPress={() =>
-                              handleDelete((cat as any)._id, cat.name)
-                            }
+                            onPress={() => handleDelete(cat._id, cat.name)}
                             className='w-7 h-7 items-center justify-center'
                           >
                             <Feather name='trash-2' size={14} color='#EF4444' />
@@ -178,7 +166,7 @@ export default function CategoriesScreen() {
           })}
 
           {/* Standalone custom categories (no parent group) */}
-          {customCategories.filter((c) => !c.parentCategory).length > 0 && (
+          {(categories ?? []).filter((c) => !c.isDefault && !(c as any).parentCategoryId).length > 0 && (
             <View className='mx-6 mb-4'>
               <View className='flex-row items-center gap-2 mb-2 ml-1'>
                 <View className='w-2 h-2 rounded-full bg-neutral-400' />
@@ -187,8 +175,8 @@ export default function CategoriesScreen() {
                 </Text>
               </View>
               <View className='bg-white rounded-2xl px-4'>
-                {customCategories
-                  .filter((c) => !c.parentCategory)
+                {(categories ?? [])
+                  .filter((c) => !c.isDefault && !(c as any).parentCategoryId)
                   .map((cat, i, arr) => (
                     <View
                       key={cat._id}
@@ -251,7 +239,7 @@ export default function CategoriesScreen() {
               onPress={() => {
                 setShowAdd(false);
                 setNewName('');
-                setParentCategory(null);
+                setSelectedParentId(null);
               }}
             >
               <Feather name='x' size={20} color='#000' />
@@ -306,27 +294,27 @@ export default function CategoriesScreen() {
             </View>
 
             <View className='flex-row flex-wrap gap-2 mb-8'>
-              {PARENT_CATEGORIES.map((parent) => {
-                const color = PARENT_CATEGORY_COLORS[parent];
-                const selected = parentCategory === parent;
+              {parentCategoriesFromHook.map((parent) => {
+                const selected = selectedParentId === parent._id;
                 return (
                   <Pressable
-                    key={parent}
-                    onPress={() => setParentCategory(selected ? null : parent)}
+                    key={parent._id}
+                    onPress={() => setSelectedParentId(selected ? null : parent._id)}
                     className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl ${
                       selected ? 'bg-black' : 'bg-white'
                     }`}
                   >
-                    <View
-                      className='w-2 h-2 rounded-full'
-                      style={{ backgroundColor: selected ? '#fff' : color }}
+                    <Feather
+                      name={parent.icon as FeatherIcon}
+                      size={11}
+                      color={selected ? '#fff' : parent.color}
                     />
                     <Text
                       className={`text-[12px] font-medium ${
                         selected ? 'text-white' : 'text-black'
                       }`}
                     >
-                      {parent}
+                      {parent.name}
                     </Text>
                   </Pressable>
                 );
