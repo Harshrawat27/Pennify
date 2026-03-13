@@ -16,6 +16,7 @@
 
 6. fix UI while adding category, adding rules hard to add because of UI
 7. user adding category is not going to category why? in DB it's correct?
+8. during onboarding whne user press on netflix cursor should go to amount not to edit netflix
 
 // APPROVAL
 

@@ -264,54 +264,75 @@ export default function ReportScreen() {
           <Text className='text-neutral-400 text-[13px]'>No spending data</Text>
         </View>
       ) : (
-        cats.map((cat) => (
-          <Pressable
-            key={cat.name}
-            onPress={() => setSelectedParent({ id: (cat as any).id ?? cat.name, ...cat, startDate, endDate })}
-            className='bg-white rounded-2xl p-4 mb-3 flex-row items-center'
-          >
-            <View
-              className='w-11 h-11 rounded-2xl items-center justify-center mr-3'
-              style={{ backgroundColor: `${cat.color}18` }}
+        cats.map((cat) => {
+          const lastAmount = (cat as any).lastAmount ?? 0;
+          const delta = lastAmount > 0
+            ? Math.round(((cat.amount - lastAmount) / lastAmount) * 100)
+            : null;
+          return (
+            <Pressable
+              key={cat.name}
+              onPress={() => setSelectedParent({ id: (cat as any).id ?? cat.name, ...cat, startDate, endDate })}
+              className='bg-white rounded-2xl p-4 mb-3 flex-row items-center'
             >
-              <Feather
-                name={((cat as any).icon ?? PARENT_CATEGORY_ICONS[cat.name] ?? 'tag') as any}
-                size={18}
-                color={cat.color}
-              />
-            </View>
-            <View className='flex-1'>
-              <View className='flex-row justify-between items-center mb-1.5'>
-                <Text className='text-[14px] font-semibold text-black'>
-                  {cat.name}
-                </Text>
-                <View className='flex-row items-center gap-1.5'>
-                  <Text className='text-[14px] font-bold text-black'>
-                    {formatCurrency(cat.amount, currency)}
+              <View
+                className='w-11 h-11 rounded-2xl items-center justify-center mr-3'
+                style={{ backgroundColor: `${cat.color}18` }}
+              >
+                <Feather
+                  name={((cat as any).icon ?? PARENT_CATEGORY_ICONS[cat.name] ?? 'tag') as any}
+                  size={18}
+                  color={cat.color}
+                />
+              </View>
+              <View className='flex-1'>
+                <View className='flex-row justify-between items-center mb-1'>
+                  <Text className='text-[14px] font-semibold text-black'>
+                    {cat.name}
                   </Text>
-                  <Feather name='chevron-right' size={14} color='#D4D4D4' />
+                  <View className='flex-row items-center gap-1.5'>
+                    <Text className='text-[14px] font-bold text-black'>
+                      {formatCurrency(cat.amount, currency)}
+                    </Text>
+                    <Feather name='chevron-right' size={14} color='#D4D4D4' />
+                  </View>
                 </View>
-              </View>
-              <View className='flex-row items-center gap-2'>
-                <View
-                  className='flex-1 h-1.5 rounded-full'
-                  style={{ backgroundColor: `${cat.color}22` }}
-                >
+                {delta !== null && (
+                  <View className='flex-row items-center gap-1 mb-1.5'>
+                    <Feather
+                      name={delta > 0 ? 'arrow-up' : 'arrow-down'}
+                      size={10}
+                      color={delta > 0 ? '#EF4444' : '#16A34A'}
+                    />
+                    <Text
+                      className='text-[11px] font-medium'
+                      style={{ color: delta > 0 ? '#EF4444' : '#16A34A' }}
+                    >
+                      {Math.abs(delta)}% vs last period
+                    </Text>
+                  </View>
+                )}
+                <View className='flex-row items-center gap-2'>
                   <View
-                    className='h-1.5 rounded-full'
-                    style={{
-                      width: `${cat.percent}%`,
-                      backgroundColor: cat.color,
-                    }}
-                  />
+                    className='flex-1 h-1.5 rounded-full'
+                    style={{ backgroundColor: `${cat.color}22` }}
+                  >
+                    <View
+                      className='h-1.5 rounded-full'
+                      style={{
+                        width: `${cat.percent}%`,
+                        backgroundColor: cat.color,
+                      }}
+                    />
+                  </View>
+                  <Text className='text-[11px] text-neutral-400 w-8 text-right'>
+                    {cat.percent}%
+                  </Text>
                 </View>
-                <Text className='text-[11px] text-neutral-400 w-8 text-right'>
-                  {cat.percent}%
-                </Text>
               </View>
-            </View>
-          </Pressable>
-        ))
+            </Pressable>
+          );
+        })
       )}
     </>
   );
@@ -746,7 +767,7 @@ export default function ReportScreen() {
               style={{ backgroundColor: `${selectedParent.color}18` }}
             >
               <Feather
-                name={(PARENT_CATEGORY_ICONS[selectedParent.name] ?? 'tag') as any}
+                name={(selectedParent.icon ?? PARENT_CATEGORY_ICONS[selectedParent.name] ?? 'tag') as any}
                 size={18}
                 color={selectedParent.color}
               />
@@ -783,31 +804,54 @@ export default function ReportScreen() {
                 <Text className='text-neutral-400 text-[13px] mt-3'>No sub-categories found</Text>
               </View>
             ) : (
-              subCats.map((sub, i) => (
-                <View key={sub.name} className='bg-white rounded-2xl p-4 mb-3'>
-                  <View className='flex-row items-center gap-3 mb-3'>
-                    <View
-                      className='w-10 h-10 rounded-xl items-center justify-center'
-                      style={{ backgroundColor: `${sub.color}18` }}
-                    >
-                      <Feather name={sub.icon as any} size={16} color={sub.color} />
+              subCats.map((sub) => {
+                const subLastAmount = (sub as any).lastAmount ?? 0;
+                const subDelta = subLastAmount > 0
+                  ? Math.round(((sub.amount - subLastAmount) / subLastAmount) * 100)
+                  : null;
+                return (
+                  <View key={sub.name} className='bg-white rounded-2xl p-4 mb-3'>
+                    <View className='flex-row items-center gap-3 mb-3'>
+                      <View
+                        className='w-10 h-10 rounded-xl items-center justify-center'
+                        style={{ backgroundColor: `${sub.color}18` }}
+                      >
+                        <Feather name={sub.icon as any} size={16} color={sub.color} />
+                      </View>
+                      <View className='flex-1'>
+                        <Text className='text-[14px] font-semibold text-black'>{sub.name}</Text>
+                        <View className='flex-row items-center gap-2 mt-0.5'>
+                          <Text className='text-[12px] text-neutral-400'>{sub.percent}% of {selectedParent.name}</Text>
+                          {subDelta !== null && (
+                            <View className='flex-row items-center gap-0.5'>
+                              <Feather
+                                name={subDelta > 0 ? 'arrow-up' : 'arrow-down'}
+                                size={9}
+                                color={subDelta > 0 ? '#EF4444' : '#16A34A'}
+                              />
+                              <Text
+                                className='text-[11px] font-medium'
+                                style={{ color: subDelta > 0 ? '#EF4444' : '#16A34A' }}
+                              >
+                                {Math.abs(subDelta)}%
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                      <Text className='text-[15px] font-bold text-black'>
+                        {formatCurrency(sub.amount, currency)}
+                      </Text>
                     </View>
-                    <View className='flex-1'>
-                      <Text className='text-[14px] font-semibold text-black'>{sub.name}</Text>
-                      <Text className='text-[12px] text-neutral-400'>{sub.percent}% of {selectedParent.name}</Text>
+                    <View className='h-1.5 rounded-full' style={{ backgroundColor: `${sub.color}22` }}>
+                      <View
+                        className='h-1.5 rounded-full'
+                        style={{ width: `${sub.percent}%`, backgroundColor: sub.color }}
+                      />
                     </View>
-                    <Text className='text-[15px] font-bold text-black'>
-                      {formatCurrency(sub.amount, currency)}
-                    </Text>
                   </View>
-                  <View className='h-1.5 rounded-full' style={{ backgroundColor: `${sub.color}22` }}>
-                    <View
-                      className='h-1.5 rounded-full'
-                      style={{ width: `${sub.percent}%`, backgroundColor: sub.color }}
-                    />
-                  </View>
-                </View>
-              ))
+                );
+              })
             )}
           </ScrollView>
         </View>

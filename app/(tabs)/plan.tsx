@@ -36,7 +36,6 @@ export default function PlanScreen() {
   const goals = useQuery(api.goals.list, userId ? { userId } : 'skip');
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
   const budgets = useQuery(api.budgets.listByMonthWithComparison, userId ? { userId, month } : 'skip');
-  const spendingInsights = useQuery(api.transactions.getCategorySpendingInsights, userId ? { userId, month } : 'skip');
   const contributions = useQuery(
     api.goals.listContributions,
     historyGoalId ? { goalId: historyGoalId as any } : 'skip',
@@ -211,63 +210,6 @@ export default function PlanScreen() {
             })
           )}
         </View>
-
-        {/* ── SPENDING INSIGHTS SECTION ── */}
-        {spendingInsights && spendingInsights.length > 0 && (
-          <View className='px-6 mt-6'>
-            <Text className='text-[17px] font-bold text-black mb-3'>This Month</Text>
-            <View className='bg-white rounded-2xl px-4'>
-              {spendingInsights.map((s, i) => {
-                const budgeted = false; // budgets are at parent level — tracked separately
-                const hasLast = s.lastMonth > 0;
-                const delta = hasLast
-                  ? Math.round(((s.thisMonth - s.lastMonth) / s.lastMonth) * 100)
-                  : null;
-                return (
-                  <View
-                    key={s.categoryId}
-                    className={`flex-row items-center py-3.5 ${i < spendingInsights.length - 1 ? 'border-b border-neutral-100' : ''}`}
-                  >
-                    <View
-                      className='w-9 h-9 rounded-xl items-center justify-center mr-3'
-                      style={{ backgroundColor: `${s.categoryColor}18` }}
-                    >
-                      <Feather name={s.categoryIcon as any} size={15} color={s.categoryColor} />
-                    </View>
-                    <View className='flex-1'>
-                      <Text className='text-[14px] font-medium text-black'>{s.categoryName}</Text>
-                      {delta !== null && (
-                        <View className='flex-row items-center gap-1 mt-0.5'>
-                          <Feather
-                            name={delta > 0 ? 'arrow-up' : 'arrow-down'}
-                            size={10}
-                            color={delta > 0 ? '#EF4444' : '#16A34A'}
-                          />
-                          <Text
-                            className='text-[11px]'
-                            style={{ color: delta > 0 ? '#EF4444' : '#16A34A' }}
-                          >
-                            {Math.abs(delta)}% vs last month
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                    <View className='items-end gap-1'>
-                      <Text className='text-[14px] font-semibold text-black'>
-                        {formatCurrencyCompact(s.thisMonth, currency)}
-                      </Text>
-                      {!budgeted && (
-                        <Pressable onPress={() => router.push('/add-budget')}>
-                          <Text className='text-[11px] text-neutral-400 underline'>Set limit</Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        )}
 
         {/* ── GOALS SECTION ── */}
         <View className='px-6 mt-6 flex-row justify-between items-center mb-2'>
