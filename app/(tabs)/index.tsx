@@ -7,7 +7,6 @@ import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Circle, Svg } from 'react-native-svg';
 import {
   Animated,
   KeyboardAvoidingView,
@@ -19,6 +18,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Circle, Svg } from 'react-native-svg';
 function SkeletonBox({
   width,
   height,
@@ -239,7 +239,11 @@ export default function HomeScreen() {
               </Pressable>
               <Pressable
                 onPress={() => {
-                  setBalanceInput(totalBalance !== undefined ? String(Math.round(totalBalance)) : '');
+                  setBalanceInput(
+                    totalBalance !== undefined
+                      ? String(Math.round(totalBalance))
+                      : ''
+                  );
                   setShowEditBalance(true);
                 }}
                 className='w-6 h-6 rounded-full bg-white/15 items-center justify-center'
@@ -287,76 +291,85 @@ export default function HomeScreen() {
 
             <View className='flex-row gap-3 mt-5'>
               {/* Income Card */}
-              <View className='flex-1 bg-white rounded-2xl p-5 pb-5'>
-                <View className='w-11 h-11 rounded-2xl bg-neutral-100 items-center justify-center'>
+              <View className='flex-1 bg-white rounded-2xl p-5 pb-5 justify-center'>
+                <View className='w-11 h-11 rounded-2xl bg-neutral-100 items-center justify-center mb-4'>
                   <Feather name='arrow-up-right' size={20} color='#000' />
                 </View>
-                <View className='mt-8'>
-                  <View className='flex-row items-center gap-1.5 mb-1'>
-                    <Text className='text-neutral-400 text-[13px]'>Income</Text>
-                    <Feather name='info' size={11} color='#D4D4D4' />
-                  </View>
-                  {monthlyStats === undefined ? (
-                    <SkeletonBox width={90} height={26} borderRadius={6} />
-                  ) : (
-                    <Text className='text-black text-[22px] font-bold tracking-tight'>
-                      {formatCurrency(income, currency)}
-                    </Text>
-                  )}
+                <View className='flex-row items-center gap-1.5 mb-1'>
+                  <Text className='text-neutral-400 text-[13px]'>Income</Text>
+                  <Feather name='info' size={11} color='#D4D4D4' />
                 </View>
+                {monthlyStats === undefined ? (
+                  <SkeletonBox width={90} height={26} borderRadius={6} />
+                ) : (
+                  <Text className='text-black text-[22px] font-bold tracking-tight'>
+                    {formatCurrency(income, currency)}
+                  </Text>
+                )}
               </View>
 
               {/* Expenses — floating circle, no card box */}
               <View className='flex-1 items-center justify-center'>
                 {monthlyStats === undefined ? (
                   <SkeletonBox width={130} height={130} borderRadius={65} />
-                ) : (() => {
-                  const RADIUS = 56;
-                  const STROKE = 7;
-                  const SIZE = (RADIUS + STROKE) * 2;
-                  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-                  const budget = monthlyBudgetData?.budget ?? 0;
-                  const denominator = budget > 0 ? budget : income > 0 ? income : 0;
-                  const pct = denominator > 0 ? Math.min(expenses / denominator, 1) : 0;
-                  const offset = CIRCUMFERENCE * (1 - pct);
-                  const pctLabel = denominator > 0 ? Math.round((expenses / denominator) * 100) : 0;
-                  return (
-                    <View style={{ width: SIZE, height: SIZE }}>
-                      <Svg width={SIZE} height={SIZE} style={{ transform: [{ rotate: '-90deg' }] }}>
-                        <Circle
-                          cx={SIZE / 2}
-                          cy={SIZE / 2}
-                          r={RADIUS}
-                          stroke='#E5E5E5'
-                          strokeWidth={STROKE}
-                          fill='none'
-                        />
-                        <Circle
-                          cx={SIZE / 2}
-                          cy={SIZE / 2}
-                          r={RADIUS}
-                          stroke='#000'
-                          strokeWidth={STROKE}
-                          fill='none'
-                          strokeDasharray={CIRCUMFERENCE}
-                          strokeDashoffset={offset}
-                          strokeLinecap='round'
-                        />
-                      </Svg>
-                      <View className='absolute inset-0 items-center justify-center gap-0.5'>
-                        <Text className='text-black text-[26px] font-bold tracking-tight leading-none'>
-                          {pctLabel}%
-                        </Text>
-                        <Text className='text-neutral-400 text-[10px] font-medium uppercase tracking-wide'>
-                          spent
-                        </Text>
-                        <Text className='text-black text-[12px] font-semibold mt-1'>
-                          {formatCurrency(expenses, currency)}
-                        </Text>
+                ) : (
+                  (() => {
+                    const RADIUS = 56;
+                    const STROKE = 7;
+                    const SIZE = (RADIUS + STROKE) * 2;
+                    const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+                    const budget = monthlyBudgetData?.budget ?? 0;
+                    const denominator =
+                      budget > 0 ? budget : income > 0 ? income : 0;
+                    const pct =
+                      denominator > 0 ? Math.min(expenses / denominator, 1) : 0;
+                    const offset = CIRCUMFERENCE * (1 - pct);
+                    const pctLabel =
+                      denominator > 0
+                        ? Math.round((expenses / denominator) * 100)
+                        : 0;
+                    return (
+                      <View style={{ width: SIZE, height: SIZE }}>
+                        <Svg
+                          width={SIZE}
+                          height={SIZE}
+                          style={{ transform: [{ rotate: '-90deg' }] }}
+                        >
+                          <Circle
+                            cx={SIZE / 2}
+                            cy={SIZE / 2}
+                            r={RADIUS}
+                            stroke='#E5E5E5'
+                            strokeWidth={STROKE}
+                            fill='none'
+                          />
+                          <Circle
+                            cx={SIZE / 2}
+                            cy={SIZE / 2}
+                            r={RADIUS}
+                            stroke='#000'
+                            strokeWidth={STROKE}
+                            fill='none'
+                            strokeDasharray={CIRCUMFERENCE}
+                            strokeDashoffset={offset}
+                            strokeLinecap='round'
+                          />
+                        </Svg>
+                        <View className='absolute inset-0 items-center justify-center gap-0.5'>
+                          <Text className='text-black text-[26px] font-bold tracking-tight leading-none'>
+                            {pctLabel}%
+                          </Text>
+                          <Text className='text-neutral-400 text-[10px] font-medium uppercase tracking-wide'>
+                            spent
+                          </Text>
+                          <Text className='text-black text-[12px] font-semibold mt-1'>
+                            {formatCurrency(expenses, currency)}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  );
-                })()}
+                    );
+                  })()
+                )}
               </View>
             </View>
           </View>
@@ -596,7 +609,9 @@ export default function HomeScreen() {
             <View className='w-10 h-1 rounded-full bg-neutral-200' />
           </View>
           <View className='px-6 pt-4 pb-4 flex-row justify-between items-center'>
-            <Text className='text-[20px] font-bold text-black'>Edit Balance</Text>
+            <Text className='text-[20px] font-bold text-black'>
+              Edit Balance
+            </Text>
             <Pressable
               onPress={() => setShowEditBalance(false)}
               className='w-9 h-9 rounded-full bg-neutral-100 items-center justify-center'
@@ -611,7 +626,13 @@ export default function HomeScreen() {
             </Text>
             <View className='flex-row items-center'>
               <Text className='text-[32px] font-bold text-black mr-1'>
-                {currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency}
+                {currency === 'INR'
+                  ? '₹'
+                  : currency === 'USD'
+                    ? '$'
+                    : currency === 'EUR'
+                      ? '€'
+                      : currency}
               </Text>
               <TextInput
                 value={balanceInput}
@@ -626,9 +647,16 @@ export default function HomeScreen() {
           </View>
 
           <View className='mx-6 mt-3 bg-neutral-100 rounded-2xl px-4 py-3 flex-row items-start gap-2'>
-            <Feather name='info' size={13} color='#A3A3A3' style={{ marginTop: 2 }} />
+            <Feather
+              name='info'
+              size={13}
+              color='#A3A3A3'
+              style={{ marginTop: 2 }}
+            />
             <Text className='flex-1 text-[12px] text-neutral-400 leading-relaxed'>
-              This sets what your balance displays as right now. Your existing transactions stay untouched — we'll adjust the offset automatically.
+              This sets what your balance displays as right now. Your existing
+              transactions stay untouched — we'll adjust the offset
+              automatically.
             </Text>
           </View>
 
@@ -658,7 +686,9 @@ export default function HomeScreen() {
             <View className='w-10 h-1 rounded-full bg-neutral-200' />
           </View>
           <View className='px-6 pt-4 pb-4 flex-row justify-between items-center'>
-            <Text className='text-[20px] font-bold text-black'>Notifications</Text>
+            <Text className='text-[20px] font-bold text-black'>
+              Notifications
+            </Text>
             <Pressable
               onPress={() => setShowNotifications(false)}
               className='w-9 h-9 rounded-full bg-neutral-100 items-center justify-center'
@@ -667,7 +697,10 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          <ScrollView className='flex-1' contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}>
+          <ScrollView
+            className='flex-1'
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
+          >
             {notifications === undefined ? (
               <View className='items-center py-12'>
                 <Feather name='loader' size={24} color='#D4D4D4' />
@@ -675,73 +708,113 @@ export default function HomeScreen() {
             ) : notifications.length === 0 ? (
               <View className='bg-white rounded-2xl p-10 items-center mt-2'>
                 <Feather name='check-circle' size={32} color='#D4D4D4' />
-                <Text className='text-neutral-400 text-[14px] font-medium mt-3'>You're all caught up!</Text>
-                <Text className='text-neutral-300 text-[12px] mt-1 text-center'>No upcoming payments or budget alerts</Text>
+                <Text className='text-neutral-400 text-[14px] font-medium mt-3'>
+                  You're all caught up!
+                </Text>
+                <Text className='text-neutral-300 text-[12px] mt-1 text-center'>
+                  No upcoming payments or budget alerts
+                </Text>
               </View>
             ) : (
               <>
                 {/* Budget alerts first */}
-                {notifications.filter(n => n.type === 'budget_80' || n.type === 'budget_100').map((n, i) => {
-                  if (n.type !== 'budget_80' && n.type !== 'budget_100') return null;
-                  const isOver = n.type === 'budget_100';
-                  return (
-                    <View key={`budget-${i}`} className='bg-white rounded-2xl p-4 mb-3 flex-row items-center gap-4'>
-                      <View className={`w-11 h-11 rounded-2xl items-center justify-center ${isOver ? 'bg-red-50' : 'bg-orange-50'}`}>
-                        <Feather name='alert-triangle' size={18} color={isOver ? '#EF4444' : '#F97316'} />
-                      </View>
-                      <View className='flex-1'>
-                        <Text className='text-[14px] font-bold text-black'>
-                          {isOver ? 'Budget Exceeded!' : 'Budget Alert — 80%'}
-                        </Text>
-                        <Text className='text-[12px] text-neutral-400 mt-0.5'>
-                          {isOver
-                            ? `You've spent ${n.percent}% of your monthly budget`
-                            : `You've used ${n.percent}% of your monthly budget`}
-                        </Text>
-                        <View className='h-1.5 bg-neutral-100 rounded-full mt-2'>
-                          <View
-                            className='h-1.5 rounded-full'
-                            style={{
-                              width: `${Math.min(n.percent, 100)}%`,
-                              backgroundColor: isOver ? '#EF4444' : '#F97316',
-                            }}
+                {notifications
+                  .filter(
+                    (n) => n.type === 'budget_80' || n.type === 'budget_100'
+                  )
+                  .map((n, i) => {
+                    if (n.type !== 'budget_80' && n.type !== 'budget_100')
+                      return null;
+                    const isOver = n.type === 'budget_100';
+                    return (
+                      <View
+                        key={`budget-${i}`}
+                        className='bg-white rounded-2xl p-4 mb-3 flex-row items-center gap-4'
+                      >
+                        <View
+                          className={`w-11 h-11 rounded-2xl items-center justify-center ${isOver ? 'bg-red-50' : 'bg-orange-50'}`}
+                        >
+                          <Feather
+                            name='alert-triangle'
+                            size={18}
+                            color={isOver ? '#EF4444' : '#F97316'}
                           />
                         </View>
+                        <View className='flex-1'>
+                          <Text className='text-[14px] font-bold text-black'>
+                            {isOver ? 'Budget Exceeded!' : 'Budget Alert — 80%'}
+                          </Text>
+                          <Text className='text-[12px] text-neutral-400 mt-0.5'>
+                            {isOver
+                              ? `You've spent ${n.percent}% of your monthly budget`
+                              : `You've used ${n.percent}% of your monthly budget`}
+                          </Text>
+                          <View className='h-1.5 bg-neutral-100 rounded-full mt-2'>
+                            <View
+                              className='h-1.5 rounded-full'
+                              style={{
+                                width: `${Math.min(n.percent, 100)}%`,
+                                backgroundColor: isOver ? '#EF4444' : '#F97316',
+                              }}
+                            />
+                          </View>
+                        </View>
                       </View>
-                    </View>
-                  );
-                })}
+                    );
+                  })}
 
                 {/* Recurring payment alerts */}
-                {notifications.filter(n => n.type === 'recurring_due').length > 0 && (
+                {notifications.filter((n) => n.type === 'recurring_due')
+                  .length > 0 && (
                   <Text className='text-[12px] text-neutral-400 font-semibold uppercase tracking-wider mb-2 mt-1'>
                     Upcoming Payments
                   </Text>
                 )}
-                {notifications.filter(n => n.type === 'recurring_due').map((n) => {
-                  if (n.type !== 'recurring_due') return null;
-                  const isToday = n.daysUntil === 0;
-                  const isTomorrow = n.daysUntil === 1;
-                  const label = isToday ? 'Due today' : isTomorrow ? 'Due tomorrow' : `Due in ${n.daysUntil} days`;
-                  return (
-                    <Pressable
-                      key={n.id}
-                      onPress={() => { setShowNotifications(false); router.push('/subscriptions'); }}
-                      className='bg-white rounded-2xl p-4 mb-3 flex-row items-center gap-4'
-                    >
-                      <View className={`w-11 h-11 rounded-2xl items-center justify-center ${isToday || isTomorrow ? 'bg-red-50' : 'bg-neutral-100'}`}>
-                        <Feather name='repeat' size={18} color={isToday || isTomorrow ? '#EF4444' : '#000'} />
-                      </View>
-                      <View className='flex-1'>
-                        <Text className='text-[14px] font-bold text-black'>{n.name}</Text>
-                        <Text className='text-[12px] text-neutral-400 mt-0.5'>{label} · {n.nextDue}</Text>
-                      </View>
-                      <Text className={`text-[14px] font-bold ${isToday || isTomorrow ? 'text-red-500' : 'text-black'}`}>
-                        {formatCurrency(n.amount, currency)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                {notifications
+                  .filter((n) => n.type === 'recurring_due')
+                  .map((n) => {
+                    if (n.type !== 'recurring_due') return null;
+                    const isToday = n.daysUntil === 0;
+                    const isTomorrow = n.daysUntil === 1;
+                    const label = isToday
+                      ? 'Due today'
+                      : isTomorrow
+                        ? 'Due tomorrow'
+                        : `Due in ${n.daysUntil} days`;
+                    return (
+                      <Pressable
+                        key={n.id}
+                        onPress={() => {
+                          setShowNotifications(false);
+                          router.push('/subscriptions');
+                        }}
+                        className='bg-white rounded-2xl p-4 mb-3 flex-row items-center gap-4'
+                      >
+                        <View
+                          className={`w-11 h-11 rounded-2xl items-center justify-center ${isToday || isTomorrow ? 'bg-red-50' : 'bg-neutral-100'}`}
+                        >
+                          <Feather
+                            name='repeat'
+                            size={18}
+                            color={isToday || isTomorrow ? '#EF4444' : '#000'}
+                          />
+                        </View>
+                        <View className='flex-1'>
+                          <Text className='text-[14px] font-bold text-black'>
+                            {n.name}
+                          </Text>
+                          <Text className='text-[12px] text-neutral-400 mt-0.5'>
+                            {label} · {n.nextDue}
+                          </Text>
+                        </View>
+                        <Text
+                          className={`text-[14px] font-bold ${isToday || isTomorrow ? 'text-red-500' : 'text-black'}`}
+                        >
+                          {formatCurrency(n.amount, currency)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
               </>
             )}
           </ScrollView>
