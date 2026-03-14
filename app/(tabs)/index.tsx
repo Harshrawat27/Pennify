@@ -7,6 +7,7 @@ import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
+import { Circle, Svg } from 'react-native-svg';
 import {
   Animated,
   KeyboardAvoidingView,
@@ -93,6 +94,10 @@ export default function HomeScreen() {
   );
   const monthlyStats = useQuery(
     api.transactions.getMonthlyStats,
+    userId ? { userId, month: currentMonth() } : 'skip'
+  );
+  const monthlyBudgetData = useQuery(
+    api.monthlyBudgets.getByMonth,
     userId ? { userId, month: currentMonth() } : 'skip'
   );
   const totalBalance = useQuery(
@@ -301,26 +306,57 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              {/* Expenses Card */}
-              <View className='flex-1 bg-white rounded-2xl p-5 pb-5'>
-                <View className='w-11 h-11 rounded-2xl bg-neutral-100 items-center justify-center'>
-                  <Feather name='arrow-down-right' size={20} color='#000' />
-                </View>
-                <View className='mt-8'>
-                  <View className='flex-row items-center gap-1.5 mb-1'>
-                    <Text className='text-neutral-400 text-[13px]'>
-                      Expenses
-                    </Text>
-                    <Feather name='info' size={11} color='#D4D4D4' />
-                  </View>
-                  {monthlyStats === undefined ? (
-                    <SkeletonBox width={90} height={26} borderRadius={6} />
-                  ) : (
-                    <Text className='text-black text-[22px] font-bold tracking-tight'>
-                      {formatCurrency(expenses, currency)}
-                    </Text>
-                  )}
-                </View>
+              {/* Expenses — floating circle, no card box */}
+              <View className='flex-1 items-center justify-center'>
+                {monthlyStats === undefined ? (
+                  <SkeletonBox width={130} height={130} borderRadius={65} />
+                ) : (() => {
+                  const RADIUS = 56;
+                  const STROKE = 7;
+                  const SIZE = (RADIUS + STROKE) * 2;
+                  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+                  const budget = monthlyBudgetData?.budget ?? 0;
+                  const denominator = budget > 0 ? budget : income > 0 ? income : 0;
+                  const pct = denominator > 0 ? Math.min(expenses / denominator, 1) : 0;
+                  const offset = CIRCUMFERENCE * (1 - pct);
+                  const pctLabel = denominator > 0 ? Math.round((expenses / denominator) * 100) : 0;
+                  return (
+                    <View style={{ width: SIZE, height: SIZE }}>
+                      <Svg width={SIZE} height={SIZE} style={{ transform: [{ rotate: '-90deg' }] }}>
+                        <Circle
+                          cx={SIZE / 2}
+                          cy={SIZE / 2}
+                          r={RADIUS}
+                          stroke='#E5E5E5'
+                          strokeWidth={STROKE}
+                          fill='none'
+                        />
+                        <Circle
+                          cx={SIZE / 2}
+                          cy={SIZE / 2}
+                          r={RADIUS}
+                          stroke='#000'
+                          strokeWidth={STROKE}
+                          fill='none'
+                          strokeDasharray={CIRCUMFERENCE}
+                          strokeDashoffset={offset}
+                          strokeLinecap='round'
+                        />
+                      </Svg>
+                      <View className='absolute inset-0 items-center justify-center gap-0.5'>
+                        <Text className='text-black text-[26px] font-bold tracking-tight leading-none'>
+                          {pctLabel}%
+                        </Text>
+                        <Text className='text-neutral-400 text-[10px] font-medium uppercase tracking-wide'>
+                          spent
+                        </Text>
+                        <Text className='text-black text-[12px] font-semibold mt-1'>
+                          {formatCurrency(expenses, currency)}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })()}
               </View>
             </View>
           </View>
