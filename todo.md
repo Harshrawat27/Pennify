@@ -9,13 +9,6 @@
   - Each user's processing runs independently, failures don't affect others
   - Priority: not urgent now (safe for hundreds of users during beta), revisit before scaling
 
-2. improve some UI on how we are asking for date for recurring payments in onboarding screen.
-3. recurrning payment - there are lots of issues in it. while onboarding we are not able to set date, if date is coming in few days still duducting money for it.
-4. hide balance and edit it option.
-5. let use add claude.md like file where he can say for few recurring things under which category it should go for that don't use AI
-
-6. fix UI while adding category, adding rules hard to add because of UI
-7. user adding category is not going to category why? in DB it's correct?
 8. during onboarding whne user press on netflix cursor should go to amount not to edit netflix
 
 // APPROVAL
@@ -73,5 +66,3 @@ policy/ToS URLs — and your chances of first-attempt approval are high. The app
 is solid.
 
 based on pricing model update privacy and terms
-
-------##### give a way to edit overall balance#####------------
