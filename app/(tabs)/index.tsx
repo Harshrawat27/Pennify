@@ -222,49 +222,62 @@ export default function HomeScreen() {
           </View>
 
           {/* Balance */}
-          <View className='items-center pt-10 pb-16'>
-            <View className='flex-row items-center gap-2'>
-              <Pressable
-                onPress={toggleHideBalance}
-                className='flex-row items-center gap-2'
-              >
-                <Text className='text-neutral-500 text-[14px] tracking-widest uppercase'>
-                  Current Balance
-                </Text>
-                <Feather
-                  name={isHidden ? 'eye-off' : 'eye'}
-                  size={14}
-                  color='#737373'
-                />
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  setBalanceInput(
-                    totalBalance !== undefined
-                      ? String(Math.round(totalBalance))
-                      : ''
-                  );
-                  setShowEditBalance(true);
-                }}
-                className='w-6 h-6 rounded-full bg-white/15 items-center justify-center'
-              >
-                <Feather name='edit-2' size={11} color='#737373' />
-              </Pressable>
-            </View>
-            <View className='mt-2'>
-              {totalBalance === undefined ? (
-                <SkeletonBox width={200} height={52} borderRadius={12} dark />
-              ) : isHidden ? (
-                <Text className='text-white text-[48px] font-bold tracking-tight leading-none'>
-                  ******
-                </Text>
-              ) : (
-                <Text className='text-white text-[48px] font-bold tracking-tight leading-none'>
-                  {formatCurrency(totalBalance, currency)}
-                </Text>
-              )}
-            </View>
-          </View>
+          {(() => {
+            const isBudgetMode = prefs !== undefined && prefs.overallBalance == null;
+            const budgetRemaining = (monthlyBudgetData?.budget ?? 0) - expenses;
+            const displayValue = isBudgetMode ? budgetRemaining : totalBalance;
+            const isLoading = isBudgetMode
+              ? monthlyStats === undefined || monthlyBudgetData === undefined
+              : totalBalance === undefined;
+
+            return (
+              <View className='items-center pt-10 pb-16'>
+                <View className='flex-row items-center gap-2'>
+                  <Pressable
+                    onPress={toggleHideBalance}
+                    className='flex-row items-center gap-2'
+                  >
+                    <Text className='text-neutral-500 text-[14px] tracking-widest uppercase'>
+                      {isBudgetMode ? 'Budget Remaining' : 'Current Balance'}
+                    </Text>
+                    <Feather
+                      name={isHidden ? 'eye-off' : 'eye'}
+                      size={14}
+                      color='#737373'
+                    />
+                  </Pressable>
+                  {!isBudgetMode && (
+                    <Pressable
+                      onPress={() => {
+                        setBalanceInput(
+                          totalBalance !== undefined
+                            ? String(Math.round(totalBalance))
+                            : ''
+                        );
+                        setShowEditBalance(true);
+                      }}
+                      className='w-6 h-6 rounded-full bg-white/15 items-center justify-center'
+                    >
+                      <Feather name='edit-2' size={11} color='#737373' />
+                    </Pressable>
+                  )}
+                </View>
+                <View className='mt-2'>
+                  {isLoading ? (
+                    <SkeletonBox width={200} height={52} borderRadius={12} dark />
+                  ) : isHidden ? (
+                    <Text className='text-white text-[48px] font-bold tracking-tight leading-none'>
+                      ******
+                    </Text>
+                  ) : (
+                    <Text className='text-white text-[48px] font-bold tracking-tight leading-none'>
+                      {formatCurrency(displayValue ?? 0, currency)}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            );
+          })()}
         </View>
 
         {/* ===== WHITE CONTENT AREA ===== */}
