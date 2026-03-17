@@ -151,6 +151,7 @@ function RootLayoutNav() {
         <Stack.Screen name='monthly-budget' />
         <Stack.Screen name='bookmarks' />
         <Stack.Screen name='smart-rules' />
+        <Stack.Screen name='finance-chat' options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={statusStyle} />
     </SafeAreaView>

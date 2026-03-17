@@ -152,6 +152,11 @@ export default function SettingsScreen() {
 
   const generalSettings: SettingRow[] = [
     {
+      icon: 'zap',
+      label: 'Ask Penny',
+      onPress: () => router.push('/finance-chat'),
+    },
+    {
       icon: 'dollar-sign',
       label: 'Currency',
       value: currencyLabel,
