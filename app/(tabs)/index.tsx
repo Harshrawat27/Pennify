@@ -1,8 +1,9 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { getLastReadId, markAnnouncementsRead } from '@/lib/announcementRead';
 import { usePendingStore } from '@/lib/stores/usePendingStore';
 import { formatCurrency } from '@/lib/utils/currency';
-import { currentMonth, formatMonthLabel } from '@/lib/utils/date';
+import { currentMonth, formatMonthLabel, prevMonth } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
 import { router } from 'expo-router';
@@ -100,6 +101,10 @@ export default function HomeScreen() {
     api.monthlyBudgets.getByMonth,
     userId ? { userId, month: currentMonth() } : 'skip'
   );
+  const lastMonthStats = useQuery(
+    api.transactions.getMonthlyStats,
+    userId ? { userId, month: prevMonth(currentMonth()) } : 'skip'
+  );
   const totalBalance = useQuery(
     api.accounts.getTotalBalance,
     userId ? { userId } : 'skip'
@@ -117,7 +122,19 @@ export default function HomeScreen() {
     api.notifications.getNotifications,
     userId ? { userId } : 'skip'
   );
-  const hasAlerts = (notifications?.length ?? 0) > 0;
+  const announcements = useQuery(api.announcements.listActive);
+  const [hasUnreadAnnouncement, setHasUnreadAnnouncement] = useState(false);
+  useEffect(() => {
+    if (!announcements || announcements.length === 0) {
+      setHasUnreadAnnouncement(false);
+      return;
+    }
+    const latestId = announcements[announcements.length - 1]._id;
+    getLastReadId().then((storedId) => {
+      setHasUnreadAnnouncement(storedId !== latestId);
+    });
+  }, [announcements]);
+  const hasAlerts = (notifications?.length ?? 0) > 0 || hasUnreadAnnouncement;
   const updateHideBalance = useMutation(api.preferences.updateHideBalance);
   const updateBalance = useMutation(api.preferences.updateBalance);
   // Local state for instant toggle feedback; syncs from DB on first load
@@ -210,7 +227,13 @@ export default function HomeScreen() {
 
             <View className='relative'>
               <Pressable
-                onPress={() => setShowNotifications(true)}
+                onPress={() => {
+                  setShowNotifications(true);
+                  if (announcements && announcements.length > 0) {
+                    const latestId = announcements[announcements.length - 1]._id;
+                    markAnnouncementsRead(latestId).then(() => setHasUnreadAnnouncement(false));
+                  }
+                }}
                 className='w-12 h-12 rounded-full bg-white/15 items-center justify-center'
               >
                 <Feather name='bell' size={20} color='#fff' />
@@ -223,7 +246,8 @@ export default function HomeScreen() {
 
           {/* Balance */}
           {(() => {
-            const isBudgetMode = prefs !== undefined && prefs.overallBalance == null;
+            const isBudgetMode =
+              prefs !== undefined && prefs.overallBalance == null;
             const budgetRemaining = (monthlyBudgetData?.budget ?? 0) - expenses;
             const displayValue = isBudgetMode ? budgetRemaining : totalBalance;
             const isLoading = isBudgetMode
@@ -264,7 +288,12 @@ export default function HomeScreen() {
                 </View>
                 <View className='mt-2'>
                   {isLoading ? (
-                    <SkeletonBox width={200} height={52} borderRadius={12} dark />
+                    <SkeletonBox
+                      width={200}
+                      height={52}
+                      borderRadius={12}
+                      dark
+                    />
                   ) : isHidden ? (
                     <Text className='text-white text-[48px] font-bold tracking-tight leading-none'>
                       ******
@@ -319,6 +348,50 @@ export default function HomeScreen() {
                     {formatCurrency(income, currency)}
                   </Text>
                 )}
+                {(() => {
+                  if (!lastMonthStats) return null;
+                  const lastHadActivity =
+                    lastMonthStats.income > 0 || lastMonthStats.expenses > 0;
+                  if (!lastHadActivity) return null;
+                  const lastIncome = lastMonthStats.income;
+                  // Last month had transactions but zero income
+                  if (lastIncome === 0) {
+                    if (income === 0) return null;
+                    return (
+                      <View className='flex-row items-center gap-1 mt-1.5'>
+                        <Feather
+                          name='arrow-up-right'
+                          size={11}
+                          color='#059669'
+                        />
+                        <Text
+                          className='text-[11px] font-semibold'
+                          style={{ color: '#059669' }}
+                        >
+                          New this month
+                        </Text>
+                      </View>
+                    );
+                  }
+                  const delta = ((income - lastIncome) / lastIncome) * 100;
+                  const isUp = delta >= 0;
+                  const absDelta = Math.abs(Math.round(delta));
+                  return (
+                    <View className='flex-row items-center gap-1 mt-1.5'>
+                      <Feather
+                        name={isUp ? 'arrow-up-right' : 'arrow-down-right'}
+                        size={11}
+                        color={isUp ? '#059669' : '#DC2626'}
+                      />
+                      <Text
+                        className='text-[11px] font-semibold'
+                        style={{ color: isUp ? '#059669' : '#DC2626' }}
+                      >
+                        {absDelta}% vs last month
+                      </Text>
+                    </View>
+                  );
+                })()}
               </View>
 
               {/* Expenses — floating circle, no card box */}
@@ -388,7 +461,7 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Insight Banner ── */}
-          <View className='mx-6 mt-6'>
+          {/* <View className='mx-6 mt-6'>
             <View className='bg-black rounded-2xl px-5 py-4 flex-row items-center justify-between'>
               <View className='flex-row items-center gap-2.5'>
                 <Text className='text-[14px]'>✨</Text>
@@ -403,7 +476,9 @@ export default function HomeScreen() {
                 <Feather name='chevron-right' size={14} color='#737373' />
               </Pressable>
             </View>
-          </View>
+          </View> */}
+
+          <View className='bg-black h-0.5 mt-6 opacity-5 mx-6'></View>
 
           {/* ── Transactions ── */}
           <View className='px-6 mt-8'>
@@ -714,11 +789,50 @@ export default function HomeScreen() {
             className='flex-1'
             contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
           >
+            {/* Announcements */}
+            {announcements && announcements.length > 0 && (
+              <>
+                <Text className='text-[12px] text-neutral-400 font-semibold uppercase tracking-wider mb-2'>
+                  From Pennify
+                </Text>
+                {announcements.map((a) => (
+                  <View key={a._id} className='bg-white rounded-2xl p-4 mb-3'>
+                    <View className='flex-row items-start gap-3'>
+                      <View className='w-10 h-10 rounded-xl bg-black items-center justify-center mt-0.5'>
+                        <Feather name='zap' size={16} color='#fff' />
+                      </View>
+                      <View className='flex-1'>
+                        <Text className='text-black font-bold text-[14px] leading-snug'>
+                          {a.title}
+                        </Text>
+                        <Text className='text-neutral-400 text-[13px] mt-1 leading-5'>
+                          {a.body}
+                        </Text>
+                        {a.link && (
+                          <Pressable
+                            onPress={() => {
+                              setShowNotifications(false);
+                              router.push(a.link as any);
+                            }}
+                            className='flex-row items-center gap-1.5 mt-3 self-start bg-black rounded-full px-3 py-1.5'
+                          >
+                            <Text className='text-white text-[12px] font-semibold'>
+                              {a.linkLabel ?? 'View'}
+                            </Text>
+                            <Feather name='arrow-right' size={11} color='#fff' />
+                          </Pressable>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
             {notifications === undefined ? (
               <View className='items-center py-12'>
                 <Feather name='loader' size={24} color='#D4D4D4' />
               </View>
-            ) : notifications.length === 0 ? (
+            ) : notifications.length === 0 && (!announcements || announcements.length === 0) ? (
               <View className='bg-white rounded-2xl p-10 items-center mt-2'>
                 <Feather name='check-circle' size={32} color='#D4D4D4' />
                 <Text className='text-neutral-400 text-[14px] font-medium mt-3'>
@@ -728,7 +842,7 @@ export default function HomeScreen() {
                   No upcoming payments or budget alerts
                 </Text>
               </View>
-            ) : (
+            ) : notifications.length > 0 ? (
               <>
                 {/* Budget alerts first */}
                 {notifications
@@ -829,7 +943,7 @@ export default function HomeScreen() {
                     );
                   })}
               </>
-            )}
+            ) : null}
           </ScrollView>
         </View>
       </Modal>

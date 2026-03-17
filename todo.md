@@ -66,3 +66,13 @@ policy/ToS URLs — and your chances of first-attempt approval are high. The app
 is solid.
 
 based on pricing model update privacy and terms
+
+----- NOTIFICATIONS --------
+So for your current setup, when you submit to the App Store / Play Store via EAS
+build, the notifications will just work with your branding. The only thing you might
+want to configure is the notification icon in app.json:
+
+"notification": {  
+ "icon": "./assets/notification-icon.png",  
+ "color": "#000000"  
+ }
