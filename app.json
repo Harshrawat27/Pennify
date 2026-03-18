@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.harshrawat.Spendler"
+      "bundleIdentifier": "app.spendler"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.harshrawat.Spendler"
+      "package": "app.spendler"
     },
     "web": {
       "output": "static",
