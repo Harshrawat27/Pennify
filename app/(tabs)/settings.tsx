@@ -157,6 +157,11 @@ export default function SettingsScreen() {
       onPress: () => router.push('/finance-chat'),
     },
     {
+      icon: 'users',
+      label: 'People & Debts',
+      onPress: () => router.push('/people'),
+    },
+    {
       icon: 'dollar-sign',
       label: 'Currency',
       value: currencyLabel,
