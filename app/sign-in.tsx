@@ -81,14 +81,14 @@ export default function SignInScreen() {
           By continuing, you agree to our{'\n'}
           <Text
             className='text-neutral-400 underline'
-            onPress={() => Linking.openURL('https://pennify.app/terms')}
+            onPress={() => Linking.openURL('https://spendler.app/terms')}
           >
             Terms of Service
           </Text>
           {' '}and{' '}
           <Text
             className='text-neutral-400 underline'
-            onPress={() => Linking.openURL('https://pennify.app/privacy')}
+            onPress={() => Linking.openURL('https://spendler.app/privacy')}
           >
             Privacy Policy
           </Text>
