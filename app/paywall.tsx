@@ -127,7 +127,7 @@ export default function PaywallScreen() {
             <Feather name='trending-up' size={30} color='#000' />
           </View>
           <Text className='text-white text-[28px] font-bold tracking-tight text-center'>
-            Pennify Premium
+            Spendler Premium
           </Text>
           <Text className='text-neutral-400 text-[15px] mt-2 text-center leading-5'>
             Everything you need to master your finances

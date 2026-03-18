@@ -134,7 +134,7 @@ export default function SettingsScreen() {
       } else {
         Alert.alert(
           'Notifications Blocked',
-          'Please enable notifications for Pennify in your device settings.',
+          'Please enable notifications for Spendler in your device settings.',
           [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Open Settings', onPress: () => Linking.openSettings() },
@@ -147,7 +147,7 @@ export default function SettingsScreen() {
     }
   };
 
-  const userName = session?.user?.name ?? 'Pennify User';
+  const userName = session?.user?.name ?? 'Spendler User';
   const userEmail = session?.user?.email ?? 'Synced to cloud';
 
   const generalSettings: SettingRow[] = [

@@ -25,7 +25,7 @@ export function Notifications({ onNext, onBack }: NotificationsProps) {
         // Permission denied — guide user to settings
         Alert.alert(
           'Notifications Blocked',
-          'Please enable notifications for Pennify in your device settings.',
+          'Please enable notifications for Spendler in your device settings.',
           [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Open Settings', onPress: () => Linking.openSettings() },

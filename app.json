@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "Pennify",
-    "slug": "Pennify",
+    "name": "Spendler",
+    "slug": "Spendler",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "pennify",
+    "scheme": "spendler",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.harshrawat.Pennify"
+      "bundleIdentifier": "com.harshrawat.Spendler"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.harshrawat.Pennify"
+      "package": "com.harshrawat.Spendler"
     },
     "web": {
       "output": "static",

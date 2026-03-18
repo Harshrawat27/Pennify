@@ -793,7 +793,7 @@ export default function HomeScreen() {
             {announcements && announcements.length > 0 && (
               <>
                 <Text className='text-[12px] text-neutral-400 font-semibold uppercase tracking-wider mb-2'>
-                  From Pennify
+                  From Spendler
                 </Text>
                 {announcements.map((a) => (
                   <View key={a._id} className='bg-white rounded-2xl p-4 mb-3'>

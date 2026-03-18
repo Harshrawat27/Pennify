@@ -42,7 +42,7 @@ export default function SignInScreen() {
           <Feather name='dollar-sign' size={36} color='#000' />
         </View>
         <Text className='text-white text-[32px] font-bold tracking-tight'>
-          Pennify
+          Spendler
         </Text>
         <Text className='text-neutral-500 text-[16px] mt-2 text-center leading-6'>
           Track your money.{'\n'}Build your future.

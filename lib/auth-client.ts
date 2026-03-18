@@ -7,8 +7,8 @@ export const authClient = createAuthClient({
   baseURL: process.env.EXPO_PUBLIC_AUTH_URL!,
   plugins: [
     expoClient({
-      scheme: "pennify",
-      storagePrefix: "pennify",
+      scheme: "spendler",
+      storagePrefix: "spendler",
       storage: SecureStore,
     }),
     convexClient(),

@@ -15,7 +15,7 @@ export function TryFree({ onNext }: TryFreeProps) {
         </View>
 
         <Text className="text-[28px] font-bold text-black text-center">
-          Try Pennify Free
+          Try Spendler Free
         </Text>
 
         <Text className="text-neutral-400 text-[15px] mt-3 text-center leading-6">

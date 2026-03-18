@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-const KEY = 'pennify_sub_status';
+const KEY = 'spendler_sub_status';
 
 export async function getLocalSubscriptionStatus(): Promise<string | null> {
   try {

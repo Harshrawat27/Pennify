@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const QUEUE_KEY = 'pennify_tx_queue';
+const QUEUE_KEY = 'spendler_tx_queue';
 
 export interface QueuedTransaction {
   localId: string;

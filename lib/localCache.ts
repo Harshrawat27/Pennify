@@ -1,9 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const ACCOUNTS_KEY = 'pennify_accounts_cache';
-const CATEGORIES_KEY = 'pennify_categories_cache';
-const PARENT_CATEGORIES_KEY = 'pennify_parent_categories_cache';
-const RULES_KEY = 'pennify_rules_cache';
+const ACCOUNTS_KEY = 'spendler_accounts_cache';
+const CATEGORIES_KEY = 'spendler_categories_cache';
+const PARENT_CATEGORIES_KEY = 'spendler_parent_categories_cache';
+const RULES_KEY = 'spendler_rules_cache';
 
 export interface CachedRule {
   _id: string;
