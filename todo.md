@@ -76,3 +76,6 @@ want to configure is the notification icon in app.json:
  "icon": "./assets/notification-icon.png",  
  "color": "#000000"  
  }
+
+Update Google OAuth redirect URIs in Google Cloud Console — add spendler:// as an
+allowed redirect URI (remove or keep pennify://)
