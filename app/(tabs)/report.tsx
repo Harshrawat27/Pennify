@@ -4,15 +4,35 @@ import { formatCurrency, getCurrencySymbol } from '@/lib/utils/currency';
 import { prevMonth } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
 import { useQuery } from 'convex/react';
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Modal, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import Svg, { Circle, G, Line, Path, Rect } from 'react-native-svg';
 
 function nextMonthStart(month: string): string {
   const [y, m] = month.split('-').map(Number);
   if (m === 12) return `${y + 1}-01-01`;
   return `${y}-${String(m + 1).padStart(2, '0')}-01`;
 }
+
+function nextMonthStr(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  if (m === 12) return `${y + 1}-01`;
+  return `${y}-${String(m + 1).padStart(2, '0')}`;
+}
+
+const MONTH_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function formatMonthLabel(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  return `${MONTH_FULL[m - 1]} ${y}`;
+}
+
+const NO_DATA_MESSAGES = [
+  "We wish you were using Spendler back then too! Just imagine the beautiful charts we could've built together. 🥺",
+  "No data here. We really wish you'd found us sooner — this could've been a great month of insights! 💛",
+  "Nothing to show. We wish you were here with us back then! Better late than never though. 🙌",
+  "Looks like we missed each other this month. We really wish we hadn't! 🫶",
+  "We were waiting for you here — wish you'd shown up sooner! Better now than never. 🚀",
+];
 
 const PERIOD_TABS = ['Week', 'Month', 'Year'];
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -31,6 +51,7 @@ const MONTH_SHORT = [
   'N',
   'D',
 ];
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 const RING_SIZE = 220;
 const RING_STROKE = 30;
@@ -101,16 +122,45 @@ function getCurrentWeekRange() {
 }
 
 export default function ReportScreen() {
-  const [period, setPeriod] = useState(1); // 0=Week 1=Month 2=Year
-  const [selectedParent, setSelectedParent] = useState<{ id: string; name: string; icon: string; color: string; amount: number; startDate: string; endDate: string } | null>(null);
-  const { data: session } = authClient.useSession();
-  const userId = session?.user?.id;
-
+  // Date constants — computed once, needed by initial state
   const today = new Date();
   const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const currentYear = today.getFullYear().toString();
   const currentMonthIdx = today.getMonth(); // 0-based
   const { start: weekStart, end: weekEnd } = getCurrentWeekRange();
+
+  const [period, setPeriod] = useState(1); // 0=Week 1=Month 2=Year
+  const [selectedParent, setSelectedParent] = useState<{ id: string; name: string; icon: string; color: string; amount: number; startDate: string; endDate: string } | null>(null);
+  const [chartSelectedIdx, setChartSelectedIdx] = useState<number | null>(null);
+  const [chartShowExpenses, setChartShowExpenses] = useState(true);
+  const [chartShowIncome, setChartShowIncome] = useState(true);
+  const { width: windowWidth } = useWindowDimensions();
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  const canGoNextMonth = nextMonthStr(selectedMonth) <= currentMonth;
+  const canGoNextYear = parseInt(selectedYear) < parseInt(currentYear);
+
+  const goToPrevMonth = () => setSelectedMonth(m => prevMonth(m));
+  const goToNextMonth = () => { if (canGoNextMonth) setSelectedMonth(m => nextMonthStr(m)); };
+  const goToPrevYear = () => { setSelectedYear(y => String(parseInt(y) - 1)); setChartSelectedIdx(null); };
+  const goToNextYear = () => { if (canGoNextYear) { setSelectedYear(y => String(parseInt(y) + 1)); setChartSelectedIdx(null); } };
+
+  // Pulse animation for skeletons
+  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 750, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 750, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
 
   // ── Queries (all unconditional — hooks rules) ──
   const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
@@ -118,27 +168,27 @@ export default function ReportScreen() {
   // Month
   const monthlyStats = useQuery(
     api.transactions.getMonthlyStats,
-    userId ? { userId, month: currentMonth } : 'skip'
+    userId ? { userId, month: selectedMonth } : 'skip'
   );
   const dailySpending = useQuery(
     api.transactions.getDailySpending,
-    userId ? { userId, month: currentMonth } : 'skip'
+    userId ? { userId, month: selectedMonth } : 'skip'
   );
   const monthlyBudget = useQuery(
     api.monthlyBudgets.getByMonth,
-    userId ? { userId, month: currentMonth } : 'skip'
+    userId ? { userId, month: selectedMonth } : 'skip'
   );
   const prevMonthBudget = useQuery(
     api.monthlyBudgets.getByMonth,
-    userId ? { userId, month: prevMonth(currentMonth) } : 'skip'
+    userId ? { userId, month: prevMonth(selectedMonth) } : 'skip'
   );
   const monthParentCats = useQuery(
     api.transactions.getParentCategoryBreakdown,
     userId
       ? {
           userId,
-          startDate: currentMonth + '-01',
-          endDate: nextMonthStart(currentMonth),
+          startDate: selectedMonth + '-01',
+          endDate: nextMonthStart(selectedMonth),
         }
       : 'skip'
   );
@@ -147,8 +197,8 @@ export default function ReportScreen() {
     userId
       ? {
           userId,
-          startDate: currentYear + '-01-01',
-          endDate: parseInt(currentYear) + 1 + '-01-01',
+          startDate: selectedYear + '-01-01',
+          endDate: (parseInt(selectedYear) + 1) + '-01-01',
         }
       : 'skip'
   );
@@ -162,7 +212,7 @@ export default function ReportScreen() {
   // Year
   const yearlyMonthly = useQuery(
     api.transactions.getYearlyMonthly,
-    userId ? { userId, year: currentYear } : 'skip'
+    userId ? { userId, year: selectedYear } : 'skip'
   );
 
   // Drill-down: sub-categories for selected parent
@@ -205,6 +255,12 @@ export default function ReportScreen() {
   const yearData = yearlyMonthly ?? [];
   const yearExpenses = yearData.reduce((s, m) => s + m.expenses, 0);
   const yearIncome = yearData.reduce((s, m) => s + m.income, 0);
+  const months12 = Array.from({ length: 12 }, (_, i) => yearData[i] ?? { expenses: 0, income: 0, label: MONTH_SHORT[i] });
+
+  // ── No-data detection (only when query has loaded, not still undefined) ──
+  const monthHasNoData = monthlyStats !== undefined && monthlyStats.expenses === 0 && monthlyStats.income === 0;
+  const yearHasNoData = yearlyMonthly !== undefined && yearExpenses === 0 && yearIncome === 0;
+  const noDataMessage = NO_DATA_MESSAGES[Math.abs(parseInt(selectedMonth.replace('-', '')) + parseInt(selectedYear)) % NO_DATA_MESSAGES.length];
 
   // ── Shared bar chart component ──
   const renderBars = (
@@ -254,10 +310,28 @@ export default function ReportScreen() {
 
   // ── Parent category cards ──
   const renderParentCategories = (
-    cats: { name: string; color: string; amount: number; percent: number }[],
+    cats: { name: string; color: string; amount: number; percent: number }[] | undefined,
     startDate: string,
     endDate: string,
-  ) => (
+  ) => {
+    // Still loading — show skeleton cards
+    if (cats === undefined) {
+      return (
+        <>
+          {[1, 2, 3].map(i => (
+            <Animated.View key={i} style={{ opacity: pulseAnim }} className='bg-white rounded-2xl p-4 mb-3 flex-row items-center'>
+              <View className='w-11 h-11 rounded-2xl bg-neutral-100 mr-3' />
+              <View className='flex-1'>
+                <View className='h-3 bg-neutral-100 rounded-full mb-2' style={{ width: 120 }} />
+                <View className='h-2 bg-neutral-100 rounded-full' />
+              </View>
+              <View className='h-3 bg-neutral-100 rounded-full ml-3' style={{ width: 56 }} />
+            </Animated.View>
+          ))}
+        </>
+      );
+    }
+    return (
     <>
       {cats.length === 0 ? (
         <View className='bg-white rounded-2xl p-5 items-center'>
@@ -335,7 +409,8 @@ export default function ReportScreen() {
         })
       )}
     </>
-  );
+    );
+  };
 
   // ── Week category list (sub-categories, no color) ──
   const renderWeekCategories = (
@@ -455,8 +530,49 @@ export default function ReportScreen() {
       {/* ═══════════════ MONTH VIEW ═══════════════ */}
       {period === 1 && (
         <>
+          {/* Month navigation */}
+          <View className='flex-row items-center justify-between mx-6 mt-5'>
+            <Pressable
+              onPress={goToPrevMonth}
+              className='w-9 h-9 rounded-full bg-white items-center justify-center'
+            >
+              <Feather name='chevron-left' size={18} color='#000' />
+            </Pressable>
+            <Text className='text-[15px] font-semibold text-black'>
+              {formatMonthLabel(selectedMonth)}
+            </Text>
+            <Pressable
+              onPress={goToNextMonth}
+              disabled={!canGoNextMonth}
+              className='w-9 h-9 rounded-full bg-white items-center justify-center'
+            >
+              <Feather name='chevron-right' size={18} color={canGoNextMonth ? '#000' : '#D4D4D4'} />
+            </Pressable>
+          </View>
+
+          {/* No-data state */}
+          {monthHasNoData ? (
+            <View className='mx-6 mt-6 bg-white rounded-2xl p-8 items-center'>
+              <Text className='text-4xl mb-4'>🕵️</Text>
+              <Text className='text-[15px] font-bold text-black text-center mb-2'>No data for this month</Text>
+              <Text className='text-[13px] text-neutral-400 text-center leading-5'>{noDataMessage}</Text>
+            </View>
+          ) : (
+          <>
           {/* Budget Ring — segmented arcs with gaps */}
           <View className='items-center mt-8'>
+            {monthParentCats === undefined ? (
+              // Skeleton ring while loading
+              <Animated.View style={{ opacity: pulseAnim, width: RING_SIZE, height: RING_SIZE }}>
+                <Svg width={RING_SIZE} height={RING_SIZE}>
+                  <Circle cx={RING_CX} cy={RING_CY} r={RING_R} stroke='#E5E5E5' strokeWidth={RING_STROKE} fill='none' />
+                </Svg>
+                <View className='absolute inset-0 items-center justify-center'>
+                  <View className='h-8 w-16 bg-neutral-100 rounded-full mb-1' />
+                  <View className='h-3 w-20 bg-neutral-100 rounded-full' />
+                </View>
+              </Animated.View>
+            ) : (
             <View style={{ width: RING_SIZE, height: RING_SIZE }}>
               <Svg width={RING_SIZE} height={RING_SIZE}>
                 {/* Track */}
@@ -468,7 +584,7 @@ export default function ReportScreen() {
                   strokeWidth={RING_STROKE}
                   fill='none'
                 />
-                {(monthParentCats ?? []).length > 0 ? (
+                {monthParentCats.length > 0 ? (
                   (() => {
                     let angleCursor = 0;
                     const cats = monthParentCats ?? [];
@@ -553,6 +669,7 @@ export default function ReportScreen() {
                 <Text className='text-[12px] text-neutral-400'>of budget</Text>
               </View>
             </View>
+            )}
             <View className='flex-row gap-6 mt-4'>
               <View className='flex-row items-center gap-2'>
                 <View className='w-2.5 h-2.5 rounded-full bg-black' />
@@ -574,7 +691,7 @@ export default function ReportScreen() {
             <Text className='text-[18px] font-bold text-black mb-3'>
               By Category
             </Text>
-            {renderParentCategories(monthParentCats ?? [], currentMonth + '-01', nextMonthStart(currentMonth))}
+            {renderParentCategories(monthParentCats, selectedMonth + '-01', nextMonthStart(selectedMonth))}
           </View>
 
           {/* Income vs Expense */}
@@ -629,16 +746,49 @@ export default function ReportScreen() {
             </Text>
             {renderBars(weeklyBars)}
           </View>
+          </>
+          )}
         </>
       )}
 
       {/* ═══════════════ YEAR VIEW ═══════════════ */}
       {period === 2 && (
         <>
+          {/* Year navigation */}
+          <View className='flex-row items-center justify-between mx-6 mt-5'>
+            <Pressable
+              onPress={goToPrevYear}
+              className='w-9 h-9 rounded-full bg-white items-center justify-center'
+            >
+              <Feather name='chevron-left' size={18} color='#000' />
+            </Pressable>
+            <Text className='text-[15px] font-semibold text-black'>{selectedYear}</Text>
+            <Pressable
+              onPress={goToNextYear}
+              disabled={!canGoNextYear}
+              className='w-9 h-9 rounded-full bg-white items-center justify-center'
+            >
+              <Feather name='chevron-right' size={18} color={canGoNextYear ? '#000' : '#D4D4D4'} />
+            </Pressable>
+          </View>
+
+          {/* No-data state */}
+          {yearHasNoData ? (
+            <View className='mx-6 mt-6 bg-white rounded-2xl p-8 items-center'>
+              <Text className='text-4xl mb-4'>📊</Text>
+              <Text className='text-[15px] font-bold text-black text-center mb-2'>No data for {selectedYear}</Text>
+              <Text className='text-[13px] text-neutral-400 text-center leading-5'>
+                {selectedYear < currentYear
+                  ? `We really wish you were using Spendler back in ${selectedYear}. Just imagine all the insights we could've shown you. We're glad you're here now! 🫶`
+                  : noDataMessage}
+              </Text>
+            </View>
+          ) : (
+          <>
           {/* Summary */}
-          <View className='mx-6 mt-6 bg-black rounded-2xl p-5'>
+          <View className='mx-6 mt-4 bg-black rounded-2xl p-5'>
             <Text className='text-neutral-500 text-[12px] uppercase tracking-wider mb-3'>
-              {currentYear} Overview
+              {selectedYear} Overview
             </Text>
             <View className='flex-row justify-between'>
               <View>
@@ -679,33 +829,160 @@ export default function ReportScreen() {
             )}
           </View>
 
-          {/* 12-month bar chart */}
-          <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
-            <Text className='text-[15px] font-bold text-black mb-5'>
-              Monthly Spending
-            </Text>
-            {renderBars(
-              yearData.map((m, i) => ({
-                label: MONTH_SHORT[i],
-                amount: m.expenses,
-              })),
-              currentMonthIdx
-            )}
-            <View className='flex-row items-center gap-4 mt-4'>
-              <View className='flex-row items-center gap-1.5'>
-                <View className='w-3 h-3 rounded-full bg-black' />
-                <Text className='text-[11px] text-neutral-400'>
-                  Current month
-                </Text>
+          {/* 12-month smooth line chart */}
+          {(() => {
+            const W = windowWidth - 88; // 2×24 margin + 2×20 padding
+            const H = 130;
+            const PT = 8;
+            const PB = 4;
+            const plotH = H - PT - PB;
+
+            // For current year: stop at current month. For past years: show all 12.
+            const chartEndIdx = selectedYear === currentYear ? currentMonthIdx : 11;
+            const pastMonths = months12.slice(0, chartEndIdx + 1);
+
+            const allVals: number[] = [];
+            if (chartShowExpenses) pastMonths.forEach(m => allVals.push(m.expenses));
+            if (chartShowIncome && trackIncome) pastMonths.forEach(m => allVals.push(m.income));
+            const maxVal = Math.max(...allVals, 0);
+
+            // Each month column is W/12 wide; center point is at (i + 0.5) * W/12
+            // This matches the flex:1 label positions exactly
+            const getX = (i: number) => (i + 0.5) * W / 12;
+            const getY = (val: number) => PT + (1 - val / maxVal) * plotH;
+
+            const buildPath = (pts: { x: number; y: number }[]) => {
+              if (pts.length < 2) return '';
+              let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+              for (let i = 1; i < pts.length; i++) {
+                const p0 = pts[Math.max(0, i - 2)];
+                const p1 = pts[i - 1];
+                const p2 = pts[i];
+                const p3 = pts[Math.min(pts.length - 1, i + 1)];
+                const t = 0.3;
+                const cp1x = p1.x + (p2.x - p0.x) * t;
+                const cp1y = p1.y + (p2.y - p0.y) * t;
+                const cp2x = p2.x - (p3.x - p1.x) * t;
+                const cp2y = p2.y - (p3.y - p1.y) * t;
+                d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)} ${cp2x.toFixed(1)} ${cp2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+              }
+              return d;
+            };
+
+            // Only plot past months
+            const expPoints = pastMonths.map((m, i) => ({ x: getX(i), y: getY(m.expenses) }));
+            const incPoints = pastMonths.map((m, i) => ({ x: getX(i), y: getY(m.income) }));
+            // Only consider a selected index valid if it's within the plotted range
+            const sel = chartSelectedIdx !== null && chartSelectedIdx <= chartEndIdx ? chartSelectedIdx : null;
+            const hasData = maxVal > 0;
+
+            return (
+              <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
+                {/* Header row with toggle pills */}
+                <View className='flex-row items-center justify-between mb-3'>
+                  <Text className='text-[15px] font-bold text-black'>Monthly Trend</Text>
+                  <View className='flex-row gap-2'>
+                    <Pressable
+                      onPress={() => setChartShowExpenses(v => !v)}
+                      style={{ paddingHorizontal: 12, paddingVertical: 5, borderRadius: 99, backgroundColor: chartShowExpenses ? '#EF4444' : '#F5F5F5' }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: chartShowExpenses ? '#fff' : '#a3a3a3' }}>Expenses</Text>
+                    </Pressable>
+                    {trackIncome && (
+                      <Pressable
+                        onPress={() => setChartShowIncome(v => !v)}
+                        style={{ paddingHorizontal: 12, paddingVertical: 5, borderRadius: 99, backgroundColor: chartShowIncome ? '#16A34A' : '#F5F5F5' }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: '600', color: chartShowIncome ? '#fff' : '#a3a3a3' }}>Income</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
+
+                {/* Tooltip row */}
+                <View style={{ height: 32, justifyContent: 'center', marginBottom: 4 }}>
+                  {sel !== null && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#000' }}>{MONTH_NAMES[sel]}</Text>
+                      {chartShowExpenses && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444' }} />
+                          <Text style={{ fontSize: 12, fontWeight: '600', color: '#EF4444' }}>{formatCurrency(pastMonths[sel].expenses, currency)}</Text>
+                        </View>
+                      )}
+                      {chartShowIncome && trackIncome && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#16A34A' }} />
+                          <Text style={{ fontSize: 12, fontWeight: '600', color: '#16A34A' }}>{formatCurrency(pastMonths[sel].income, currency)}</Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+
+                {/* SVG + tap columns */}
+                {!hasData ? (
+                  <View style={{ height: H, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 13, color: '#a3a3a3' }}>No data yet</Text>
+                  </View>
+                ) : (
+                  <View style={{ position: 'relative' }}>
+                    <Svg width={W} height={H}>
+                      {chartShowExpenses && (
+                        <Path d={buildPath(expPoints)} stroke='#EF4444' strokeWidth={2.5} fill='none' strokeLinecap='round' strokeLinejoin='round' />
+                      )}
+                      {chartShowIncome && trackIncome && (
+                        <Path d={buildPath(incPoints)} stroke='#16A34A' strokeWidth={2.5} fill='none' strokeLinecap='round' strokeLinejoin='round' />
+                      )}
+                      {sel !== null && (
+                        <Line
+                          x1={getX(sel)} y1={PT}
+                          x2={getX(sel)} y2={H - PB}
+                          stroke='#000' strokeWidth={1}
+                          strokeDasharray='4,4'
+                          opacity={0.2}
+                        />
+                      )}
+                      {sel !== null && chartShowExpenses && (
+                        <Circle cx={getX(sel)} cy={getY(pastMonths[sel].expenses)} r={5} fill='#fff' stroke='#EF4444' strokeWidth={2.5} />
+                      )}
+                      {sel !== null && chartShowIncome && trackIncome && (
+                        <Circle cx={getX(sel)} cy={getY(pastMonths[sel].income)} r={5} fill='#fff' stroke='#16A34A' strokeWidth={2.5} />
+                      )}
+                    </Svg>
+                    {/* Invisible tap columns — only active for past/current months */}
+                    <View style={{ position: 'absolute', top: 0, left: 0, width: W, height: H, flexDirection: 'row' }}>
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <Pressable
+                          key={i}
+                          style={{ flex: 1, height: H }}
+                          onPress={() => i <= chartEndIdx ? setChartSelectedIdx(prev => prev === i ? null : i) : undefined}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* X axis labels */}
+                <View style={{ flexDirection: 'row', width: W, marginTop: 6 }}>
+                  {MONTH_SHORT.map((label, i) => (
+                    <Text
+                      key={i}
+                      style={{
+                        flex: 1,
+                        textAlign: 'center',
+                        fontSize: 10,
+                        color: (i === (selectedYear === currentYear ? currentMonthIdx : 11) || sel === i) ? '#000' : '#a3a3a3',
+                        fontWeight: (i === (selectedYear === currentYear ? currentMonthIdx : 11) || sel === i) ? '700' : '400',
+                      }}
+                    >
+                      {label}
+                    </Text>
+                  ))}
+                </View>
               </View>
-              <View className='flex-row items-center gap-1.5'>
-                <View className='w-3 h-3 rounded-full bg-neutral-200' />
-                <Text className='text-[11px] text-neutral-400'>
-                  Other months
-                </Text>
-              </View>
-            </View>
-          </View>
+            );
+          })()}
 
           {/* Highest spending month */}
           {yearData.length > 0 &&
@@ -737,8 +1014,10 @@ export default function ReportScreen() {
             <Text className='text-[18px] font-bold text-black mb-3'>
               By Category
             </Text>
-            {renderParentCategories(yearParentCats ?? [], currentYear + '-01-01', (parseInt(currentYear) + 1) + '-01-01')}
+            {renderParentCategories(yearParentCats, selectedYear + '-01-01', (parseInt(selectedYear) + 1) + '-01-01')}
           </View>
+          </>
+          )}
         </>
       )}
 

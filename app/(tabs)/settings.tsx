@@ -19,16 +19,6 @@ type SettingRow = {
   onPress?: () => void;
 };
 
-const STATIC_GENERAL_SETTINGS: SettingRow[] = [
-  { icon: 'globe', label: 'Language', value: 'English' },
-  { icon: 'lock', label: 'Passcode Lock', toggle: true },
-];
-
-const DATA_SETTINGS: SettingRow[] = [
-  { icon: 'download-cloud', label: 'Export Data', value: 'CSV' },
-  { icon: 'upload-cloud', label: 'Backup', value: 'Auto' },
-  { icon: 'refresh-cw', label: 'Sync', value: 'On' },
-];
 
 const ABOUT_SETTINGS: SettingRow[] = [
   { icon: 'help-circle', label: 'Help & Support' },
@@ -206,7 +196,6 @@ export default function SettingsScreen() {
       toggleValue: notificationsOn,
       onToggle: handleToggleNotifications,
     },
-    ...STATIC_GENERAL_SETTINGS,
   ];
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -292,7 +281,6 @@ export default function SettingsScreen() {
       )}
 
       <SettingGroup title='General' items={generalSettings} />
-      <SettingGroup title='Data' items={DATA_SETTINGS} />
       <SettingGroup title='About' items={ABOUT_SETTINGS} />
 
       {/* Logout */}
