@@ -1,5 +1,11 @@
+import { api } from '@/convex/_generated/api';
 import { deleteAccount } from '@/lib/account/deleteAccount';
 import { authClient } from '@/lib/auth-client';
+import {
+  getOfferings,
+  getStatusFromCustomerInfo,
+  restorePurchases,
+} from '@/lib/revenuecat';
 import { Feather } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -12,7 +18,9 @@ import {
   Text,
   View,
 } from 'react-native';
+import Purchases, { PurchasesPackage } from 'react-native-purchases';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useMutation } from 'convex/react';
 
 const TIMELINE_STEPS = [
   {
@@ -47,9 +55,12 @@ export default function PaywallScreen() {
   const { data: session } = authClient.useSession();
   const navigation = useNavigation();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>(
-    'yearly'
-  );
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>('yearly');
+  const [monthlyPackage, setMonthlyPackage] = useState<PurchasesPackage | null>(null);
+  const [yearlyPackage, setYearlyPackage] = useState<PurchasesPackage | null>(null);
+  const updateSubscription = useMutation(api.preferences.updateSubscription);
+  const userId = session?.user?.id;
 
   // Cross-fade animation
   const yearlyOpacity = useRef(new Animated.Value(1)).current;
@@ -85,6 +96,25 @@ export default function PaywallScreen() {
     }
   }, [selectedPlan]);
 
+  // Load RevenueCat offerings
+  useEffect(() => {
+    getOfferings().then((offering) => {
+      if (!offering) return;
+      for (const pkg of offering.availablePackages) {
+        const id = pkg.product.identifier;
+        if (id.includes('monthly')) setMonthlyPackage(pkg);
+        if (id.includes('yearly')) setYearlyPackage(pkg);
+      }
+    });
+  }, []);
+
+  // Derive display prices from RevenueCat (fallback to hardcoded)
+  const monthlyPrice = monthlyPackage?.product.priceString ?? '$9.99';
+  const yearlyPrice = yearlyPackage?.product.priceString ?? '$29.99';
+  const yearlyPerMonth = yearlyPackage
+    ? `$${((yearlyPackage.product.price ?? 29.99) / 12).toFixed(2)}/mo`
+    : '$2.50/mo';
+
   // Billing date = 3 days from today
   const billingDate = new Date();
   billingDate.setDate(billingDate.getDate() + 3);
@@ -99,18 +129,46 @@ export default function PaywallScreen() {
     else router.replace('/(tabs)');
   }
 
-  function handlePurchase() {
-    Alert.alert('Coming Soon', 'In-app purchases will be available soon.', [
-      { text: 'OK' },
-    ]);
+  async function handlePurchase() {
+    if (!userId) return;
+    const pkg = selectedPlan === 'yearly' ? yearlyPackage : monthlyPackage;
+    if (!pkg) {
+      Alert.alert('Not available', 'Could not load products. Please try again.');
+      return;
+    }
+    setIsPurchasing(true);
+    try {
+      const { customerInfo } = await Purchases.purchasePackage(pkg);
+      const status = getStatusFromCustomerInfo(customerInfo);
+      await updateSubscription({ userId, subscriptionStatus: status });
+      router.replace('/(tabs)');
+    } catch (e: any) {
+      if (!e.userCancelled) {
+        Alert.alert('Purchase failed', e.message ?? 'Something went wrong. Please try again.');
+      }
+    } finally {
+      setIsPurchasing(false);
+    }
   }
 
-  function handleRestore() {
-    Alert.alert(
-      'Restore Purchase',
-      'Purchase restoration will be available once the app launches on the App Store.',
-      [{ text: 'OK' }]
-    );
+  async function handleRestore() {
+    if (!userId) return;
+    setIsPurchasing(true);
+    try {
+      const info = await restorePurchases();
+      if (!info) throw new Error('Could not restore purchases.');
+      const status = getStatusFromCustomerInfo(info);
+      if (status === 'none' || status === 'expired') {
+        Alert.alert('No purchases found', 'We could not find any active subscriptions to restore.');
+      } else {
+        await updateSubscription({ userId, subscriptionStatus: status });
+        router.replace('/(tabs)');
+      }
+    } catch (e: any) {
+      Alert.alert('Restore failed', e.message ?? 'Something went wrong.');
+    } finally {
+      setIsPurchasing(false);
+    }
   }
 
   async function handleSignOut() {
@@ -175,8 +233,10 @@ export default function PaywallScreen() {
         >
           <Feather name='chevron-left' size={24} color='#000' />
         </Pressable>
-        <Pressable onPress={handleRestore} hitSlop={12}>
-          <Text className='text-[15px] text-neutral-500'>Restore</Text>
+        <Pressable onPress={handleRestore} hitSlop={12} disabled={isPurchasing}>
+          <Text className={`text-[15px] ${isPurchasing ? 'text-neutral-300' : 'text-neutral-500'}`}>
+            Restore
+          </Text>
         </Pressable>
       </View>
 
@@ -309,7 +369,7 @@ export default function PaywallScreen() {
               Monthly
             </Text>
             <Text className='text-[14px] font-bold text-black mt-1'>
-              $9.99 /mo
+              {monthlyPrice} /mo
             </Text>
             <View
               style={{
@@ -360,7 +420,7 @@ export default function PaywallScreen() {
             </View>
             <Text className='text-[14px] font-semibold text-black'>Yearly</Text>
             <Text className='text-[14px] font-bold text-black mt-1'>
-              $2.50 /mo
+              {yearlyPerMonth}
             </Text>
             <View
               style={{
@@ -433,7 +493,7 @@ export default function PaywallScreen() {
               position: 'absolute',
             }}
           >
-            Subscribe Monthly · $9.99
+            Subscribe Monthly · {monthlyPrice}
           </Animated.Text>
         </Pressable>
 
@@ -458,7 +518,7 @@ export default function PaywallScreen() {
               right: 32,
             }}
           >
-            3 days free, then $29.99 per year ($2.50/mo). Cancel anytime before{' '}
+            3 days free, then {yearlyPrice} per year ({yearlyPerMonth}). Cancel anytime before{' '}
             {billingDateStr}.
           </Animated.Text>
           <Animated.Text

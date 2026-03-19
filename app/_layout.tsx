@@ -1,6 +1,7 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { ConvexAuthSetup } from '@/lib/auth/ConvexAuthSetup';
+import { initializePurchases } from '@/lib/revenuecat';
 import { useQuery } from 'convex/react';
 import { Stack, router, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -49,6 +50,11 @@ function RootLayoutNav() {
     }
     // Expiry is handled silently — user stays in tabs but + button shows paywall
   }, [prefs?.subscriptionStatus]);
+
+  // Initialize RevenueCat as soon as we have a userId
+  useEffect(() => {
+    if (userId) initializePurchases(userId);
+  }, [userId]);
 
   useEffect(() => {
     // Reset routing flag when userId changes (e.g. sign-out then sign-in)
