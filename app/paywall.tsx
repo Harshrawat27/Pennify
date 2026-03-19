@@ -2,10 +2,11 @@ import { deleteAccount } from '@/lib/account/deleteAccount';
 import { authClient } from '@/lib/auth-client';
 import { Feather } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Pressable,
   ScrollView,
   Text,
@@ -30,8 +31,15 @@ const TIMELINE_STEPS = [
     icon: 'award',
     color: '#000',
     title: 'In 3 Days — Billing Starts',
-    description: null, // computed dynamically
+    description: null,
   },
+];
+
+const MONTHLY_FEATURES = [
+  'Unlimited budgets & saving goals',
+  'AI-powered expense insights',
+  'Monthly & yearly reports',
+  'Multi-account support',
 ];
 
 export default function PaywallScreen() {
@@ -43,6 +51,40 @@ export default function PaywallScreen() {
     'yearly'
   );
 
+  // Cross-fade animation
+  const yearlyOpacity = useRef(new Animated.Value(1)).current;
+  const monthlyOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (selectedPlan === 'yearly') {
+      Animated.parallel([
+        Animated.timing(monthlyOpacity, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(yearlyOpacity, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(yearlyOpacity, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(monthlyOpacity, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [selectedPlan]);
+
   // Billing date = 3 days from today
   const billingDate = new Date();
   billingDate.setDate(billingDate.getDate() + 3);
@@ -53,22 +95,17 @@ export default function PaywallScreen() {
   });
 
   function handleMaybeLater() {
-    if (navigation.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tabs)');
-    }
+    if (navigation.canGoBack()) router.back();
+    else router.replace('/(tabs)');
   }
 
   function handlePurchase() {
-    // TODO: Integrate RevenueCat purchase here
     Alert.alert('Coming Soon', 'In-app purchases will be available soon.', [
       { text: 'OK' },
     ]);
   }
 
   function handleRestore() {
-    // TODO: Integrate RevenueCat restore here
     Alert.alert(
       'Restore Purchase',
       'Purchase restoration will be available once the app launches on the App Store.',
@@ -147,32 +184,47 @@ export default function PaywallScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
       >
-        {/* Logo */}
-        {/* <View className='items-center mt-4'>
-          <Image
-            source={require('../assets/images/icon.png')}
-            style={{ width: 56, height: 56, borderRadius: 14 }}
-            resizeMode='cover'
-          />
-        </View> */}
-
-        {/* Title */}
-        <View className='px-6 mt-5'>
-          {selectedPlan === 'yearly' ? (
+        {/* Title — fixed height, both titles stacked, cross-fade */}
+        <View style={{ height: 88, marginTop: 20, paddingHorizontal: 24 }}>
+          {/* Yearly title */}
+          <Animated.View
+            style={{
+              position: 'absolute',
+              left: 24,
+              right: 24,
+              opacity: yearlyOpacity,
+            }}
+          >
             <Text className='text-[30px] font-extrabold text-black text-center leading-9'>
-              Start your 3-day{'\n'}
-              <Text className='text-black'>FREE trial</Text> to continue.
+              Start your 3-day{'\n'}FREE trial to continue.
             </Text>
-          ) : (
+          </Animated.View>
+          {/* Monthly title */}
+          <Animated.View
+            style={{
+              position: 'absolute',
+              left: 24,
+              right: 24,
+              opacity: monthlyOpacity,
+            }}
+          >
             <Text className='text-[30px] font-extrabold text-black text-center leading-9'>
               Subscribe to{'\n'}continue.
             </Text>
-          )}
+          </Animated.View>
         </View>
 
-        {/* Timeline — only for yearly */}
-        {selectedPlan === 'yearly' ? (
-          <View className='mx-6 mt-8'>
+        {/* Middle content — fixed height, cross-fade between timeline and features */}
+        <View style={{ height: 250, marginTop: 24, marginHorizontal: 24 }}>
+          {/* Yearly: timeline */}
+          <Animated.View
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              opacity: yearlyOpacity,
+            }}
+          >
             {TIMELINE_STEPS.map((step, i) => {
               const isLast = i === TIMELINE_STEPS.length - 1;
               const description =
@@ -180,7 +232,6 @@ export default function PaywallScreen() {
                 `You'll be charged on ${billingDateStr} unless you cancel anytime before.`;
               return (
                 <View key={i} className='flex-row gap-4'>
-                  {/* Icon + connector line */}
                   <View className='items-center' style={{ width: 44 }}>
                     <View
                       style={{ backgroundColor: step.color }}
@@ -200,7 +251,6 @@ export default function PaywallScreen() {
                       />
                     )}
                   </View>
-                  {/* Text */}
                   <View className='flex-1 pb-6'>
                     <Text className='text-[16px] font-bold text-black'>
                       {step.title}
@@ -212,31 +262,37 @@ export default function PaywallScreen() {
                 </View>
               );
             })}
-          </View>
-        ) : (
-          /* Monthly — show brief feature list instead */
-          <View className='mx-6 mt-6 bg-neutral-50 rounded-2xl p-5'>
-            {[
-              'Unlimited budgets & saving goals',
-              'AI-powered expense insights',
-              'Monthly & yearly reports',
-              'Multi-account support',
-            ].map((f, i) => (
-              <View
-                key={i}
-                className={`flex-row items-center gap-3 ${i > 0 ? 'mt-3' : ''}`}
-              >
-                <View className='w-5 h-5 rounded-full bg-black items-center justify-center'>
-                  <Feather name='check' size={11} color='#fff' />
+          </Animated.View>
+
+          {/* Monthly: feature list */}
+          <Animated.View
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              opacity: monthlyOpacity,
+            }}
+          >
+            <View className='bg-neutral-50 rounded-2xl p-5'>
+              {MONTHLY_FEATURES.map((f, i) => (
+                <View
+                  key={i}
+                  className={`flex-row items-center gap-3 ${i > 0 ? 'mt-3' : ''}`}
+                >
+                  <View className='w-5 h-5 rounded-full bg-black items-center justify-center'>
+                    <Feather name='check' size={11} color='#fff' />
+                  </View>
+                  <Text className='text-[14px] text-black font-medium'>
+                    {f}
+                  </Text>
                 </View>
-                <Text className='text-[14px] text-black font-medium'>{f}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+              ))}
+            </View>
+          </Animated.View>
+        </View>
 
         {/* Plan cards */}
-        <View className='flex-row mx-5 mt-8 gap-3'>
+        <View className='flex-row mx-5 mt-2 gap-3'>
           {/* Monthly */}
           <Pressable
             onPress={() => setSelectedPlan('monthly')}
@@ -287,7 +343,6 @@ export default function PaywallScreen() {
               backgroundColor: '#fff',
             }}
           >
-            {/* "3 DAYS FREE" badge — absolutely positioned above the card */}
             <View
               style={{
                 position: 'absolute',
@@ -328,34 +383,99 @@ export default function PaywallScreen() {
           </Pressable>
         </View>
 
-        {/* No payment due now — yearly only */}
-        {selectedPlan === 'yearly' && (
-          <View className='flex-row items-center justify-center gap-2 mt-4'>
+        {/* No payment due — fixed height to avoid jump */}
+        <View
+          style={{
+            height: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: 12,
+          }}
+        >
+          <Animated.View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              opacity: yearlyOpacity,
+            }}
+          >
             <Feather name='check' size={14} color='#000' />
             <Text className='text-[14px] font-semibold text-black'>
               No Payment Due Now
             </Text>
-          </View>
-        )}
+          </Animated.View>
+        </View>
 
         {/* CTA Button */}
         <Pressable
           onPress={handlePurchase}
-          className='mx-5 bg-black rounded-2xl py-4 items-center mt-5'
+          className='mx-5 bg-black rounded-2xl mt-3'
+          style={{ height: 56, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Text className='text-white text-[16px] font-bold'>
-            {selectedPlan === 'yearly'
-              ? 'Start My 3-Day Free Trial'
-              : 'Subscribe Monthly · $9.99'}
-          </Text>
+          <Animated.Text
+            style={{
+              color: '#fff',
+              fontSize: 16,
+              fontWeight: '700',
+              opacity: yearlyOpacity,
+              position: 'absolute',
+            }}
+          >
+            Start My 3-Day Free Trial
+          </Animated.Text>
+          <Animated.Text
+            style={{
+              color: '#fff',
+              fontSize: 16,
+              fontWeight: '700',
+              opacity: monthlyOpacity,
+              position: 'absolute',
+            }}
+          >
+            Subscribe Monthly · $9.99
+          </Animated.Text>
         </Pressable>
 
-        {/* Legal */}
-        <Text className='text-neutral-400 text-[11px] text-center mx-8 mt-3 leading-4'>
-          {selectedPlan === 'yearly'
-            ? `3 days free, then $29.99 per year ($2.50/mo).`
-            : '$9.99/month. Subscriptions auto-renew unless cancelled 24 hours before renewal.'}
-        </Text>
+        {/* Legal — fixed height */}
+        <View
+          style={{
+            height: 36,
+            marginTop: 8,
+            paddingHorizontal: 32,
+            justifyContent: 'center',
+          }}
+        >
+          <Animated.Text
+            style={{
+              color: '#a3a3a3',
+              fontSize: 11,
+              textAlign: 'center',
+              lineHeight: 16,
+              opacity: yearlyOpacity,
+              position: 'absolute',
+              left: 32,
+              right: 32,
+            }}
+          >
+            3 days free, then $29.99 per year ($2.50/mo). Cancel anytime before{' '}
+            {billingDateStr}.
+          </Animated.Text>
+          <Animated.Text
+            style={{
+              color: '#a3a3a3',
+              fontSize: 11,
+              textAlign: 'center',
+              lineHeight: 16,
+              opacity: monthlyOpacity,
+              position: 'absolute',
+              left: 32,
+              right: 32,
+            }}
+          >
+            $9.99/month. Auto-renews unless cancelled 24 hours before renewal.
+          </Animated.Text>
+        </View>
 
         {/* Bottom links */}
         <View className='items-center mt-6 gap-3'>
