@@ -79,3 +79,25 @@ want to configure is the notification icon in app.json:
 
 Update Google OAuth redirect URIs in Google Cloud Console — add spendler:// as an
 allowed redirect URI (remove or keep pennify://)
+
+------- NOTIFICATION FOR TRIAL PERIOD ---------
+
+Yes, completely doable but there's a catch — you can't schedule a notification at  
+ purchase time saying "remind me in exactly 2 days" because:
+
+1. Local notifications — you'd schedule it at purchase time with a 2-day delay.  
+   Simple, but it gets cancelled if user deletes the app, clears notifications, or  
+   reinstalls. Also doesn't account if they cancel the subscription before day 2.
+2. Server-side push (better) — RevenueCat has webhooks. When a trial starts, it fires
+   a INITIAL_PURCHASE event to your backend (pennifyweb). Your backend receives it,  
+   stores the trial start date, then at day 2 sends a push notification via Expo Push
+   API. This is reliable and you can check if they're still subscribed before sending.  
+
+
+The server-side approach is the right way — you already have pennifyweb as a backend,
+Convex can store the trial start date, and you already use Expo notifications. It's
+maybe 1-2 hours of work once RevenueCat webhooks are set up.
+
+For now local notification at purchase time is fine as a quick solution — just call  
+ scheduleNotificationAsync with a 2-day trigger right after the RevenueCat purchase
+succeeds.

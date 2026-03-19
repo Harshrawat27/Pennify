@@ -478,14 +478,14 @@ export default function PaywallScreen() {
         </View>
 
         {/* Bottom links */}
-        <View className='items-center mt-6 gap-3'>
+        {/* <View className='items-center mt-6 gap-3'>
           <Pressable onPress={handleSignOut}>
             <Text className='text-neutral-400 text-[12px]'>Sign out</Text>
           </Pressable>
           <Pressable onPress={handleDeleteAccount}>
             <Text className='text-red-400 text-[12px]'>Delete Account</Text>
           </Pressable>
-        </View>
+        </View> */}
       </ScrollView>
     </View>
   );
