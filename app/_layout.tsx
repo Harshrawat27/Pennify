@@ -109,9 +109,9 @@ function RootLayoutNav() {
   const isSignIn = pathname === '/sign-in';
   const isPaywall = pathname === '/paywall';
   const statusBarAreaBg =
-    isHome || isWelcome || isSignIn || isPaywall ? 'black' : '#fafafa';
+    isHome || isWelcome || isSignIn ? 'black' : '#fff';
   const statusStyle =
-    isHome || isWelcome || isSignIn || !session || isPaywall ? 'light' : 'dark';
+    isHome || isWelcome || isSignIn || !session ? 'light' : 'dark';
 
   return (
     <SafeAreaView
