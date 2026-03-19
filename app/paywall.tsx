@@ -1,9 +1,16 @@
-import { authClient } from '@/lib/auth-client';
 import { deleteAccount } from '@/lib/account/deleteAccount';
-import { Feather } from '@expo/vector-icons';
+import { authClient } from '@/lib/auth-client';
 import { router, useNavigation } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const FEATURES = [
@@ -14,12 +21,11 @@ const FEATURES = [
   { icon: 'zap', label: 'AI-powered insights' },
 ];
 
-// TODO: Update prices before launch
 const PLANS = [
   {
     id: 'monthly',
     label: 'Monthly',
-    price: '₹299',
+    price: '$9.99',
     period: '/month',
     badge: null,
     description: 'Billed monthly',
@@ -27,10 +33,10 @@ const PLANS = [
   {
     id: 'yearly',
     label: 'Yearly',
-    price: '₹1,999',
+    price: '$29.99',
     period: '/year',
-    badge: 'Save 44%',
-    description: 'Billed annually · ₹167/mo',
+    badge: 'Save 75%',
+    description: 'Billed annually · $2.50/mo',
   },
 ];
 
@@ -110,7 +116,9 @@ export default function PaywallScreen() {
     return (
       <View className='flex-1 bg-black items-center justify-center'>
         <ActivityIndicator size='large' color='#ffffff' />
-        <Text className='text-neutral-500 text-[14px] mt-4'>Deleting account…</Text>
+        <Text className='text-neutral-500 text-[14px] mt-4'>
+          Deleting account…
+        </Text>
       </View>
     );
   }
@@ -123,19 +131,21 @@ export default function PaywallScreen() {
       >
         {/* Header */}
         <View className='items-center pt-10 pb-8 px-6'>
-          <View className='w-16 h-16 rounded-2xl bg-white items-center justify-center mb-5'>
-            <Feather name='trending-up' size={30} color='#000' />
-          </View>
+          <Image
+            source={require('../assets/images/white-icon.png')}
+            className='w-16 h-16 rounded-2xl mb-5'
+            resizeMode='contain'
+          />
           <Text className='text-white text-[28px] font-bold tracking-tight text-center'>
             Spendler Premium
           </Text>
           <Text className='text-neutral-400 text-[15px] mt-2 text-center leading-5'>
-            Everything you need to master your finances
+            Everything you need to track expenses and crush your budget goals
           </Text>
         </View>
 
         {/* Features */}
-        <View className='mx-6 bg-white/5 rounded-2xl p-5 mb-8'>
+        {/* <View className='mx-6 bg-white/5 rounded-2xl p-5 mb-8'>
           {FEATURES.map((f, i) => (
             <View
               key={f.icon}
@@ -144,7 +154,9 @@ export default function PaywallScreen() {
               <View className='w-8 h-8 rounded-xl bg-white/10 items-center justify-center'>
                 <Feather name={f.icon as any} size={15} color='#fff' />
               </View>
-              <Text className='text-white text-[14px] font-medium'>{f.label}</Text>
+              <Text className='text-white text-[14px] font-medium'>
+                {f.label}
+              </Text>
               <Feather
                 name='check'
                 size={14}
@@ -153,7 +165,7 @@ export default function PaywallScreen() {
               />
             </View>
           ))}
-        </View>
+        </View> */}
 
         {/* Plans */}
         <View className='mx-6 gap-3'>
