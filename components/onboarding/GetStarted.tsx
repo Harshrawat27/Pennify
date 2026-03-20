@@ -1,6 +1,5 @@
-import { Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
 
 interface GetStartedProps {
   onNext: () => void;
@@ -17,9 +16,11 @@ export function GetStarted({ onNext, onSignIn }: GetStartedProps) {
     >
       {/* Top: Branding */}
       <View className="items-center mt-20">
-        <View className="w-20 h-20 rounded-3xl bg-white items-center justify-center mb-6">
-          <Feather name="dollar-sign" size={36} color="#000" />
-        </View>
+        <Image
+          source={require('@/assets/images/white-icon.png')}
+          style={{ width: 80, height: 80, marginBottom: 24, borderRadius: 20 }}
+          resizeMode="contain"
+        />
         <Text className="text-white text-[32px] font-bold tracking-tight">
           Spendler
         </Text>

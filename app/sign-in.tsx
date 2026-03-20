@@ -1,7 +1,7 @@
 import { authClient } from '@/lib/auth-client';
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SignInScreen() {
@@ -38,9 +38,11 @@ export default function SignInScreen() {
     >
       {/* Top: Branding */}
       <View className='items-center mt-20'>
-        <View className='w-20 h-20 rounded-3xl bg-white items-center justify-center mb-6'>
-          <Feather name='dollar-sign' size={36} color='#000' />
-        </View>
+        <Image
+          source={require('@/assets/images/white-icon.png')}
+          style={{ width: 80, height: 80, marginBottom: 24, borderRadius: 20 }}
+          resizeMode='contain'
+        />
         <Text className='text-white text-[32px] font-bold tracking-tight'>
           Spendler
         </Text>
