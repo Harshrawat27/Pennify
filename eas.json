@@ -1,0 +1,23 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "production": {
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_CONVEX_URL": "https://posh-kookabura-712.convex.cloud",
+        "EXPO_PUBLIC_CONVEX_SITE_URL": "https://posh-kookabura-712.convex.site",
+        "EXPO_PUBLIC_AUTH_URL": "https://spendler.app",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_TxkUbHNzrLjnHhguvNLpQUAyknH"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {}
+    }
+  }
+}
