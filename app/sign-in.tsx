@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleGoogleSignIn = async () => {
@@ -36,7 +37,7 @@ export default function SignInScreen() {
 
   const handleAppleSignIn = async () => {
     setError('');
-    setIsLoading(true);
+    setIsAppleLoading(true);
     try {
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -54,7 +55,7 @@ export default function SignInScreen() {
       console.error('[SignIn] Apple error:', e);
       setError('Apple sign-in failed. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsAppleLoading(false);
     }
   };
 
@@ -90,10 +91,10 @@ export default function SignInScreen() {
 
         <Pressable
           onPress={handleGoogleSignIn}
-          disabled={isLoading}
+          disabled={isLoading || isAppleLoading}
           className='bg-white rounded-2xl py-4 flex-row items-center justify-center gap-3'
           style={({ pressed }) => ({
-            opacity: pressed || isLoading ? 0.6 : 1,
+            opacity: pressed || isLoading || isAppleLoading ? 0.6 : 1,
           })}
         >
           {isLoading ? (

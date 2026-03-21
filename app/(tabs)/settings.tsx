@@ -22,7 +22,7 @@ type SettingRow = {
 
 
 const ABOUT_SETTINGS: SettingRow[] = [
-  { icon: 'help-circle', label: 'Help & Support' },
+  { icon: 'help-circle', label: 'Help & Support', onPress: () => router.push('/help-support') },
   { icon: 'star', label: 'Rate the App' },
   { icon: 'info', label: 'Version', value: '1.0.0' },
 ];
