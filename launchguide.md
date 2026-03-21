@@ -127,16 +127,14 @@ Go to https://appstoreconnect.apple.com:
 4. Screenshots — required: 6.7" iPhone (iPhone 15 Pro Max size). Minimum 1 per device
    size shown. You can use simulator screenshots.
 5. Privacy Policy URL — https://your-pennifyweb-domain/privacy
-6. Submit for Review — Apple takes 1-3 days usually, often same day now  
-
+6. Submit for Review — Apple takes 1-3 days usually, often same day now
 
 ---
 
 Step 7 — After Approval
 
 - Apple emails you → set Available date (immediately or scheduled)
-- App goes live on App Store  
-
+- App goes live on App Store
 
 ---
 
@@ -165,3 +163,45 @@ Things to have ready before starting
 - Screenshots — at minimum iPhone 6.7" size
 - Privacy policy URL — your pennifyweb /privacy page
 - App description — what goes on the App Store listing
+
+--- launchign guide 2 -----
+
+---
+
+Step 1 — Install EAS CLI
+npm install -g eas-cli
+
+Step 2 — Login to your Expo account  
+ eas login  
+ Enter your expo.dev email and password.
+
+Step 3 — Link your app to Expo (run from Pennify folder)  
+ eas init  
+ This adds a projectId to your app.json. If asked "Do you want to create a new  
+ project?" → Yes.
+
+Step 4 — Run the production build  
+ eas build --platform ios --profile production  
+ During this it will ask about Apple credentials — choose "Automatically manage
+credentials". Log in with your Apple Developer account when prompted.
+
+Step 5 — Wait for build to finish
+EAS builds in the cloud (~15-20 min). You'll get a link to monitor it. When done  
+ you'll see a download link.
+
+Step 6 — Submit to App Store  
+ eas submit --platform ios --profile production --latest  
+ This uploads the build directly to App Store Connect. You'll need to log in with your
+Apple ID again.
+
+---
+
+Before running Step 4 — check in expo.dev:
+
+- Go to expo.dev → your project → Secrets — no action needed since env vars are in  
+  eas.json directly.  
+
+
+One thing to change before building:  
+ The EXPO_PUBLIC_REVENUECAT_IOS_KEY in eas.json is your sandbox/test key. Do you have
+a production RevenueCat key? If yes, replace it before building.
