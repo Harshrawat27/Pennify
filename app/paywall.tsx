@@ -167,16 +167,43 @@ export default function PaywallScreen() {
     }
   }
 
-  async function doRestore() {
+  async function handleRestore() {
     if (!userId) return;
     setIsPurchasing(true);
     try {
       const info = await restorePurchases();
       if (!info) throw new Error('Could not restore purchases.');
       const status = getStatusFromCustomerInfo(info);
+
       if (status === 'none' || status === 'expired') {
         Alert.alert('No purchases found', 'We could not find any active subscriptions to restore.');
+        return;
+      }
+
+      const isTransfer = info.originalAppUserId !== userId;
+
+      if (isTransfer) {
+        // Cross-account transfer — warn user before proceeding
+        Alert.alert(
+          'Transfer Subscription',
+          'This subscription belongs to another account. Transferring it will move it to this account and the previous account will lose access.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Transfer & Restore',
+              onPress: async () => {
+                try {
+                  await updateSubscription({ userId, subscriptionStatus: status });
+                  router.replace('/(tabs)');
+                } catch (e: any) {
+                  Alert.alert('Restore failed', e.message ?? 'Something went wrong.');
+                }
+              },
+            },
+          ]
+        );
       } else {
+        // Same user restoring on new device — no warning needed
         await updateSubscription({ userId, subscriptionStatus: status });
         router.replace('/(tabs)');
       }
@@ -185,17 +212,6 @@ export default function PaywallScreen() {
     } finally {
       setIsPurchasing(false);
     }
-  }
-
-  function handleRestore() {
-    Alert.alert(
-      'Restore Purchase',
-      'Your subscription will be transferred to this account. Any previous account using this subscription will lose access.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Transfer & Restore', onPress: () => doRestore() },
-      ]
-    );
   }
 
   async function handleSignOut() {
