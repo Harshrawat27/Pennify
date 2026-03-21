@@ -1,9 +1,9 @@
+import { Platform } from 'react-native';
 import Purchases, {
   CustomerInfo,
   LOG_LEVEL,
   PurchasesOffering,
 } from 'react-native-purchases';
-import { Platform } from 'react-native';
 
 const IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? '';
 
@@ -44,14 +44,14 @@ export async function getCustomerInfo(): Promise<CustomerInfo | null> {
 export type SubStatus = 'none' | 'monthly' | 'yearly' | 'expired';
 
 export function getStatusFromCustomerInfo(info: CustomerInfo): SubStatus {
-  const active = info.entitlements.active['pro'];
+  const active = info.entitlements.active['Spendler Pro'];
   if (active) {
     const id = active.productIdentifier ?? '';
     if (id.includes('yearly')) return 'yearly';
     if (id.includes('monthly')) return 'monthly';
     return 'yearly'; // fallback for any active pro entitlement
   }
-  const all = info.entitlements.all['pro'];
+  const all = info.entitlements.all['Spendler Pro'];
   if (all) return 'expired';
   return 'none';
 }

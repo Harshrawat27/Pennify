@@ -1,7 +1,14 @@
 import { authClient } from '@/lib/auth-client';
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Image, Linking, Pressable, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Linking,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SignInScreen() {
@@ -17,13 +24,17 @@ export default function SignInScreen() {
     setIsLoading(true);
     try {
       console.log('[SignIn] calling authClient.signIn.social...');
+      console.log('[SignIn] baseURL:', process.env.EXPO_PUBLIC_AUTH_URL);
       const result = await authClient.signIn.social({
         provider: 'google',
         callbackURL: '/',
       });
       console.log('[SignIn] signIn.social returned:', JSON.stringify(result));
+      console.log('[SignIn] result.error:', result?.error);
+      console.log('[SignIn] result.data:', JSON.stringify(result?.data));
     } catch (e: unknown) {
       console.error('[SignIn] Google error:', e);
+      console.error('[SignIn] Google error stringified:', JSON.stringify(e));
       setError('Google sign-in failed. Please try again.');
     } finally {
       console.log('[SignIn] finally — resetting isLoading');
@@ -86,8 +97,8 @@ export default function SignInScreen() {
             onPress={() => Linking.openURL('https://spendler.app/terms')}
           >
             Terms of Service
-          </Text>
-          {' '}and{' '}
+          </Text>{' '}
+          and{' '}
           <Text
             className='text-neutral-400 underline'
             onPress={() => Linking.openURL('https://spendler.app/privacy')}

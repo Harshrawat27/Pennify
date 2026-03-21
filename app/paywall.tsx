@@ -139,6 +139,22 @@ export default function PaywallScreen() {
     setIsPurchasing(true);
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
+      // Security: only update if this purchase belongs to the current user
+      // Prevents User B from claiming User A's subscription via shared Apple ID
+      if (customerInfo.originalAppUserId !== userId) {
+        Alert.alert(
+          'Subscription Found',
+          'This Apple ID already has an active subscription on another account. Tap Restore to transfer it to this account — the previous account will lose access.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Restore Instead',
+              onPress: () => handleRestore(),
+            },
+          ]
+        );
+        return;
+      }
       const status = getStatusFromCustomerInfo(customerInfo);
       await updateSubscription({ userId, subscriptionStatus: status });
       router.replace('/(tabs)');
@@ -151,7 +167,7 @@ export default function PaywallScreen() {
     }
   }
 
-  async function handleRestore() {
+  async function doRestore() {
     if (!userId) return;
     setIsPurchasing(true);
     try {
@@ -171,6 +187,17 @@ export default function PaywallScreen() {
     }
   }
 
+  function handleRestore() {
+    Alert.alert(
+      'Restore Purchase',
+      'Your subscription will be transferred to this account. Any previous account using this subscription will lose access.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Transfer & Restore', onPress: () => doRestore() },
+      ]
+    );
+  }
+
   async function handleSignOut() {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -178,6 +205,7 @@ export default function PaywallScreen() {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
+          await Purchases.logOut().catch(() => {});
           await authClient.signOut();
           router.replace('/sign-in');
         },

@@ -1,4 +1,5 @@
 import { authClient } from '@/lib/auth-client';
+import Purchases from 'react-native-purchases';
 import { api } from '@/convex/_generated/api';
 import { useQuery, useMutation } from 'convex/react';
 import { CURRENCIES } from '@/lib/utils/currency';
@@ -202,6 +203,7 @@ export default function SettingsScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = () => {
+    void Purchases.logOut().catch(() => {});
     void authClient.signOut();
     router.replace('/sign-in');
   };
