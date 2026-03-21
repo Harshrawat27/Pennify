@@ -147,6 +147,13 @@ export default function SettingsScreen() {
       label: 'Ask Penny',
       onPress: () => router.push('/finance-chat'),
     },
+    ...(prefs?.subscriptionStatus === 'monthly' || prefs?.subscriptionStatus === 'yearly'
+      ? [{
+          icon: 'award' as const,
+          label: 'Manage Subscription',
+          onPress: () => Linking.openURL('https://apps.apple.com/account/subscriptions'),
+        }]
+      : []),
     {
       icon: 'users',
       label: 'People & Debts',

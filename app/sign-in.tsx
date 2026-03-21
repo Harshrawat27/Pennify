@@ -1,10 +1,12 @@
 import { authClient } from '@/lib/auth-client';
 import { Feather } from '@expo/vector-icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
   Linking,
+  Platform,
   Pressable,
   Text,
   View,
@@ -16,28 +18,42 @@ export default function SignInScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  console.log('[SignIn] rendered — isLoading:', isLoading);
-
   const handleGoogleSignIn = async () => {
-    console.log('[SignIn] button pressed');
     setError('');
     setIsLoading(true);
     try {
-      console.log('[SignIn] calling authClient.signIn.social...');
-      console.log('[SignIn] baseURL:', process.env.EXPO_PUBLIC_AUTH_URL);
-      const result = await authClient.signIn.social({
+      await authClient.signIn.social({
         provider: 'google',
         callbackURL: '/',
       });
-      console.log('[SignIn] signIn.social returned:', JSON.stringify(result));
-      console.log('[SignIn] result.error:', result?.error);
-      console.log('[SignIn] result.data:', JSON.stringify(result?.data));
     } catch (e: unknown) {
       console.error('[SignIn] Google error:', e);
-      console.error('[SignIn] Google error stringified:', JSON.stringify(e));
       setError('Google sign-in failed. Please try again.');
     } finally {
-      console.log('[SignIn] finally — resetting isLoading');
+      setIsLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setError('');
+    setIsLoading(true);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) throw new Error('No identity token');
+      await authClient.signIn.social({
+        provider: 'apple',
+        idToken: { token: credential.identityToken },
+      } as any);
+    } catch (e: any) {
+      if (e?.code === 'ERR_REQUEST_CANCELED') return; // user dismissed
+      console.error('[SignIn] Apple error:', e);
+      setError('Apple sign-in failed. Please try again.');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -89,6 +105,20 @@ export default function SignInScreen() {
             {isLoading ? 'Please wait...' : 'Continue with Google'}
           </Text>
         </Pressable>
+
+        {Platform.OS === 'ios' && (
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={
+              AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+            }
+            buttonStyle={
+              AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+            }
+            cornerRadius={16}
+            style={{ height: 52 }}
+            onPress={handleAppleSignIn}
+          />
+        )}
 
         <Text className='text-neutral-600 text-[12px] text-center leading-5'>
           By continuing, you agree to our{'\n'}
