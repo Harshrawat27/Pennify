@@ -11,7 +11,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import NetInfo from '@react-native-community/netinfo';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -41,6 +41,10 @@ export default function AddTransactionScreen() {
 
   const addPending = usePendingStore((s) => s.add);
   const requestSync = usePendingStore((s) => s.requestSync);
+
+  const amountRef = useRef<TextInput>(null);
+  const titleRef = useRef<TextInput>(null);
+  const noteRef = useRef<TextInput>(null);
 
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -257,32 +261,35 @@ export default function AddTransactionScreen() {
         ) : null}
 
         {/* Amount */}
-        <View className="mx-6 mt-6 bg-white rounded-2xl p-5">
+        <Pressable className="mx-6 mt-6 bg-white rounded-2xl p-5" onPress={() => amountRef.current?.focus()}>
           <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Amount</Text>
           <View className="flex-row items-center">
             <Text className="text-[32px] font-bold text-black mr-1">{getCurrencySymbol(currency)}</Text>
             <TextInput
+              ref={amountRef}
               value={amount}
               onChangeText={setAmount}
               placeholder="0"
               placeholderTextColor="#D4D4D4"
               keyboardType="decimal-pad"
               className="flex-1 text-[32px] font-bold text-black"
+              autoFocus
             />
           </View>
-        </View>
+        </Pressable>
 
         {/* Title */}
-        <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
+        <Pressable className="mx-6 mt-4 bg-white rounded-2xl p-5" onPress={() => titleRef.current?.focus()}>
           <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Title</Text>
           <TextInput
+            ref={titleRef}
             value={title}
             onChangeText={setTitle}
             placeholder="e.g. Coffee, Salary..."
             placeholderTextColor="#D4D4D4"
             className="text-[16px] text-black"
           />
-        </View>
+        </Pressable>
 
         {/* Account Picker */}
         <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
@@ -318,9 +325,10 @@ export default function AddTransactionScreen() {
         </View>
 
         {/* Note */}
-        <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
+        <Pressable className="mx-6 mt-4 bg-white rounded-2xl p-5" onPress={() => noteRef.current?.focus()}>
           <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Note</Text>
           <TextInput
+            ref={noteRef}
             value={note}
             onChangeText={setNote}
             placeholder="Optional note..."
@@ -328,7 +336,7 @@ export default function AddTransactionScreen() {
             className="text-[16px] text-black"
             multiline
           />
-        </View>
+        </Pressable>
 
         {/* Auto-categorize hint */}
         <View className="mx-6 mt-3 flex-row items-center gap-2">
