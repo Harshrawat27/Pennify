@@ -7,6 +7,7 @@ import {
   restorePurchases,
 } from '@/lib/revenuecat';
 import { Feather } from '@expo/vector-icons';
+import { useMutation } from 'convex/react';
 import { router, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -18,9 +19,11 @@ import {
   Text,
   View,
 } from 'react-native';
-import Purchases, { IntroEligibilityStatus, PurchasesPackage } from 'react-native-purchases';
+import Purchases, {
+  INTRO_ELIGIBILITY_STATUS,
+  PurchasesPackage,
+} from 'react-native-purchases';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useMutation } from 'convex/react';
 
 const TIMELINE_STEPS = [
   {
@@ -56,9 +59,15 @@ export default function PaywallScreen() {
   const navigation = useNavigation();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>('yearly');
-  const [monthlyPackage, setMonthlyPackage] = useState<PurchasesPackage | null>(null);
-  const [yearlyPackage, setYearlyPackage] = useState<PurchasesPackage | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>(
+    'yearly'
+  );
+  const [monthlyPackage, setMonthlyPackage] = useState<PurchasesPackage | null>(
+    null
+  );
+  const [yearlyPackage, setYearlyPackage] = useState<PurchasesPackage | null>(
+    null
+  );
   const [trialEligible, setTrialEligible] = useState(true); // optimistic default
   const updateSubscription = useMutation(api.preferences.updateSubscription);
   const userId = session?.user?.id;
@@ -70,13 +79,29 @@ export default function PaywallScreen() {
   useEffect(() => {
     if (selectedPlan === 'yearly') {
       Animated.parallel([
-        Animated.timing(monthlyOpacity, { toValue: 0, duration: 180, useNativeDriver: true }),
-        Animated.timing(yearlyOpacity, { toValue: 1, duration: 180, useNativeDriver: true }),
+        Animated.timing(monthlyOpacity, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(yearlyOpacity, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(yearlyOpacity, { toValue: 0, duration: 180, useNativeDriver: true }),
-        Animated.timing(monthlyOpacity, { toValue: 1, duration: 180, useNativeDriver: true }),
+        Animated.timing(yearlyOpacity, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(monthlyOpacity, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
       ]).start();
     }
   }, [selectedPlan]);
@@ -89,13 +114,22 @@ export default function PaywallScreen() {
       for (const pkg of offering.availablePackages) {
         const id = pkg.product.identifier;
         if (id.includes('monthly')) setMonthlyPackage(pkg);
-        if (id.includes('yearly')) { setYearlyPackage(pkg); yPkg = pkg; }
+        if (id.includes('yearly')) {
+          setYearlyPackage(pkg);
+          yPkg = pkg;
+        }
       }
       if (yPkg) {
         try {
-          const result = await Purchases.checkTrialOrIntroductoryPriceEligibility([yPkg.product.identifier]);
+          const result =
+            await Purchases.checkTrialOrIntroductoryPriceEligibility([
+              yPkg.product.identifier,
+            ]);
           const status = result[yPkg.product.identifier]?.status;
-          setTrialEligible(status === IntroEligibilityStatus.INTRO_ELIGIBILITY_STATUS_ELIGIBLE);
+          setTrialEligible(
+            status ===
+              INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE
+          );
         } catch {
           setTrialEligible(false);
         }
@@ -128,7 +162,10 @@ export default function PaywallScreen() {
     if (!userId) return;
     const pkg = selectedPlan === 'yearly' ? yearlyPackage : monthlyPackage;
     if (!pkg) {
-      Alert.alert('Not available', 'Could not load products. Please try again.');
+      Alert.alert(
+        'Not available',
+        'Could not load products. Please try again.'
+      );
       return;
     }
     setIsPurchasing(true);
@@ -150,7 +187,10 @@ export default function PaywallScreen() {
       router.replace('/(tabs)');
     } catch (e: any) {
       if (!e.userCancelled) {
-        Alert.alert('Purchase failed', e.message ?? 'Something went wrong. Please try again.');
+        Alert.alert(
+          'Purchase failed',
+          e.message ?? 'Something went wrong. Please try again.'
+        );
       }
     } finally {
       setIsPurchasing(false);
@@ -166,7 +206,10 @@ export default function PaywallScreen() {
       const status = getStatusFromCustomerInfo(info);
 
       if (status === 'none' || status === 'expired') {
-        Alert.alert('No purchases found', 'We could not find any active subscriptions to restore.');
+        Alert.alert(
+          'No purchases found',
+          'We could not find any active subscriptions to restore.'
+        );
         return;
       }
 
@@ -182,10 +225,16 @@ export default function PaywallScreen() {
               text: 'Transfer & Restore',
               onPress: async () => {
                 try {
-                  await updateSubscription({ userId, subscriptionStatus: status });
+                  await updateSubscription({
+                    userId,
+                    subscriptionStatus: status,
+                  });
                   router.replace('/(tabs)');
                 } catch (e: any) {
-                  Alert.alert('Restore failed', e.message ?? 'Something went wrong.');
+                  Alert.alert(
+                    'Restore failed',
+                    e.message ?? 'Something went wrong.'
+                  );
                 }
               },
             },
@@ -247,7 +296,9 @@ export default function PaywallScreen() {
     return (
       <View className='flex-1 bg-white items-center justify-center'>
         <ActivityIndicator size='large' color='#000' />
-        <Text className='text-neutral-500 text-[14px] mt-4'>Deleting account…</Text>
+        <Text className='text-neutral-500 text-[14px] mt-4'>
+          Deleting account…
+        </Text>
       </View>
     );
   }
@@ -256,11 +307,17 @@ export default function PaywallScreen() {
     <View className='flex-1 bg-white'>
       {/* Header */}
       <View className='flex-row items-center justify-between px-5 pt-4 pb-2'>
-        <Pressable onPress={handleMaybeLater} hitSlop={12} className='w-9 h-9 items-center justify-center'>
+        <Pressable
+          onPress={handleMaybeLater}
+          hitSlop={12}
+          className='w-9 h-9 items-center justify-center'
+        >
           <Feather name='chevron-left' size={24} color='#000' />
         </Pressable>
         <Pressable onPress={handleRestore} hitSlop={12} disabled={isPurchasing}>
-          <Text className={`text-[15px] ${isPurchasing ? 'text-neutral-300' : 'text-neutral-500'}`}>
+          <Text
+            className={`text-[15px] ${isPurchasing ? 'text-neutral-300' : 'text-neutral-500'}`}
+          >
             Restore
           </Text>
         </Pressable>
@@ -275,13 +332,27 @@ export default function PaywallScreen() {
           {trialEligible ? (
             <>
               {/* Yearly trial title */}
-              <Animated.View style={{ position: 'absolute', left: 24, right: 24, opacity: yearlyOpacity }}>
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  left: 24,
+                  right: 24,
+                  opacity: yearlyOpacity,
+                }}
+              >
                 <Text className='text-[30px] font-extrabold text-black text-center leading-9'>
                   Start your 3-day{'\n'}FREE trial to continue.
                 </Text>
               </Animated.View>
               {/* Monthly title */}
-              <Animated.View style={{ position: 'absolute', left: 24, right: 24, opacity: monthlyOpacity }}>
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  left: 24,
+                  right: 24,
+                  opacity: monthlyOpacity,
+                }}
+              >
                 <Text className='text-[30px] font-extrabold text-black text-center leading-9'>
                   Subscribe to{'\n'}continue.
                 </Text>
@@ -300,7 +371,14 @@ export default function PaywallScreen() {
           {trialEligible ? (
             <>
               {/* Yearly: timeline */}
-              <Animated.View style={{ position: 'absolute', left: 0, right: 0, opacity: yearlyOpacity }}>
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  opacity: yearlyOpacity,
+                }}
+              >
                 {TIMELINE_STEPS.map((step, i) => {
                   const isLast = i === TIMELINE_STEPS.length - 1;
                   const description =
@@ -313,7 +391,11 @@ export default function PaywallScreen() {
                           style={{ backgroundColor: step.color }}
                           className='w-11 h-11 rounded-full items-center justify-center'
                         >
-                          <Feather name={step.icon as any} size={19} color='#fff' />
+                          <Feather
+                            name={step.icon as any}
+                            size={19}
+                            color='#fff'
+                          />
                         </View>
                         {!isLast && (
                           <View
@@ -328,8 +410,12 @@ export default function PaywallScreen() {
                         )}
                       </View>
                       <View className='flex-1 pb-6'>
-                        <Text className='text-[16px] font-bold text-black'>{step.title}</Text>
-                        <Text className='text-[13px] text-neutral-500 mt-1 leading-5'>{description}</Text>
+                        <Text className='text-[16px] font-bold text-black'>
+                          {step.title}
+                        </Text>
+                        <Text className='text-[13px] text-neutral-500 mt-1 leading-5'>
+                          {description}
+                        </Text>
                       </View>
                     </View>
                   );
@@ -337,14 +423,26 @@ export default function PaywallScreen() {
               </Animated.View>
 
               {/* Monthly: features */}
-              <Animated.View style={{ position: 'absolute', left: 0, right: 0, opacity: monthlyOpacity }}>
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  opacity: monthlyOpacity,
+                }}
+              >
                 <View className='bg-neutral-50 rounded-2xl p-5'>
                   {FEATURES.map((f, i) => (
-                    <View key={i} className={`flex-row items-center gap-3 ${i > 0 ? 'mt-3' : ''}`}>
+                    <View
+                      key={i}
+                      className={`flex-row items-center gap-3 ${i > 0 ? 'mt-3' : ''}`}
+                    >
                       <View className='w-5 h-5 rounded-full bg-black items-center justify-center'>
                         <Feather name='check' size={11} color='#fff' />
                       </View>
-                      <Text className='text-[14px] text-black font-medium'>{f}</Text>
+                      <Text className='text-[14px] text-black font-medium'>
+                        {f}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -354,11 +452,16 @@ export default function PaywallScreen() {
             // No trial — show features for both plans
             <View className='bg-neutral-50 rounded-2xl p-5'>
               {FEATURES.map((f, i) => (
-                <View key={i} className={`flex-row items-center gap-3 ${i > 0 ? 'mt-3' : ''}`}>
+                <View
+                  key={i}
+                  className={`flex-row items-center gap-3 ${i > 0 ? 'mt-3' : ''}`}
+                >
                   <View className='w-5 h-5 rounded-full bg-black items-center justify-center'>
                     <Feather name='check' size={11} color='#fff' />
                   </View>
-                  <Text className='text-[14px] text-black font-medium'>{f}</Text>
+                  <Text className='text-[14px] text-black font-medium'>
+                    {f}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -379,18 +482,29 @@ export default function PaywallScreen() {
               backgroundColor: '#fff',
             }}
           >
-            <Text className='text-[14px] font-semibold text-black'>Monthly</Text>
-            <Text className='text-[14px] font-bold text-black mt-1'>{monthlyPrice} /mo</Text>
+            <Text className='text-[14px] font-semibold text-black'>
+              Monthly
+            </Text>
+            <Text className='text-[14px] font-bold text-black mt-1'>
+              {monthlyPrice} /mo
+            </Text>
             <View
               style={{
-                width: 22, height: 22, borderRadius: 11, marginTop: 10,
+                width: 22,
+                height: 22,
+                borderRadius: 11,
+                marginTop: 10,
                 borderWidth: 2,
                 borderColor: selectedPlan === 'monthly' ? '#000' : '#ccc',
-                backgroundColor: selectedPlan === 'monthly' ? '#000' : 'transparent',
-                alignItems: 'center', justifyContent: 'center',
+                backgroundColor:
+                  selectedPlan === 'monthly' ? '#000' : 'transparent',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              {selectedPlan === 'monthly' && <Feather name='check' size={12} color='#fff' />}
+              {selectedPlan === 'monthly' && (
+                <Feather name='check' size={12} color='#fff' />
+              )}
             </View>
           </Pressable>
 
@@ -407,34 +521,69 @@ export default function PaywallScreen() {
             }}
           >
             {trialEligible && (
-              <View style={{ position: 'absolute', top: -13, left: 0, right: 0, alignItems: 'center' }}>
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -13,
+                  left: 0,
+                  right: 0,
+                  alignItems: 'center',
+                }}
+              >
                 <View className='bg-black rounded-full px-3 py-1'>
-                  <Text className='text-white text-[11px] font-bold tracking-wide'>3 DAYS FREE</Text>
+                  <Text className='text-white text-[11px] font-bold tracking-wide'>
+                    3 DAYS FREE
+                  </Text>
                 </View>
               </View>
             )}
             <Text className='text-[14px] font-semibold text-black'>Yearly</Text>
-            <Text className='text-[14px] font-bold text-black mt-1'>{yearlyPerMonth}</Text>
+            <Text className='text-[14px] font-bold text-black mt-1'>
+              {yearlyPerMonth}
+            </Text>
             <View
               style={{
-                width: 22, height: 22, borderRadius: 11, marginTop: 10,
+                width: 22,
+                height: 22,
+                borderRadius: 11,
+                marginTop: 10,
                 borderWidth: 2,
                 borderColor: '#000',
-                backgroundColor: selectedPlan === 'yearly' ? '#000' : 'transparent',
-                alignItems: 'center', justifyContent: 'center',
+                backgroundColor:
+                  selectedPlan === 'yearly' ? '#000' : 'transparent',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              {selectedPlan === 'yearly' && <Feather name='check' size={12} color='#fff' />}
+              {selectedPlan === 'yearly' && (
+                <Feather name='check' size={12} color='#fff' />
+              )}
             </View>
           </Pressable>
         </View>
 
         {/* No payment due — only when trial eligible and yearly selected */}
-        <View style={{ height: 32, alignItems: 'center', justifyContent: 'center', marginTop: 12 }}>
+        <View
+          style={{
+            height: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: 12,
+          }}
+        >
           {trialEligible && (
-            <Animated.View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, opacity: yearlyOpacity }}>
+            <Animated.View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                opacity: yearlyOpacity,
+              }}
+            >
               <Feather name='check' size={14} color='#000' />
-              <Text className='text-[14px] font-semibold text-black'>No Payment Due Now</Text>
+              <Text className='text-[14px] font-semibold text-black'>
+                No Payment Due Now
+              </Text>
             </Animated.View>
           )}
         </View>
@@ -448,12 +597,24 @@ export default function PaywallScreen() {
           {trialEligible ? (
             <>
               <Animated.Text
-                style={{ color: '#fff', fontSize: 16, fontWeight: '700', opacity: yearlyOpacity, position: 'absolute' }}
+                style={{
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: '700',
+                  opacity: yearlyOpacity,
+                  position: 'absolute',
+                }}
               >
                 Start My 3-Day Free Trial
               </Animated.Text>
               <Animated.Text
-                style={{ color: '#fff', fontSize: 16, fontWeight: '700', opacity: monthlyOpacity, position: 'absolute' }}
+                style={{
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: '700',
+                  opacity: monthlyOpacity,
+                  position: 'absolute',
+                }}
               >
                 Subscribe Monthly · {monthlyPrice}
               </Animated.Text>
@@ -461,12 +622,24 @@ export default function PaywallScreen() {
           ) : (
             <>
               <Animated.Text
-                style={{ color: '#fff', fontSize: 16, fontWeight: '700', opacity: yearlyOpacity, position: 'absolute' }}
+                style={{
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: '700',
+                  opacity: yearlyOpacity,
+                  position: 'absolute',
+                }}
               >
                 Subscribe Yearly · {yearlyPrice}
               </Animated.Text>
               <Animated.Text
-                style={{ color: '#fff', fontSize: 16, fontWeight: '700', opacity: monthlyOpacity, position: 'absolute' }}
+                style={{
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: '700',
+                  opacity: monthlyOpacity,
+                  position: 'absolute',
+                }}
               >
                 Subscribe Monthly · {monthlyPrice}
               </Animated.Text>
@@ -475,43 +648,78 @@ export default function PaywallScreen() {
         </Pressable>
 
         {/* Legal */}
-        <View style={{ height: 36, marginTop: 8, paddingHorizontal: 32, justifyContent: 'center' }}>
+        <View
+          style={{
+            height: 36,
+            marginTop: 8,
+            paddingHorizontal: 32,
+            justifyContent: 'center',
+          }}
+        >
           {trialEligible ? (
             <>
               <Animated.Text
                 style={{
-                  color: '#a3a3a3', fontSize: 11, textAlign: 'center', lineHeight: 16,
-                  opacity: yearlyOpacity, position: 'absolute', left: 32, right: 32,
+                  color: '#a3a3a3',
+                  fontSize: 11,
+                  textAlign: 'center',
+                  lineHeight: 16,
+                  opacity: yearlyOpacity,
+                  position: 'absolute',
+                  left: 32,
+                  right: 32,
                 }}
               >
-                3 days free, then {yearlyPrice} per year ({yearlyPerMonth}). Cancel anytime before {billingDateStr}.
+                3 days free, then {yearlyPrice} per year ({yearlyPerMonth}).
+                Cancel anytime before {billingDateStr}.
               </Animated.Text>
               <Animated.Text
                 style={{
-                  color: '#a3a3a3', fontSize: 11, textAlign: 'center', lineHeight: 16,
-                  opacity: monthlyOpacity, position: 'absolute', left: 32, right: 32,
+                  color: '#a3a3a3',
+                  fontSize: 11,
+                  textAlign: 'center',
+                  lineHeight: 16,
+                  opacity: monthlyOpacity,
+                  position: 'absolute',
+                  left: 32,
+                  right: 32,
                 }}
               >
-                {monthlyPrice}/month. Auto-renews unless cancelled 24 hours before renewal.
+                {monthlyPrice}/month. Auto-renews unless cancelled 24 hours
+                before renewal.
               </Animated.Text>
             </>
           ) : (
             <>
               <Animated.Text
                 style={{
-                  color: '#a3a3a3', fontSize: 11, textAlign: 'center', lineHeight: 16,
-                  opacity: yearlyOpacity, position: 'absolute', left: 32, right: 32,
+                  color: '#a3a3a3',
+                  fontSize: 11,
+                  textAlign: 'center',
+                  lineHeight: 16,
+                  opacity: yearlyOpacity,
+                  position: 'absolute',
+                  left: 32,
+                  right: 32,
                 }}
               >
-                {yearlyPrice}/year ({yearlyPerMonth}). Auto-renews unless cancelled 24 hours before renewal.
+                {yearlyPrice}/year ({yearlyPerMonth}). Auto-renews unless
+                cancelled 24 hours before renewal.
               </Animated.Text>
               <Animated.Text
                 style={{
-                  color: '#a3a3a3', fontSize: 11, textAlign: 'center', lineHeight: 16,
-                  opacity: monthlyOpacity, position: 'absolute', left: 32, right: 32,
+                  color: '#a3a3a3',
+                  fontSize: 11,
+                  textAlign: 'center',
+                  lineHeight: 16,
+                  opacity: monthlyOpacity,
+                  position: 'absolute',
+                  left: 32,
+                  right: 32,
                 }}
               >
-                {monthlyPrice}/month. Auto-renews unless cancelled 24 hours before renewal.
+                {monthlyPrice}/month. Auto-renews unless cancelled 24 hours
+                before renewal.
               </Animated.Text>
             </>
           )}
