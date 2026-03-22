@@ -5,7 +5,8 @@
   "build": {
     "production": {
       "ios": {
-        "simulator": false
+        "simulator": false,
+        "autoIncrement": true
       },
       "env": {
         "EXPO_PUBLIC_CONVEX_URL": "https://posh-kookabura-712.convex.cloud",
