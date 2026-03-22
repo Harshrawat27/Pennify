@@ -12,6 +12,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "app.spendler",
       "usesAppleSignIn": true,
+      "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
