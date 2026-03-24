@@ -3,7 +3,7 @@ import { authClient } from '@/lib/auth-client';
 import { ConvexAuthSetup } from '@/lib/auth/ConvexAuthSetup';
 import { initializePurchases } from '@/lib/revenuecat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { Stack, router, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -19,9 +19,10 @@ SplashScreen.preventAutoHideAsync();
 function RootLayoutNav() {
   const { data: session, isPending } = authClient.useSession();
   const userId = session?.user?.id;
+  const { isAuthenticated } = useConvexAuth();
 
   // Check Convex for user preferences to determine routing
-  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const prefs = useQuery(api.preferences.get, userId && isAuthenticated ? { userId } : 'skip');
 
   const hasRouted = useRef(false);
   const prevUserId = useRef<string | undefined>(undefined);
