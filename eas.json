@@ -4,6 +4,19 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_CONVEX_URL": "https://posh-kookabura-712.convex.cloud",
+        "EXPO_PUBLIC_CONVEX_SITE_URL": "https://posh-kookabura-712.convex.site",
+        "EXPO_PUBLIC_AUTH_URL": "https://spendler.app",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_TxkUbHNzrLjnHhguvNLpQUAyknH"
+      }
+    },
     "production": {
       "ios": {
         "simulator": false,

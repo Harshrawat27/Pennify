@@ -137,10 +137,17 @@ export default function HomeScreen() {
   const hasAlerts = (notifications?.length ?? 0) > 0 || hasUnreadAnnouncement;
   const updateHideBalance = useMutation(api.preferences.updateHideBalance);
   const updateBalance = useMutation(api.preferences.updateBalance);
+  // Safety net: if prefs loaded but no record exists, user skipped onboarding — send them back
+  useEffect(() => {
+    if (prefs === null) {
+      router.replace('/welcome');
+    }
+  }, [prefs]);
+
   // Local state for instant toggle feedback; syncs from DB on first load
   const [localHidden, setLocalHidden] = useState<boolean | null>(null);
   useEffect(() => {
-    if (localHidden === null && prefs !== undefined) {
+    if (localHidden === null && prefs !== undefined && prefs !== null) {
       setLocalHidden(prefs.hideBalance ?? false);
     }
   }, [prefs, localHidden]);
@@ -247,7 +254,7 @@ export default function HomeScreen() {
           {/* Balance */}
           {(() => {
             const isBudgetMode =
-              prefs !== undefined && prefs.overallBalance == null;
+              prefs !== undefined && prefs !== null && prefs.overallBalance == null;
             const budgetRemaining = (monthlyBudgetData?.budget ?? 0) - expenses;
             const displayValue = isBudgetMode ? budgetRemaining : totalBalance;
             const isLoading = isBudgetMode

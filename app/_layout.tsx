@@ -2,13 +2,16 @@ import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { ConvexAuthSetup } from '@/lib/auth/ConvexAuthSetup';
 import { initializePurchases } from '@/lib/revenuecat';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from 'convex/react';
 import { Stack, router, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import '../global.css';
+
+const HAS_LAUNCHED_KEY = 'spendler_has_launched';
 
 // Keep the splash screen visible until we manually hide it
 SplashScreen.preventAutoHideAsync();
@@ -24,6 +27,14 @@ function RootLayoutNav() {
   const prevUserId = useRef<string | undefined>(undefined);
   const prevSubStatus = useRef<string | undefined>(undefined);
   const splashHidden = useRef(false);
+  const [hasLaunched, setHasLaunched] = useState<boolean | null>(null);
+
+  // Check if app has been launched before on this device
+  useEffect(() => {
+    AsyncStorage.getItem(HAS_LAUNCHED_KEY).then((val) => {
+      setHasLaunched(val === 'true');
+    });
+  }, []);
   // prevSubStatus tracks changes after initial routing to re-route on purchase
 
   // Hide splash as soon as auth state is known (only once)
@@ -68,12 +79,24 @@ function RootLayoutNav() {
       console.log('[Layout] auth isPending — waiting');
       return;
     }
+    if (hasLaunched === null) {
+      console.log('[Layout] hasLaunched check pending — waiting');
+      return;
+    }
     if (hasRouted.current) return;
 
     if (!session) {
-      console.log('[Layout] No session → /sign-in');
       hasRouted.current = true;
-      router.replace('/sign-in');
+      if (!hasLaunched) {
+        // First time ever opening the app on this device
+        console.log('[Layout] First launch, no session → /welcome');
+        AsyncStorage.setItem(HAS_LAUNCHED_KEY, 'true');
+        router.replace('/welcome');
+      } else {
+        // Returning user who is logged out
+        console.log('[Layout] Returning user, no session → /sign-in');
+        router.replace('/sign-in');
+      }
       return;
     }
 
@@ -107,7 +130,7 @@ function RootLayoutNav() {
     } else {
       console.log('[Layout] Has prefs, already in app → skip replace');
     }
-  }, [session, isPending, prefs, userId]);
+  }, [session, isPending, prefs, userId, hasLaunched]);
 
   const pathname = usePathname();
   const isHome = pathname === '/';
