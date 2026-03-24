@@ -1,7 +1,7 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { getLocalSubscriptionStatus, setLocalSubscriptionStatus } from '@/lib/subscription';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { useEffect, useState } from 'react';
 
 /**
@@ -15,11 +15,12 @@ import { useEffect, useState } from 'react';
 export function useSubscription() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const { isAuthenticated } = useConvexAuth();
 
   // undefined = still reading from SecureStore; null = no subscription
   const [localStatus, setLocalStatus] = useState<string | null | undefined>(undefined);
 
-  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const prefs = useQuery(api.preferences.get, userId && isAuthenticated ? { userId } : 'skip');
 
   // Seed from local cache on mount (instant on returning opens)
   useEffect(() => {

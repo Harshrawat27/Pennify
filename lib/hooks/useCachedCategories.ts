@@ -5,7 +5,7 @@ import {
   setCachedCategories,
   type CachedCategory,
 } from '@/lib/localCache';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { useEffect, useState } from 'react';
 
 /**
@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 export function useCachedCategories(): CachedCategory[] {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const { isAuthenticated } = useConvexAuth();
 
   const [categories, setCategories] = useState<CachedCategory[]>([]);
 
@@ -27,7 +28,7 @@ export function useCachedCategories(): CachedCategory[] {
   }, []);
 
   // Convex is source of truth — runs in background, overwrites cache
-  const convexCategories = useQuery(api.categories.list, userId ? { userId } : 'skip');
+  const convexCategories = useQuery(api.categories.list, userId && isAuthenticated ? { userId } : 'skip');
 
   useEffect(() => {
     if (convexCategories === undefined) return;

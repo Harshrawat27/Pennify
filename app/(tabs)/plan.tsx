@@ -1,5 +1,6 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import { formatCurrencyCompact } from '@/lib/utils/currency';
 import { currentMonth, formatDateShort } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
@@ -27,15 +28,16 @@ function monthsUntil(dateStr: string): number {
 export default function PlanScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const authenticatedUserId = useAuthenticatedUserId();
 
   const [contributionGoalId, setContributionGoalId] = useState<string | null>(null);
   const [contributionAmount, setContributionAmount] = useState('');
   const [historyGoalId, setHistoryGoalId] = useState<string | null>(null);
 
   const month = currentMonth();
-  const goals = useQuery(api.goals.list, userId ? { userId } : 'skip');
-  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
-  const budgets = useQuery(api.budgets.listByMonthWithComparison, userId ? { userId, month } : 'skip');
+  const goals = useQuery(api.goals.list, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const budgets = useQuery(api.budgets.listByMonthWithComparison, authenticatedUserId ? { userId: authenticatedUserId, month } : 'skip');
   const contributions = useQuery(
     api.goals.listContributions,
     historyGoalId ? { goalId: historyGoalId as any } : 'skip',

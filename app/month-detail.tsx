@@ -8,6 +8,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import { formatCurrency } from '@/lib/utils/currency';
 import {
   currentMonth, formatMonthLabel, prevMonth, nextMonth,
@@ -22,17 +23,18 @@ export default function MonthDetailScreen() {
 
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const authenticatedUserId = useAuthenticatedUserId();
 
   const { start, end } = useMemo(() => monthToDateRange(month), [month]);
 
-  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
   const stats = useQuery(
     api.transactions.getStatsForPeriod,
-    userId ? { userId, startDate: start, endDate: end } : 'skip',
+    authenticatedUserId ? { userId: authenticatedUserId, startDate: start, endDate: end } : 'skip',
   );
   const transactions = useQuery(
     api.transactions.listByMonth,
-    userId ? { userId, month } : 'skip',
+    authenticatedUserId ? { userId: authenticatedUserId, month } : 'skip',
   );
 
   const currency = prefs?.currency ?? 'INR';

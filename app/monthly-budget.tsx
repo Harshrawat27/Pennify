@@ -1,5 +1,6 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import { formatCurrency, getCurrencySymbol } from '@/lib/utils/currency';
 import { currentMonth, formatMonthLabel, prevMonth } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
@@ -17,11 +18,12 @@ import {
 export default function MonthlyBudgetScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const authenticatedUserId = useAuthenticatedUserId();
 
   const month = currentMonth();
-  const budget = useQuery(api.monthlyBudgets.getByMonth, userId ? { userId, month } : 'skip');
-  const prevBudget = useQuery(api.monthlyBudgets.getByMonth, userId ? { userId, month: prevMonth(month) } : 'skip');
-  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const budget = useQuery(api.monthlyBudgets.getByMonth, authenticatedUserId ? { userId: authenticatedUserId, month } : 'skip');
+  const prevBudget = useQuery(api.monthlyBudgets.getByMonth, authenticatedUserId ? { userId: authenticatedUserId, month: prevMonth(month) } : 'skip');
+  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
   const upsert = useMutation(api.monthlyBudgets.upsert);
 
   const currency = prefs?.currency ?? 'INR';

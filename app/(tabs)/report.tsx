@@ -1,5 +1,6 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import { formatCurrency, getCurrencySymbol } from '@/lib/utils/currency';
 import { prevMonth } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
@@ -161,32 +162,33 @@ export default function ReportScreen() {
 
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const authenticatedUserId = useAuthenticatedUserId();
 
   // ── Queries (all unconditional — hooks rules) ──
-  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
 
   // Month
   const monthlyStats = useQuery(
     api.transactions.getMonthlyStats,
-    userId ? { userId, month: selectedMonth } : 'skip'
+    authenticatedUserId ? { userId: authenticatedUserId, month: selectedMonth } : 'skip'
   );
   const dailySpending = useQuery(
     api.transactions.getDailySpending,
-    userId ? { userId, month: selectedMonth } : 'skip'
+    authenticatedUserId ? { userId: authenticatedUserId, month: selectedMonth } : 'skip'
   );
   const monthlyBudget = useQuery(
     api.monthlyBudgets.getByMonth,
-    userId ? { userId, month: selectedMonth } : 'skip'
+    authenticatedUserId ? { userId: authenticatedUserId, month: selectedMonth } : 'skip'
   );
   const prevMonthBudget = useQuery(
     api.monthlyBudgets.getByMonth,
-    userId ? { userId, month: prevMonth(selectedMonth) } : 'skip'
+    authenticatedUserId ? { userId: authenticatedUserId, month: prevMonth(selectedMonth) } : 'skip'
   );
   const monthParentCats = useQuery(
     api.transactions.getParentCategoryBreakdown,
-    userId
+    authenticatedUserId
       ? {
-          userId,
+          userId: authenticatedUserId,
           startDate: selectedMonth + '-01',
           endDate: nextMonthStart(selectedMonth),
         }
@@ -194,9 +196,9 @@ export default function ReportScreen() {
   );
   const yearParentCats = useQuery(
     api.transactions.getParentCategoryBreakdown,
-    userId
+    authenticatedUserId
       ? {
-          userId,
+          userId: authenticatedUserId,
           startDate: selectedYear + '-01-01',
           endDate: (parseInt(selectedYear) + 1) + '-01-01',
         }
@@ -206,20 +208,20 @@ export default function ReportScreen() {
   // Week
   const weekStats = useQuery(
     api.transactions.getStatsForPeriod,
-    userId ? { userId, startDate: weekStart, endDate: weekEnd } : 'skip'
+    authenticatedUserId ? { userId: authenticatedUserId, startDate: weekStart, endDate: weekEnd } : 'skip'
   );
 
   // Year
   const yearlyMonthly = useQuery(
     api.transactions.getYearlyMonthly,
-    userId ? { userId, year: selectedYear } : 'skip'
+    authenticatedUserId ? { userId: authenticatedUserId, year: selectedYear } : 'skip'
   );
 
   // Drill-down: sub-categories for selected parent
   const subCats = useQuery(
     api.transactions.getSubCategoryBreakdown,
-    userId && selectedParent
-      ? { userId, startDate: selectedParent.startDate, endDate: selectedParent.endDate, parentCategoryId: selectedParent.id as any }
+    authenticatedUserId && selectedParent
+      ? { userId: authenticatedUserId, startDate: selectedParent.startDate, endDate: selectedParent.endDate, parentCategoryId: selectedParent.id as any }
       : 'skip'
   );
 

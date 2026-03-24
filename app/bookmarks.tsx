@@ -1,5 +1,6 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import { formatCurrency } from '@/lib/utils/currency';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -9,9 +10,10 @@ import { Pressable, ScrollView, Text, View, ActivityIndicator } from 'react-nati
 export default function BookmarksScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const authenticatedUserId = useAuthenticatedUserId();
 
-  const bookmarks = useQuery(api.transactions.listBookmarked, userId ? { userId } : 'skip');
-  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const bookmarks = useQuery(api.transactions.listBookmarked, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
   const currency = prefs?.currency ?? 'INR';
 
   // Group by date descending

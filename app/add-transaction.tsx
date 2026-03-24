@@ -1,5 +1,6 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import { useCachedAccounts } from '@/lib/hooks/useCachedAccounts';
 import { enqueue, type QueuedTransaction } from '@/lib/offlineQueue';
 import { usePendingStore } from '@/lib/stores/usePendingStore';
@@ -31,11 +32,12 @@ const SCAN_URL = `${process.env.EXPO_PUBLIC_AUTH_URL}/api/scan-receipt`;
 export default function AddTransactionScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id ?? '';
+  const authenticatedUserId = useAuthenticatedUserId();
 
   // Cached: loads instantly from AsyncStorage, syncs with Convex in background
   const accounts = useCachedAccounts();
 
-  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
   const currency = prefs?.currency ?? 'INR';
   const trackIncome = prefs?.trackIncome ?? true;
 

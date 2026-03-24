@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import { getCurrencySymbol } from '@/lib/utils/currency';
 import type { FeatherIcon } from '@/lib/models/types';
 
@@ -24,8 +25,9 @@ const GOAL_COLORS = ['#000000', '#525252', '#A3A3A3', '#059669', '#2563EB', '#DC
 export default function AddGoalScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id ?? '';
+  const authenticatedUserId = useAuthenticatedUserId();
 
-  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
   const createGoal = useMutation(api.goals.create);
 
   const currency = prefs?.currency ?? 'INR';

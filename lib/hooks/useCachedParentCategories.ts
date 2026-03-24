@@ -5,7 +5,7 @@ import {
   setCachedParentCategories,
   type CachedParentCategory,
 } from '@/lib/localCache';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { useEffect, useState } from 'react';
 
 /**
@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 export function useCachedParentCategories(): CachedParentCategory[] {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const { isAuthenticated } = useConvexAuth();
 
   const [parentCategories, setParentCategories] = useState<CachedParentCategory[]>([]);
 
@@ -25,7 +26,7 @@ export function useCachedParentCategories(): CachedParentCategory[] {
     });
   }, []);
 
-  const convexParents = useQuery(api.parentCategories.list, userId ? { userId } : 'skip');
+  const convexParents = useQuery(api.parentCategories.list, userId && isAuthenticated ? { userId } : 'skip');
 
   useEffect(() => {
     if (convexParents === undefined) return;

@@ -1,4 +1,5 @@
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import Purchases from 'react-native-purchases';
 import { api } from '@/convex/_generated/api';
 import { useQuery, useMutation } from 'convex/react';
@@ -90,8 +91,9 @@ function SettingGroup({ title, items }: { title: string; items: SettingRow[] }) 
 export default function SettingsScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const authenticatedUserId = useAuthenticatedUserId();
 
-  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
   const updateCurrency = useMutation(api.preferences.updateCurrency);
   const updateTrackIncome = useMutation(api.preferences.updateTrackIncome);
   const updateNotifications = useMutation(api.preferences.updateNotifications);

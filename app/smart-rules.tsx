@@ -1,5 +1,6 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import { useCachedCategories } from '@/lib/hooks/useCachedCategories';
 import { getCachedRules, setCachedRules, type CachedRule } from '@/lib/localCache';
 import { Feather } from '@expo/vector-icons';
@@ -27,9 +28,10 @@ if (Platform.OS === 'android') {
 export default function SmartRulesScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const authenticatedUserId = useAuthenticatedUserId();
 
   const categories = useCachedCategories();
-  const convexRules = useQuery(api.rules.list, userId ? { userId } : 'skip');
+  const convexRules = useQuery(api.rules.list, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
   const createRule = useMutation(api.rules.create);
   const removeRule = useMutation(api.rules.remove);
 

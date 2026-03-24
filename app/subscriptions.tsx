@@ -1,5 +1,6 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import { formatCurrency } from '@/lib/utils/currency';
 import { formatDateShort } from '@/lib/utils/date';
 import { scheduleRecurringReminder, cancelRecurringReminder } from '@/lib/utils/notifications';
@@ -38,6 +39,7 @@ export default function SubscriptionsScreen() {
   const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const authenticatedUserId = useAuthenticatedUserId();
 
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
@@ -49,13 +51,13 @@ export default function SubscriptionsScreen() {
   const [isSinkingFund, setIsSinkingFund] = useState(false);
   const [goalIcon, setGoalIcon] = useState<FeatherIcon>('target');
   const [goalColor, setGoalColor] = useState('#000000');
-  const payments = useQuery(api.recurring.list, userId ? { userId } : 'skip');
+  const payments = useQuery(api.recurring.list, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
 
   // Category picker — store ID only, derive live object from query to avoid stale ref crash
   const [editingCategoryPaymentId, setEditingCategoryPaymentId] = useState<string | null>(null);
   const editingCategoryFor = (payments ?? []).find((p) => p._id === editingCategoryPaymentId) ?? null;
-  const categories = useQuery(api.categories.list, userId ? { userId } : 'skip');
-  const prefs = useQuery(api.preferences.get, userId ? { userId } : 'skip');
+  const categories = useQuery(api.categories.list, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
 
   const createPayment = useMutation(api.recurring.create);
   const categorizePayment = useAction(api.categorize.categorizeRecurringPayment);

@@ -1,5 +1,6 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import { useCachedParentCategories } from '@/lib/hooks/useCachedParentCategories';
 import type { FeatherIcon } from '@/lib/models/types';
 import { Feather } from '@expo/vector-icons';
@@ -19,10 +20,11 @@ import {
 export default function CategoriesScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const authenticatedUserId = useAuthenticatedUserId();
 
   const categories = useQuery(
     api.categories.list,
-    userId ? { userId } : 'skip'
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
   );
   const createCategory = useMutation(api.categories.create);
   const removeCategory = useMutation(api.categories.remove);

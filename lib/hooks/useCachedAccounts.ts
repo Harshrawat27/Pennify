@@ -5,7 +5,7 @@ import {
   setCachedAccounts,
   type CachedAccount,
 } from '@/lib/localCache';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { useEffect, useState } from 'react';
 
 /**
@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 export function useCachedAccounts(): CachedAccount[] {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const { isAuthenticated } = useConvexAuth();
 
   const [accounts, setAccounts] = useState<CachedAccount[]>([]);
 
@@ -29,7 +30,7 @@ export function useCachedAccounts(): CachedAccount[] {
   }, []);
 
   // Convex is source of truth — runs in background, overwrites cache
-  const convexAccounts = useQuery(api.accounts.list, userId ? { userId } : 'skip');
+  const convexAccounts = useQuery(api.accounts.list, userId && isAuthenticated ? { userId } : 'skip');
 
   useEffect(() => {
     if (convexAccounts === undefined) return;
