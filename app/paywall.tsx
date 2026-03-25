@@ -1,6 +1,7 @@
 import { api } from '@/convex/_generated/api';
 import { deleteAccount } from '@/lib/account/deleteAccount';
 import { authClient } from '@/lib/auth-client';
+import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import {
   getOfferings,
   getStatusFromCustomerInfo,
@@ -71,6 +72,7 @@ export default function PaywallScreen() {
   const [trialEligible, setTrialEligible] = useState(true); // optimistic default
   const updateSubscription = useMutation(api.preferences.updateSubscription);
   const userId = session?.user?.id;
+  const authenticatedUserId = useAuthenticatedUserId();
 
   // Cross-fade animation
   const yearlyOpacity = useRef(new Animated.Value(1)).current;
@@ -183,7 +185,14 @@ export default function PaywallScreen() {
         return;
       }
       const status = getStatusFromCustomerInfo(customerInfo);
-      await updateSubscription({ userId, subscriptionStatus: status });
+      // Best-effort update — webhook will sync if this fails
+      try {
+        if (authenticatedUserId) {
+          await updateSubscription({ userId: authenticatedUserId, subscriptionStatus: status });
+        }
+      } catch {
+        // Webhook will handle the sync
+      }
       router.replace('/(tabs)');
     } catch (e: any) {
       if (!e.userCancelled) {
@@ -225,23 +234,28 @@ export default function PaywallScreen() {
               text: 'Transfer & Restore',
               onPress: async () => {
                 try {
-                  await updateSubscription({
-                    userId,
-                    subscriptionStatus: status,
-                  });
-                  router.replace('/(tabs)');
-                } catch (e: any) {
-                  Alert.alert(
-                    'Restore failed',
-                    e.message ?? 'Something went wrong.'
-                  );
+                  if (authenticatedUserId) {
+                    await updateSubscription({
+                      userId: authenticatedUserId,
+                      subscriptionStatus: status,
+                    });
+                  }
+                } catch {
+                  // Webhook will handle the sync
                 }
+                router.replace('/(tabs)');
               },
             },
           ]
         );
       } else {
-        await updateSubscription({ userId, subscriptionStatus: status });
+        try {
+          if (authenticatedUserId) {
+            await updateSubscription({ userId: authenticatedUserId, subscriptionStatus: status });
+          }
+        } catch {
+          // Webhook will handle the sync
+        }
         router.replace('/(tabs)');
       }
     } catch (e: any) {
@@ -591,10 +605,13 @@ export default function PaywallScreen() {
         {/* CTA Button */}
         <Pressable
           onPress={handlePurchase}
+          disabled={isPurchasing}
           className='mx-5 bg-black rounded-2xl mt-3'
-          style={{ height: 56, alignItems: 'center', justifyContent: 'center' }}
+          style={{ height: 56, alignItems: 'center', justifyContent: 'center', opacity: isPurchasing ? 0.7 : 1 }}
         >
-          {trialEligible ? (
+          {isPurchasing ? (
+            <ActivityIndicator color='#fff' />
+          ) : trialEligible ? (
             <>
               <Animated.Text
                 style={{

@@ -1,0 +1,40 @@
+Spendler — Personal Finance & Budget Tracker
+
+Take control of your money with Spendler. Track every rupee, dollar, or euro you spend, set budgets that actually work, and build savings goals — all in one clean, fast app.
+
+TRACK YOUR SPENDING
+Log income and expenses in seconds. Attach receipts by scanning them with your camera. Organize transactions across multiple accounts — cash, bank, credit card, or digital wallet. Bookmark important transactions to find them later.
+
+BUDGETS THAT MAKE SENSE
+Set a monthly spending limit and category-level budgets. See exactly how much you've spent versus your budget in real time. Get a clear picture of where your money goes every month.
+
+SAVINGS GOALS
+Create goals for anything — emergency fund, travel, home, tech. Track how much you've saved and how far you have to go. Add contributions and mark goals as complete when you get there.
+
+RECURRING PAYMENTS
+Never lose track of subscriptions and bills. Add your recurring payments with billing dates, amounts, and frequencies. Get notified the day before anything renews.
+
+PEOPLE & SHARED EXPENSES
+Track money you owe or are owed. Record payments with dates and notes and see the running balance for each person.
+
+SMART RULES
+Set keyword-based rules to automatically categorize transactions as you log them. Save time on repetitive categorization.
+
+REPORTS & INSIGHTS
+View your spending trends by week, month, or year. See breakdowns by category and drill into sub-categories. Compare months and spot patterns in your financial habits.
+
+ASK PENNY — AI FINANCE ASSISTANT
+Chat with Penny, your built-in AI financial assistant. Ask questions about your spending, get insights about your habits, and understand your finances better.
+
+MORE FEATURES
+• 25+ currencies with proper locale formatting
+• Offline support — log transactions without internet, syncs automatically when back online
+• Daily reminders and weekly spending reports
+• Hide balance for privacy in public
+• Sign in with Google or Apple — your data is always backed up
+
+SUBSCRIPTION
+Spendler offers a 3-day free trial. After the trial, a subscription is required to continue using premium features. Subscriptions are available monthly or yearly and auto-renew unless cancelled at least 24 hours before the renewal date. Manage or cancel your subscription anytime in iOS Settings → Apple ID → Subscriptions.
+
+Privacy Policy: https://spendler.app/privacy
+Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
