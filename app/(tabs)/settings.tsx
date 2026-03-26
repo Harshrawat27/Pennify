@@ -149,6 +149,11 @@ export default function SettingsScreen() {
       label: 'Ask Penny',
       onPress: () => router.push('/finance-chat'),
     },
+    {
+      icon: 'award',
+      label: 'Plans & Pricing',
+      onPress: () => router.push('/paywall'),
+    },
     ...(prefs?.subscriptionStatus === 'monthly' || prefs?.subscriptionStatus === 'yearly'
       ? [{
           icon: 'award' as const,
