@@ -1,6 +1,9 @@
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Purchases from 'react-native-purchases';
+
+const WAS_AUTHENTICATED_KEY = 'spendler_was_authenticated';
 import { api } from '@/convex/_generated/api';
 import { useQuery, useMutation } from 'convex/react';
 import { CURRENCIES } from '@/lib/utils/currency';
@@ -217,6 +220,7 @@ export default function SettingsScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = () => {
+    void AsyncStorage.removeItem(WAS_AUTHENTICATED_KEY);
     void Purchases.logOut().catch(() => {});
     void authClient.signOut();
     router.replace('/sign-in');
@@ -226,6 +230,7 @@ export default function SettingsScreen() {
     if (!userId) return;
     setIsDeleting(true);
     try {
+      await AsyncStorage.removeItem(WAS_AUTHENTICATED_KEY);
       await deleteAccount(userId);
       router.replace('/sign-in');
     } catch (e) {

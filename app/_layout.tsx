@@ -3,6 +3,7 @@ import { authClient } from '@/lib/auth-client';
 import { ConvexAuthSetup } from '@/lib/auth/ConvexAuthSetup';
 import { initializePurchases } from '@/lib/revenuecat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { Stack, router, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import '../global.css';
 
 const HAS_LAUNCHED_KEY = 'spendler_has_launched';
+const WAS_AUTHENTICATED_KEY = 'spendler_was_authenticated';
 
 // Keep the splash screen visible until we manually hide it
 SplashScreen.preventAutoHideAsync();
@@ -87,17 +89,35 @@ function RootLayoutNav() {
     if (hasRouted.current) return;
 
     if (!session) {
-      hasRouted.current = true;
-      if (!hasLaunched) {
-        // First time ever opening the app on this device
-        console.log('[Layout] First launch, no session → /welcome');
-        AsyncStorage.setItem(HAS_LAUNCHED_KEY, 'true');
-        router.replace('/welcome');
-      } else {
-        // Returning user who is logged out
-        console.log('[Layout] Returning user, no session → /sign-in');
-        router.replace('/sign-in');
-      }
+      // Check network before deciding — offline + previously authenticated = let them in
+      NetInfo.fetch().then((state) => {
+        const isOnline = state.isConnected && state.isInternetReachable !== false;
+        if (!isOnline) {
+          AsyncStorage.getItem(WAS_AUTHENTICATED_KEY).then((wasAuth) => {
+            if (wasAuth === 'true') {
+              // Known user, offline — route to tabs so offline queue still works
+              console.log('[Layout] Offline + was authenticated → /(tabs) offline mode');
+              hasRouted.current = true;
+              router.replace('/(tabs)');
+            } else {
+              // Never authenticated, offline — route to sign-in
+              hasRouted.current = true;
+              console.log('[Layout] Offline + never authenticated → /sign-in');
+              router.replace('/sign-in');
+            }
+          });
+        } else {
+          hasRouted.current = true;
+          if (!hasLaunched) {
+            console.log('[Layout] First launch, no session → /welcome');
+            AsyncStorage.setItem(HAS_LAUNCHED_KEY, 'true');
+            router.replace('/welcome');
+          } else {
+            console.log('[Layout] Returning user, no session → /sign-in');
+            router.replace('/sign-in');
+          }
+        }
+      });
       return;
     }
 
@@ -114,6 +134,9 @@ function RootLayoutNav() {
       router.replace('/welcome');
       return;
     }
+
+    // Mark user as authenticated so offline opens can bypass sign-in
+    void AsyncStorage.setItem(WAS_AUTHENTICATED_KEY, 'true');
 
     // Only navigate to tabs if we're still on an auth screen.
     // If the user already navigated somewhere (another tab, a modal, etc.)
