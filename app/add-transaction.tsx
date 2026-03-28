@@ -2,8 +2,11 @@ import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as StoreReview from 'expo-store-review';
 
 const STORED_USER_ID_KEY = 'spendler_user_id';
+const TX_COUNT_KEY = 'spendler_tx_count';
+const RATING_REQUESTED_KEY = 'spendler_rating_requested';
 import { useCachedAccounts } from '@/lib/hooks/useCachedAccounts';
 import { enqueue, type QueuedTransaction } from '@/lib/offlineQueue';
 import { usePendingStore } from '@/lib/stores/usePendingStore';
@@ -178,6 +181,17 @@ export default function AddTransactionScreen() {
     router.back();
     // 4. Signal the background sync hook (in CustomTabBar) to flush now
     requestSync();
+    // 5. Rating prompt — show once after 5th transaction
+    const alreadyRequested = await AsyncStorage.getItem(RATING_REQUESTED_KEY);
+    if (!alreadyRequested) {
+      const raw = await AsyncStorage.getItem(TX_COUNT_KEY);
+      const count = parseInt(raw ?? '0', 10) + 1;
+      await AsyncStorage.setItem(TX_COUNT_KEY, String(count));
+      if (count >= 5 && await StoreReview.hasAction()) {
+        await AsyncStorage.setItem(RATING_REQUESTED_KEY, 'true');
+        await StoreReview.requestReview();
+      }
+    }
   };
 
   const canSave = !!title.trim() && !!amount && !!effectiveAccountId;

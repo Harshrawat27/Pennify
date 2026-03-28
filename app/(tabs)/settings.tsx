@@ -28,8 +28,8 @@ type SettingRow = {
 
 const ABOUT_SETTINGS: SettingRow[] = [
   { icon: 'help-circle', label: 'Help & Support', onPress: () => router.push('/help-support') },
-  { icon: 'star', label: 'Rate the App' },
-  { icon: 'info', label: 'Version', value: '1.0.0' },
+  { icon: 'star', label: 'Rate the App', onPress: () => Linking.openURL('https://apps.apple.com/us/app/spendler/id6760784989') },
+  { icon: 'info', label: 'Version', value: '1.0.1' },
 ];
 
 function SettingItem({ item, isLast }: { item: SettingRow; isLast: boolean }) {
