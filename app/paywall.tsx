@@ -140,11 +140,14 @@ export default function PaywallScreen() {
   }, []);
 
   // Derive display prices from RevenueCat (fallback to hardcoded)
-  const monthlyPrice = monthlyPackage?.product.priceString ?? '$9.99';
-  const yearlyPrice = yearlyPackage?.product.priceString ?? '$29.99';
+  const monthlyPrice = monthlyPackage?.product.priceString ?? '$4.99';
+  const yearlyPrice = yearlyPackage?.product.priceString ?? '$19.99';
   const yearlyPerMonth = yearlyPackage
-    ? `$${((yearlyPackage.product.price ?? 29.99) / 12).toFixed(2)}/mo`
-    : '$2.50/mo';
+    ? `$${((yearlyPackage.product.price ?? 19.99) / 12).toFixed(2)}/mo`
+    : '$1.67/mo';
+  const discountPercent = monthlyPackage && yearlyPackage
+    ? Math.round(((monthlyPackage.product.price * 12 - yearlyPackage.product.price) / (monthlyPackage.product.price * 12)) * 100)
+    : 67;
 
   // Billing date = 3 days from today (only relevant when trial eligible)
   const billingDate = new Date();
@@ -554,6 +557,9 @@ export default function PaywallScreen() {
             <Text className='text-[14px] font-semibold text-black'>Yearly</Text>
             <Text className='text-[14px] font-bold text-black mt-1'>
               {yearlyPerMonth}
+            </Text>
+            <Text className='text-[11px] text-neutral-400 mt-0.5'>
+              Save {discountPercent}% vs monthly
             </Text>
             <View
               style={{

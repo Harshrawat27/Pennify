@@ -1,7 +1,8 @@
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
+import { getOfferings } from '@/lib/revenuecat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Purchases from 'react-native-purchases';
+import Purchases, { PurchasesPackage } from 'react-native-purchases';
 
 const WAS_AUTHENTICATED_KEY = 'spendler_was_authenticated';
 const STORED_USER_ID_KEY = 'spendler_user_id';
@@ -217,6 +218,23 @@ export default function SettingsScreen() {
     },
   ];
 
+  const [monthlyPkg, setMonthlyPkg] = useState<PurchasesPackage | null>(null);
+  const [yearlyPkg, setYearlyPkg] = useState<PurchasesPackage | null>(null);
+
+  useEffect(() => {
+    getOfferings().then((offering) => {
+      if (!offering) return;
+      for (const pkg of offering.availablePackages) {
+        if (pkg.product.identifier.includes('monthly')) setMonthlyPkg(pkg);
+        if (pkg.product.identifier.includes('yearly')) setYearlyPkg(pkg);
+      }
+    });
+  }, []);
+
+  const discountPercent = monthlyPkg && yearlyPkg
+    ? Math.round(((monthlyPkg.product.price * 12 - yearlyPkg.product.price) / (monthlyPkg.product.price * 12)) * 100)
+    : 67;
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -291,14 +309,14 @@ export default function SettingsScreen() {
               </Text>
               <Text className='text-neutral-500 text-[12px] mt-0.5'>
                 {prefs?.subscriptionStatus === 'monthly'
-                  ? 'Save 33% with an annual plan'
+                  ? `Save ${discountPercent}% with an annual plan`
                   : 'Unlimited budgets & insights'}
               </Text>
             </View>
           </View>
           <View className='bg-white rounded-full px-4 py-2'>
             <Text className='text-black text-[12px] font-bold'>
-              {prefs?.subscriptionStatus === 'monthly' ? 'Save 33%' : 'Go Pro'}
+              {prefs?.subscriptionStatus === 'monthly' ? `Save ${discountPercent}%` : 'Go Pro'}
             </Text>
           </View>
         </Pressable>
