@@ -14,6 +14,7 @@ import '../global.css';
 
 const HAS_LAUNCHED_KEY = 'spendler_has_launched';
 const WAS_AUTHENTICATED_KEY = 'spendler_was_authenticated';
+const STORED_USER_ID_KEY = 'spendler_user_id';
 
 // Keep the splash screen visible until we manually hide it
 SplashScreen.preventAutoHideAsync();
@@ -66,8 +67,12 @@ function RootLayoutNav() {
   }, [prefs?.subscriptionStatus]);
 
   // Initialize RevenueCat as soon as we have a userId
+  // Also persist userId to AsyncStorage for offline access
   useEffect(() => {
-    if (userId) initializePurchases(userId);
+    if (userId) {
+      initializePurchases(userId);
+      void AsyncStorage.setItem(STORED_USER_ID_KEY, userId);
+    }
   }, [userId]);
 
   useEffect(() => {

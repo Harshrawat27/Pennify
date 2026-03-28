@@ -1,3 +1,4 @@
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 import { useSyncQueue } from '@/lib/hooks/useSyncQueue';
 import { Feather } from '@expo/vector-icons';
@@ -170,7 +171,9 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
 export default function TabLayout() {
   return (
-    <Tabs
+    <View style={{ flex: 1 }}>
+      <OfflineBanner />
+      <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
@@ -184,5 +187,6 @@ export default function TabLayout() {
       <Tabs.Screen name="plan" />
       <Tabs.Screen name="settings" />
     </Tabs>
+    </View>
   );
 }

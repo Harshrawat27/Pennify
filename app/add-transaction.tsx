@@ -1,6 +1,9 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const STORED_USER_ID_KEY = 'spendler_user_id';
 import { useCachedAccounts } from '@/lib/hooks/useCachedAccounts';
 import { enqueue, type QueuedTransaction } from '@/lib/offlineQueue';
 import { usePendingStore } from '@/lib/stores/usePendingStore';
@@ -138,7 +141,10 @@ export default function AddTransactionScreen() {
   const handleSave = async () => {
     const numAmount = parseFloat(amount);
     if (!title.trim() || isNaN(numAmount) || numAmount <= 0 || !effectiveAccountId) return;
-    if (!userId) return;
+
+    // In offline mode session?.user?.id is empty — fall back to AsyncStorage
+    const resolvedUserId = userId || await AsyncStorage.getItem(STORED_USER_ID_KEY) || '';
+    if (!resolvedUserId) return;
 
     const today = localDateString(); // device local date, not UTC
     const localId = Crypto.randomUUID();
@@ -147,7 +153,7 @@ export default function AddTransactionScreen() {
 
     const pending: QueuedTransaction = {
       localId,
-      userId,
+      userId: resolvedUserId,
       title: title.trim(),
       amount: isExpense ? -numAmount : numAmount,
       note: note.trim(),
