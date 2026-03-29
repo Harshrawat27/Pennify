@@ -14,7 +14,7 @@ import { deleteAccount } from '@/lib/account/deleteAccount';
 import { requestNotificationPermission, scheduleDailyReminder, cancelAllNotifications } from '@/lib/utils/notifications';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 type SettingRow = {
   icon: React.ComponentProps<typeof Feather>['name'];

@@ -142,8 +142,12 @@ export default function PaywallScreen() {
   // Derive display prices from RevenueCat (fallback to hardcoded)
   const monthlyPrice = monthlyPackage?.product.priceString ?? '$4.99';
   const yearlyPrice = yearlyPackage?.product.priceString ?? '$19.99';
+  // Extract currency symbol from priceString (e.g. "$19.99" → "$", "₹1,999" → "₹")
+  const currencySymbol = yearlyPackage
+    ? yearlyPackage.product.priceString.replace(/[\d,.\s]/g, '').trim() || '$'
+    : '$';
   const yearlyPerMonth = yearlyPackage
-    ? `$${((yearlyPackage.product.price ?? 19.99) / 12).toFixed(2)}/mo`
+    ? `${currencySymbol}${((yearlyPackage.product.price ?? 19.99) / 12).toFixed(2)}/mo`
     : '$1.67/mo';
   const discountPercent = monthlyPackage && yearlyPackage
     ? Math.round(((monthlyPackage.product.price * 12 - yearlyPackage.product.price) / (monthlyPackage.product.price * 12)) * 100)
