@@ -1,21 +1,34 @@
+import { ConfirmationDialog } from '@/components/ConfirmationDialog';
+import { api } from '@/convex/_generated/api';
+import { deleteAccount } from '@/lib/account/deleteAccount';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
 import { getOfferings } from '@/lib/revenuecat';
+import { CURRENCIES } from '@/lib/utils/currency';
+import {
+  cancelAllNotifications,
+  requestNotificationPermission,
+  scheduleDailyReminder,
+} from '@/lib/utils/notifications';
+import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useMutation, useQuery } from 'convex/react';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import Purchases, { PurchasesPackage } from 'react-native-purchases';
 
 const WAS_AUTHENTICATED_KEY = 'spendler_was_authenticated';
 const STORED_USER_ID_KEY = 'spendler_user_id';
-import { api } from '@/convex/_generated/api';
-import { useQuery, useMutation } from 'convex/react';
-import { CURRENCIES } from '@/lib/utils/currency';
-import { ConfirmationDialog } from '@/components/ConfirmationDialog';
-import { deleteAccount } from '@/lib/account/deleteAccount';
-import { requestNotificationPermission, scheduleDailyReminder, cancelAllNotifications } from '@/lib/utils/notifications';
-import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 type SettingRow = {
   icon: React.ComponentProps<typeof Feather>['name'];
   label: string;
@@ -26,11 +39,19 @@ type SettingRow = {
   onPress?: () => void;
 };
 
-
 const ABOUT_SETTINGS: SettingRow[] = [
-  { icon: 'help-circle', label: 'Help & Support', onPress: () => router.push('/help-support') },
-  { icon: 'star', label: 'Rate the App', onPress: () => Linking.openURL('https://apps.apple.com/us/app/spendler/id6760784989') },
-  { icon: 'info', label: 'Version', value: '1.0.1' },
+  {
+    icon: 'help-circle',
+    label: 'Help & Support',
+    onPress: () => router.push('/help-support'),
+  },
+  {
+    icon: 'star',
+    label: 'Rate the App',
+    onPress: () =>
+      Linking.openURL('https://apps.apple.com/us/app/spendler/id6760784989'),
+  },
+  { icon: 'info', label: 'Version', value: '1.0.2' },
 ];
 
 function SettingItem({ item, isLast }: { item: SettingRow; isLast: boolean }) {
@@ -74,7 +95,13 @@ function SettingItem({ item, isLast }: { item: SettingRow; isLast: boolean }) {
   );
 }
 
-function SettingGroup({ title, items }: { title: string; items: SettingRow[] }) {
+function SettingGroup({
+  title,
+  items,
+}: {
+  title: string;
+  items: SettingRow[];
+}) {
   return (
     <View className='mx-6 mt-6'>
       <Text className='text-[12px] text-neutral-400 font-semibold uppercase tracking-wider mb-2 ml-1'>
@@ -98,7 +125,10 @@ export default function SettingsScreen() {
   const userId = session?.user?.id;
   const authenticatedUserId = useAuthenticatedUserId();
 
-  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const prefs = useQuery(
+    api.preferences.get,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
   const updateCurrency = useMutation(api.preferences.updateCurrency);
   const updateTrackIncome = useMutation(api.preferences.updateTrackIncome);
   const updateNotifications = useMutation(api.preferences.updateNotifications);
@@ -159,12 +189,16 @@ export default function SettingsScreen() {
       label: 'Plans & Pricing',
       onPress: () => router.push('/paywall'),
     },
-    ...(prefs?.subscriptionStatus === 'monthly' || prefs?.subscriptionStatus === 'yearly'
-      ? [{
-          icon: 'award' as const,
-          label: 'Manage Subscription',
-          onPress: () => Linking.openURL('https://apps.apple.com/account/subscriptions'),
-        }]
+    ...(prefs?.subscriptionStatus === 'monthly' ||
+    prefs?.subscriptionStatus === 'yearly'
+      ? [
+          {
+            icon: 'award' as const,
+            label: 'Manage Subscription',
+            onPress: () =>
+              Linking.openURL('https://apps.apple.com/account/subscriptions'),
+          },
+        ]
       : []),
     {
       icon: 'users',
@@ -231,9 +265,14 @@ export default function SettingsScreen() {
     });
   }, []);
 
-  const discountPercent = monthlyPkg && yearlyPkg
-    ? Math.round(((monthlyPkg.product.price * 12 - yearlyPkg.product.price) / (monthlyPkg.product.price * 12)) * 100)
-    : 67;
+  const discountPercent =
+    monthlyPkg && yearlyPkg
+      ? Math.round(
+          ((monthlyPkg.product.price * 12 - yearlyPkg.product.price) /
+            (monthlyPkg.product.price * 12)) *
+            100
+        )
+      : 67;
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -316,7 +355,9 @@ export default function SettingsScreen() {
           </View>
           <View className='bg-white rounded-full px-4 py-2'>
             <Text className='text-black text-[12px] font-bold'>
-              {prefs?.subscriptionStatus === 'monthly' ? `Save ${discountPercent}%` : 'Go Pro'}
+              {prefs?.subscriptionStatus === 'monthly'
+                ? `Save ${discountPercent}%`
+                : 'Go Pro'}
             </Text>
           </View>
         </Pressable>
@@ -345,7 +386,7 @@ export default function SettingsScreen() {
           className='bg-white rounded-2xl py-4 items-center flex-row justify-center gap-2'
         >
           {isDeleting ? (
-            <ActivityIndicator size="small" color="#EF4444" />
+            <ActivityIndicator size='small' color='#EF4444' />
           ) : null}
           <Text className='text-red-500 font-semibold text-[14px]'>
             {isDeleting ? 'Deleting...' : 'Delete Account'}
@@ -355,10 +396,10 @@ export default function SettingsScreen() {
 
       <ConfirmationDialog
         visible={showDeleteDialog}
-        title="Delete Account"
-        message="This will permanently delete your account and all your data. This action cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Keep Account"
+        title='Delete Account'
+        message='This will permanently delete your account and all your data. This action cannot be undone.'
+        confirmLabel='Delete'
+        cancelLabel='Keep Account'
         destructive
         onConfirm={handleDeleteAccount}
         onCancel={() => setShowDeleteDialog(false)}
