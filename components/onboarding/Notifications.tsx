@@ -16,25 +16,8 @@ export function Notifications({ onNext, onBack }: NotificationsProps) {
   const weeklyReport = useOnboardingStore((s) => s.weeklyReport);
   const setWeeklyReport = useOnboardingStore((s) => s.setWeeklyReport);
 
-  const handleToggleNotifications = async (value: boolean) => {
-    if (value) {
-      const granted = await requestNotificationPermission();
-      if (granted) {
-        setNotificationsEnabled(true);
-      } else {
-        // Permission denied — guide user to settings
-        Alert.alert(
-          'Notifications Blocked',
-          'Please enable notifications for Spendler in your device settings.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() },
-          ]
-        );
-      }
-    } else {
-      setNotificationsEnabled(false);
-    }
+  const handleToggleNotifications = (value: boolean) => {
+    setNotificationsEnabled(value);
   };
 
   return (
@@ -119,7 +102,24 @@ export function Notifications({ onNext, onBack }: NotificationsProps) {
       {/* Continue */}
       <View className="px-6 pb-10 pt-4">
         <Pressable
-          onPress={onNext}
+          onPress={async () => {
+            if (notificationsEnabled) {
+              const granted = await requestNotificationPermission();
+              if (!granted) {
+                setNotificationsEnabled(false);
+                Alert.alert(
+                  'Notifications Blocked',
+                  'You can enable notifications anytime from Settings.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Open Settings', onPress: () => Linking.openSettings() },
+                  ]
+                );
+                return;
+              }
+            }
+            onNext();
+          }}
           className="py-4 rounded-2xl items-center bg-black"
           style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
         >
