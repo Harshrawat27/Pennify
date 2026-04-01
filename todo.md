@@ -1,37 +1,44 @@
-# Pennify TODO
+Let me think through this thoroughly:
 
-## Scale / Performance
+Things we can improve in existing features:
 
-- [ ] **Refactor `processMonthly` cron to fan-out pattern at scale**
-  - Current: single mutation loops through ALL users' recurring payments + budgets in one go
-  - Problem: Convex mutations have an 8-second execution limit — will time out at ~10K+ users
-  - Fix: cron schedules individual per-user mutations using `ctx.scheduler.runAfter(0, internal.recurring.processUser, { userId })`
-  - Each user's processing runs independently, failures don't affect others
-  - Priority: not urgent now (safe for hundreds of users during beta), revisit before scaling
+- Home screen — no search for transactions, have to go to month detail to
+  search
+- Add transaction — no date picker, always saves as today. Can't backdate a
+  transaction
+- Reports — no export to PDF/CSV (download button exists but does it work?)
+- Recurring payments — no notification the day before renewal (mentioned in
+  description but implemented?)
+- Goals — no deadline/target date progress indicator
+- People & Debts — no way to settle/mark debt as paid partially
+- Smart Rules — only keyword based, no amount-based rules
 
-------- OFFLINE BANNER -------
+Missing features people commonly use:
 
-Saved to memory so we don't forget it. When you're ready, it'll be a clean
-addition — a /offline screen with an illustration and a big "Add Transaction"
-button, routing there instead of straight to tabs when offline.
+- Split expenses — split a bill with multiple people at once (restaurant,
+  trip)
+- Cash flow calendar — see which days money comes in/goes out
+- Net worth tracker — assets minus liabilities, not just transactions
+- Tax categories — tag transactions as tax deductible
+- Multiple currencies per transaction — travel use case, spent in foreign
+  currency
+- Receipt storage — attach photo to any transaction (not just scanned ones)
+- Widgets — home screen widget showing balance or today's spending
+- Savings rate — what % of income are you saving each month
+- Bill reminders — separate from subscriptions, one-time bills like rent,
+  electricity
+- Custom date ranges — reports for custom periods not just week/month/year
+- Transaction templates — save frequent transactions as templates for quick
+  add
+- Balance history graph — see how your net balance changed over time
 
-------- NOTIFICATION FOR TRIAL PERIOD ---------
+Which ones I'd prioritize:
 
-Yes, completely doable but there's a catch — you can't schedule a notification at  
- purchase time saying "remind me in exactly 2 days" because:
-
-1. Local notifications — you'd schedule it at purchase time with a 2-day delay.  
-   Simple, but it gets cancelled if user deletes the app, clears notifications, or  
-   reinstalls. Also doesn't account if they cancel the subscription before day 2.
-2. Server-side push (better) — RevenueCat has webhooks. When a trial starts, it fires
-   a INITIAL_PURCHASE event to your backend (pennifyweb). Your backend receives it,  
-   stores the trial start date, then at day 2 sends a push notification via Expo Push
-   API. This is reliable and you can check if they're still subscribed before sending.
-
-The server-side approach is the right way — you already have pennifyweb as a backend,
-Convex can store the trial start date, and you already use Expo notifications. It's
-maybe 1-2 hours of work once RevenueCat webhooks are set up.
-
-For now local notification at purchase time is fine as a quick solution — just call  
- scheduleNotificationAsync with a 2-day trigger right after the RevenueCat purchase
-succeeds.
+1. Date picker on add transaction — very commonly needed, people forget to log
+   and add later
+2. Widgets — huge retention feature, users see their balance without opening
+   app
+3. Savings rate — simple calculation, high value insight
+4. Custom date ranges in reports — power users want this
+5. Receipt attachment on any transaction — you already have scan, just let
+   attach too
