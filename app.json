@@ -2,7 +2,7 @@
   "expo": {
     "name": "Spendler",
     "slug": "Spendler",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "spendler",
@@ -12,7 +12,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "app.spendler",
       "usesAppleSignIn": true,
-      "buildNumber": "14",
+      "buildNumber": "15",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["fetch", "remote-notification"]
