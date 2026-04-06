@@ -39,6 +39,19 @@ function RootLayoutNav() {
       setHasLaunched(val === 'true');
     });
   }, []);
+
+  // Fast-open: if user was previously authenticated, route to tabs instantly
+  // without waiting for network. Session validates in background — if expired,
+  // the normal flow below will redirect to sign-in.
+  useEffect(() => {
+    AsyncStorage.getItem(WAS_AUTHENTICATED_KEY).then((wasAuth) => {
+      if (wasAuth === 'true' && !splashHidden.current) {
+        splashHidden.current = true;
+        router.replace('/(tabs)');
+        SplashScreen.hideAsync();
+      }
+    });
+  }, []);
   // prevSubStatus tracks changes after initial routing to re-route on purchase
 
   // Hide splash as soon as auth state is known (only once)
