@@ -2,7 +2,7 @@
   "expo": {
     "name": "Spendler",
     "slug": "Spendler",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "spendler",
@@ -13,6 +13,9 @@
       "bundleIdentifier": "app.spendler",
       "usesAppleSignIn": true,
       "buildNumber": "15",
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.app.spendler"]
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["fetch", "remote-notification"]
@@ -50,7 +53,8 @@
       ],
       "expo-secure-store",
       [
-        "expo-notifications",
+        "@bacons/apple-targets",
+      "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
           "color": "#FAFAFA",

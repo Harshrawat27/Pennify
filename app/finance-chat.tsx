@@ -1,6 +1,7 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
+import { useCachedCurrency } from '@/lib/hooks/useCachedCurrency';
 import { Feather } from '@expo/vector-icons';
 import { useQuery } from 'convex/react';
 import { router } from 'expo-router';
@@ -186,7 +187,8 @@ export default function FinanceChatScreen() {
       question: text.trim(),
       transactions,
       preferences: {
-        currency: prefs?.currency ?? 'INR',
+        const currency = useCachedCurrency();
+        currency: currency,
         monthlyBudget: monthlyBudgetData?.budget ?? null,
       },
     });

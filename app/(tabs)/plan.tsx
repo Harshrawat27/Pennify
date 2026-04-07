@@ -1,11 +1,12 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
+import { useCachedCurrency } from '@/lib/hooks/useCachedCurrency';
 import { formatCurrencyCompact } from '@/lib/utils/currency';
 import { currentMonth, formatDateShort } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { useMutation, useQuery } from 'convex/react';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import {
   Alert,
@@ -30,17 +31,28 @@ export default function PlanScreen() {
   const userId = session?.user?.id;
   const authenticatedUserId = useAuthenticatedUserId();
 
-  const [contributionGoalId, setContributionGoalId] = useState<string | null>(null);
+  const [contributionGoalId, setContributionGoalId] = useState<string | null>(
+    null
+  );
   const [contributionAmount, setContributionAmount] = useState('');
   const [historyGoalId, setHistoryGoalId] = useState<string | null>(null);
 
   const month = currentMonth();
-  const goals = useQuery(api.goals.list, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
-  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
-  const budgets = useQuery(api.budgets.listByMonthWithComparison, authenticatedUserId ? { userId: authenticatedUserId, month } : 'skip');
+  const goals = useQuery(
+    api.goals.list,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
+  const prefs = useQuery(
+    api.preferences.get,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
+  const budgets = useQuery(
+    api.budgets.listByMonthWithComparison,
+    authenticatedUserId ? { userId: authenticatedUserId, month } : 'skip'
+  );
   const contributions = useQuery(
     api.goals.listContributions,
-    historyGoalId ? { goalId: historyGoalId as any } : 'skip',
+    historyGoalId ? { goalId: historyGoalId as any } : 'skip'
   );
 
   const addContribution = useMutation(api.goals.addContribution);
@@ -48,7 +60,7 @@ export default function PlanScreen() {
   const markPaid = useMutation(api.goals.markPaid);
   const removeGoal = useMutation(api.goals.remove);
 
-  const currency = prefs?.currency ?? 'INR';
+  const currency = useCachedCurrency();
 
   const activeGoals = (goals ?? []).filter((g) => g.status !== 'completed');
   const completedGoals = (goals ?? []).filter((g) => g.status === 'completed');
@@ -59,7 +71,11 @@ export default function PlanScreen() {
     if (!userId || !contributionGoalId) return;
     const amount = parseFloat(contributionAmount);
     if (!amount || amount <= 0) return;
-    await addContribution({ userId, goalId: contributionGoalId as any, amount });
+    await addContribution({
+      userId,
+      goalId: contributionGoalId as any,
+      amount,
+    });
     setContributionGoalId(null);
     setContributionAmount('');
   }
@@ -99,17 +115,13 @@ export default function PlanScreen() {
   function handleMarkComplete(goal: any) {
     const pct = goal.target > 0 ? (goal.saved / goal.target) * 100 : 0;
     if (pct < 100) return;
-    Alert.alert(
-      'Goal Achieved!',
-      `Mark "${goal.name}" as completed?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Complete',
-          onPress: () => markCompleted({ id: goal._id }),
-        },
-      ]
-    );
+    Alert.alert('Goal Achieved!', `Mark "${goal.name}" as completed?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Complete',
+        onPress: () => markCompleted({ id: goal._id }),
+      },
+    ]);
   }
 
   return (
@@ -121,7 +133,9 @@ export default function PlanScreen() {
       >
         {/* Header */}
         <View className='px-6 pt-4 pb-2'>
-          <Text className='text-[22px] font-bold text-black tracking-tight'>Plan</Text>
+          <Text className='text-[22px] font-bold text-black tracking-tight'>
+            Plan
+          </Text>
         </View>
 
         {/* ── BUDGETS SECTION ── */}
@@ -141,20 +155,33 @@ export default function PlanScreen() {
               <View className='w-12 h-12 rounded-full bg-neutral-100 items-center justify-center mb-3'>
                 <Feather name='sliders' size={20} color='#A3A3A3' />
               </View>
-              <Text className='text-[14px] font-semibold text-black'>No budgets set</Text>
+              <Text className='text-[14px] font-semibold text-black'>
+                No budgets set
+              </Text>
               <Text className='text-neutral-400 text-[12px] mt-1 text-center'>
                 Tap + to set a spending limit per category
               </Text>
             </View>
           ) : (
             budgets.map((b) => {
-              const pct = b.limitAmount > 0 ? Math.min((b.spent / b.limitAmount) * 100, 100) : 0;
+              const pct =
+                b.limitAmount > 0
+                  ? Math.min((b.spent / b.limitAmount) * 100, 100)
+                  : 0;
               const isOver = b.spent > b.limitAmount;
               const isWarning = !isOver && pct >= 80;
-              const barColor = isOver ? '#EF4444' : isWarning ? '#F97316' : '#000';
+              const barColor = isOver
+                ? '#EF4444'
+                : isWarning
+                  ? '#F97316'
+                  : '#000';
               const hasLastMonth = (b as any).lastMonthSpent > 0;
               const delta = hasLastMonth
-                ? Math.round(((b.spent - (b as any).lastMonthSpent) / (b as any).lastMonthSpent) * 100)
+                ? Math.round(
+                    ((b.spent - (b as any).lastMonthSpent) /
+                      (b as any).lastMonthSpent) *
+                      100
+                  )
                 : null;
               const parentColor = (b as any).parentColor ?? '#6B7280';
               const parentIcon = (b as any).parentIcon ?? 'tag';
@@ -167,10 +194,16 @@ export default function PlanScreen() {
                       className='w-10 h-10 rounded-xl items-center justify-center'
                       style={{ backgroundColor: `${parentColor}18` }}
                     >
-                      <Feather name={parentIcon as any} size={16} color={parentColor} />
+                      <Feather
+                        name={parentIcon as any}
+                        size={16}
+                        color={parentColor}
+                      />
                     </View>
                     <View className='flex-1'>
-                      <Text className='text-[14px] font-semibold text-black'>{parentName}</Text>
+                      <Text className='text-[14px] font-semibold text-black'>
+                        {parentName}
+                      </Text>
                       {delta !== null && (
                         <View className='flex-row items-center gap-1 mt-0.5'>
                           <Feather
@@ -204,7 +237,8 @@ export default function PlanScreen() {
                   </View>
                   {isOver && (
                     <Text className='text-[11px] text-red-500 font-medium mt-1.5'>
-                      Over budget by {formatCurrencyCompact(b.spent - b.limitAmount, currency)}
+                      Over budget by{' '}
+                      {formatCurrencyCompact(b.spent - b.limitAmount, currency)}
                     </Text>
                   )}
                 </View>
@@ -240,13 +274,15 @@ export default function PlanScreen() {
             </View>
           ) : (
             activeGoals.map((g) => {
-              const pct = g.target > 0 ? Math.round((g.saved / g.target) * 100) : 0;
+              const pct =
+                g.target > 0 ? Math.round((g.saved / g.target) * 100) : 0;
               const isComplete = pct >= 100;
 
               // Monthly needed calc for sinking fund goals
               const remaining = g.target - g.saved;
               const months = g.nextDue ? monthsUntil(g.nextDue) : 0;
-              const monthlyNeeded = months > 0 ? Math.ceil(remaining / months) : null;
+              const monthlyNeeded =
+                months > 0 ? Math.ceil(remaining / months) : null;
               const isPaymentDue = g.paymentDue === true;
               const isSinkingFund = g.isRecurring === true;
 
@@ -272,10 +308,14 @@ export default function PlanScreen() {
                     </View>
                     <View className='flex-1'>
                       <View className='flex-row items-center gap-2'>
-                        <Text className='text-[15px] font-semibold text-black'>{g.name}</Text>
+                        <Text className='text-[15px] font-semibold text-black'>
+                          {g.name}
+                        </Text>
                         {isSinkingFund && (
                           <View className='bg-neutral-100 px-2 py-0.5 rounded-full'>
-                            <Text className='text-[10px] font-medium text-neutral-400'>Yearly</Text>
+                            <Text className='text-[10px] font-medium text-neutral-400'>
+                              Yearly
+                            </Text>
                           </View>
                         )}
                       </View>
@@ -305,18 +345,24 @@ export default function PlanScreen() {
                   </View>
 
                   {/* Monthly needed hint for sinking fund goals */}
-                  {isSinkingFund && !isPaymentDue && monthlyNeeded !== null && remaining > 0 && (
-                    <View className='mt-3 flex-row items-center gap-1.5'>
-                      <Feather name='trending-up' size={12} color='#A3A3A3' />
-                      <Text className='text-[12px] text-neutral-400'>
-                        Save{' '}
-                        <Text className='font-semibold text-black'>
-                          {formatCurrencyCompact(monthlyNeeded, currency)}/mo
+                  {isSinkingFund &&
+                    !isPaymentDue &&
+                    monthlyNeeded !== null &&
+                    remaining > 0 && (
+                      <View className='mt-3 flex-row items-center gap-1.5'>
+                        <Feather name='trending-up' size={12} color='#A3A3A3' />
+                        <Text className='text-[12px] text-neutral-400'>
+                          Save{' '}
+                          <Text className='font-semibold text-black'>
+                            {formatCurrencyCompact(monthlyNeeded, currency)}/mo
+                          </Text>
+                          {months > 0
+                            ? ` for ${months} month${months !== 1 ? 's' : ''}`
+                            : ''}{' '}
+                          to hit your target
                         </Text>
-                        {months > 0 ? ` for ${months} month${months !== 1 ? 's' : ''}` : ''} to hit your target
-                      </Text>
-                    </View>
-                  )}
+                      </View>
+                    )}
 
                   {isSinkingFund && !isPaymentDue && remaining <= 0 && (
                     <View className='mt-3 flex-row items-center gap-1.5'>
@@ -336,7 +382,9 @@ export default function PlanScreen() {
                         className='flex-1 flex-row items-center justify-center bg-red-500 rounded-xl py-2.5 gap-1.5'
                       >
                         <Feather name='check' size={14} color='#fff' />
-                        <Text className='text-white text-[13px] font-semibold'>Mark as Paid</Text>
+                        <Text className='text-white text-[13px] font-semibold'>
+                          Mark as Paid
+                        </Text>
                       </Pressable>
                     ) : (
                       <>
@@ -349,7 +397,9 @@ export default function PlanScreen() {
                           className='flex-1 flex-row items-center justify-center bg-black rounded-xl py-2.5 gap-1.5'
                         >
                           <Feather name='plus' size={14} color='#fff' />
-                          <Text className='text-white text-[13px] font-semibold'>Add money</Text>
+                          <Text className='text-white text-[13px] font-semibold'>
+                            Add money
+                          </Text>
                         </Pressable>
 
                         {/* Mark complete — only for non-sinking-fund goals */}
@@ -357,7 +407,11 @@ export default function PlanScreen() {
                           <Pressable
                             onPress={() => handleMarkComplete(g)}
                             className='flex-1 flex-row items-center justify-center rounded-xl py-2.5 gap-1.5'
-                            style={{ backgroundColor: isComplete ? g.color + '20' : '#F5F5F5' }}
+                            style={{
+                              backgroundColor: isComplete
+                                ? g.color + '20'
+                                : '#F5F5F5',
+                            }}
                           >
                             <Feather
                               name='check-circle'
@@ -366,7 +420,9 @@ export default function PlanScreen() {
                             />
                             <Text
                               className='text-[13px] font-semibold'
-                              style={{ color: isComplete ? g.color : '#D4D4D4' }}
+                              style={{
+                                color: isComplete ? g.color : '#D4D4D4',
+                              }}
                             >
                               Complete
                             </Text>
@@ -381,7 +437,10 @@ export default function PlanScreen() {
                             style={{ backgroundColor: g.color + '20' }}
                           >
                             <Feather name='check' size={14} color={g.color} />
-                            <Text className='text-[13px] font-semibold' style={{ color: g.color }}>
+                            <Text
+                              className='text-[13px] font-semibold'
+                              style={{ color: g.color }}
+                            >
                               Pay Now
                             </Text>
                           </Pressable>
@@ -464,7 +523,9 @@ export default function PlanScreen() {
       >
         <View className='flex-1 bg-neutral-50'>
           <View className='px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100'>
-            <Text className='text-[18px] font-bold text-black'>Contribution History</Text>
+            <Text className='text-[18px] font-bold text-black'>
+              Contribution History
+            </Text>
             <Pressable onPress={() => setHistoryGoalId(null)}>
               <Feather name='x' size={20} color='#000' />
             </Pressable>
@@ -476,12 +537,19 @@ export default function PlanScreen() {
                 className='w-10 h-10 rounded-2xl items-center justify-center'
                 style={{ backgroundColor: historyGoal.color + '20' }}
               >
-                <Feather name={historyGoal.icon as any} size={16} color={historyGoal.color} />
+                <Feather
+                  name={historyGoal.icon as any}
+                  size={16}
+                  color={historyGoal.color}
+                />
               </View>
               <View>
-                <Text className='text-[15px] font-semibold text-black'>{historyGoal.name}</Text>
+                <Text className='text-[15px] font-semibold text-black'>
+                  {historyGoal.name}
+                </Text>
                 <Text className='text-[12px] text-neutral-400'>
-                  {formatCurrencyCompact(historyGoal.saved, currency)} saved of {formatCurrencyCompact(historyGoal.target, currency)}
+                  {formatCurrencyCompact(historyGoal.saved, currency)} saved of{' '}
+                  {formatCurrencyCompact(historyGoal.target, currency)}
                 </Text>
               </View>
             </View>
@@ -489,7 +557,11 @@ export default function PlanScreen() {
 
           <ScrollView
             className='flex-1'
-            contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40 }}
+            contentContainerStyle={{
+              paddingHorizontal: 24,
+              paddingTop: 12,
+              paddingBottom: 40,
+            }}
             showsVerticalScrollIndicator={false}
           >
             {contributions === undefined ? (
@@ -501,7 +573,9 @@ export default function PlanScreen() {
                 <View className='w-14 h-14 rounded-full bg-neutral-100 items-center justify-center mb-3'>
                   <Feather name='clock' size={22} color='#A3A3A3' />
                 </View>
-                <Text className='text-[15px] font-semibold text-black'>No contributions yet</Text>
+                <Text className='text-[15px] font-semibold text-black'>
+                  No contributions yet
+                </Text>
                 <Text className='text-neutral-400 text-[13px] mt-1'>
                   Add money to this goal to see history
                 </Text>

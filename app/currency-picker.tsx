@@ -1,11 +1,12 @@
-import { View, Text, Pressable, ScrollView } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
+import { useCachedCurrency } from '@/lib/hooks/useCachedCurrency';
 import { CURRENCIES } from '@/lib/utils/currency';
+import { Feather } from '@expo/vector-icons';
+import { useMutation, useQuery } from 'convex/react';
+import { router } from 'expo-router';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 const currencyList = Object.values(CURRENCIES);
 
@@ -14,10 +15,13 @@ export default function CurrencyPickerScreen() {
   const userId = session?.user?.id;
   const authenticatedUserId = useAuthenticatedUserId();
 
-  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const prefs = useQuery(
+    api.preferences.get,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
   const updateCurrency = useMutation(api.preferences.updateCurrency);
 
-  const currency = prefs?.currency ?? 'INR';
+  const currency = useCachedCurrency();
 
   const handleSelect = async (code: string) => {
     if (!userId) return;
@@ -27,24 +31,24 @@ export default function CurrencyPickerScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-neutral-50"
+      className='flex-1 bg-neutral-50'
       contentContainerStyle={{ paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View className="px-6 pt-4 pb-2 flex-row justify-between items-center">
+      <View className='px-6 pt-4 pb-2 flex-row justify-between items-center'>
         <Pressable
           onPress={() => router.back()}
-          className="w-10 h-10 rounded-full bg-white items-center justify-center"
+          className='w-10 h-10 rounded-full bg-white items-center justify-center'
         >
-          <Feather name="x" size={20} color="#000" />
+          <Feather name='x' size={20} color='#000' />
         </Pressable>
-        <Text className="text-[18px] font-bold text-black">Currency</Text>
-        <View className="w-10" />
+        <Text className='text-[18px] font-bold text-black'>Currency</Text>
+        <View className='w-10' />
       </View>
 
       {/* Currency List */}
-      <View className="mx-6 mt-5 bg-white rounded-2xl px-4">
+      <View className='mx-6 mt-5 bg-white rounded-2xl px-4'>
         {currencyList.map((c, i) => {
           const isSelected = c.code === currency;
           const isLast = i === currencyList.length - 1;
@@ -57,22 +61,20 @@ export default function CurrencyPickerScreen() {
                 !isLast ? 'border-b border-neutral-100' : ''
               }`}
             >
-              <View className="w-10 h-10 rounded-xl bg-neutral-100 items-center justify-center">
-                <Text className="text-[16px] font-bold text-black">
+              <View className='w-10 h-10 rounded-xl bg-neutral-100 items-center justify-center'>
+                <Text className='text-[16px] font-bold text-black'>
                   {c.symbol}
                 </Text>
               </View>
-              <View className="flex-1 ml-3">
-                <Text className="text-[14px] font-medium text-black">
+              <View className='flex-1 ml-3'>
+                <Text className='text-[14px] font-medium text-black'>
                   {c.name}
                 </Text>
-                <Text className="text-[12px] text-neutral-400 mt-0.5">
+                <Text className='text-[12px] text-neutral-400 mt-0.5'>
                   {c.code}
                 </Text>
               </View>
-              {isSelected && (
-                <Feather name="check" size={18} color="#000" />
-              )}
+              {isSelected && <Feather name='check' size={18} color='#000' />}
             </Pressable>
           );
         })}

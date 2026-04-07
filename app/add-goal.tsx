@@ -1,13 +1,23 @@
-import { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
-import { getCurrencySymbol } from '@/lib/utils/currency';
+import { useCachedCurrency } from '@/lib/hooks/useCachedCurrency';
 import type { FeatherIcon } from '@/lib/models/types';
+import { getCurrencySymbol } from '@/lib/utils/currency';
+import { Feather } from '@expo/vector-icons';
+import { useMutation, useQuery } from 'convex/react';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 const GOAL_ICONS: { icon: FeatherIcon; label: string }[] = [
   { icon: 'shield', label: 'Emergency' },
@@ -20,17 +30,27 @@ const GOAL_ICONS: { icon: FeatherIcon; label: string }[] = [
   { icon: 'target', label: 'Other' },
 ];
 
-const GOAL_COLORS = ['#000000', '#525252', '#A3A3A3', '#059669', '#2563EB', '#DC2626'];
+const GOAL_COLORS = [
+  '#000000',
+  '#525252',
+  '#A3A3A3',
+  '#059669',
+  '#2563EB',
+  '#DC2626',
+];
 
 export default function AddGoalScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id ?? '';
   const authenticatedUserId = useAuthenticatedUserId();
 
-  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const prefs = useQuery(
+    api.preferences.get,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
   const createGoal = useMutation(api.goals.create);
 
-  const currency = prefs?.currency ?? 'INR';
+  const currency = useCachedCurrency();
 
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
@@ -60,56 +80,67 @@ export default function AddGoalScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-neutral-50"
+      className='flex-1 bg-neutral-50'
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        className="flex-1"
+        className='flex-1'
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps='handled'
       >
         {/* Header */}
-        <View className="px-6 pt-4 pb-2 flex-row justify-between items-center">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full bg-white items-center justify-center">
-            <Feather name="x" size={20} color="#000" />
+        <View className='px-6 pt-4 pb-2 flex-row justify-between items-center'>
+          <Pressable
+            onPress={() => router.back()}
+            className='w-10 h-10 rounded-full bg-white items-center justify-center'
+          >
+            <Feather name='x' size={20} color='#000' />
           </Pressable>
-          <Text className="text-[18px] font-bold text-black">Add Goal</Text>
-          <View className="w-10" />
+          <Text className='text-[18px] font-bold text-black'>Add Goal</Text>
+          <View className='w-10' />
         </View>
 
         {/* Goal Name */}
-        <View className="mx-6 mt-6 bg-white rounded-2xl p-5">
-          <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Goal Name</Text>
+        <View className='mx-6 mt-6 bg-white rounded-2xl p-5'>
+          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+            Goal Name
+          </Text>
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="e.g. Vacation, New Laptop..."
-            placeholderTextColor="#D4D4D4"
-            className="text-[16px] text-black"
+            placeholder='e.g. Vacation, New Laptop...'
+            placeholderTextColor='#D4D4D4'
+            className='text-[16px] text-black'
           />
         </View>
 
         {/* Target Amount */}
-        <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
-          <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Target Amount</Text>
-          <View className="flex-row items-center">
-            <Text className="text-[32px] font-bold text-black mr-1">{getCurrencySymbol(currency)}</Text>
+        <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
+          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+            Target Amount
+          </Text>
+          <View className='flex-row items-center'>
+            <Text className='text-[32px] font-bold text-black mr-1'>
+              {getCurrencySymbol(currency)}
+            </Text>
             <TextInput
               value={target}
               onChangeText={setTarget}
-              placeholder="0"
-              placeholderTextColor="#D4D4D4"
-              keyboardType="decimal-pad"
-              className="flex-1 text-[32px] font-bold text-black"
+              placeholder='0'
+              placeholderTextColor='#D4D4D4'
+              keyboardType='decimal-pad'
+              className='flex-1 text-[32px] font-bold text-black'
             />
           </View>
         </View>
 
         {/* Icon Picker */}
-        <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
-          <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Icon</Text>
-          <View className="flex-row flex-wrap gap-3">
+        <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
+          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+            Icon
+          </Text>
+          <View className='flex-row flex-wrap gap-3'>
             {GOAL_ICONS.map((item) => (
               <Pressable
                 key={item.icon}
@@ -129,9 +160,11 @@ export default function AddGoalScreen() {
         </View>
 
         {/* Color Picker */}
-        <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
-          <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Color</Text>
-          <View className="flex-row gap-3">
+        <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
+          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+            Color
+          </Text>
+          <View className='flex-row gap-3'>
             {GOAL_COLORS.map((color) => (
               <Pressable
                 key={color}
@@ -142,7 +175,7 @@ export default function AddGoalScreen() {
                 style={{ backgroundColor: color }}
               >
                 {selectedColor === color && (
-                  <Feather name="check" size={16} color="#fff" />
+                  <Feather name='check' size={16} color='#fff' />
                 )}
               </Pressable>
             ))}
@@ -150,7 +183,7 @@ export default function AddGoalScreen() {
         </View>
 
         {/* Save Button */}
-        <View className="mx-6 mt-6">
+        <View className='mx-6 mt-6'>
           <Pressable
             onPress={handleSave}
             disabled={isSaving || !name.trim() || !target}
@@ -159,9 +192,11 @@ export default function AddGoalScreen() {
             }`}
           >
             {isSaving ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size='small' color='#fff' />
             ) : (
-              <Text className="text-white font-bold text-[16px]">Save Goal</Text>
+              <Text className='text-white font-bold text-[16px]'>
+                Save Goal
+              </Text>
             )}
           </Pressable>
         </View>

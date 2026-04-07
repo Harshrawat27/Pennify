@@ -1,16 +1,26 @@
-import { useState, useEffect } from 'react';
-import {
-  View, Text, TextInput, Pressable, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Modal, StatusBar,
-} from 'react-native';
-import { Image } from 'expo-image';
-import { Feather } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
+import { useCachedCurrency } from '@/lib/hooks/useCachedCurrency';
 import { getCurrencySymbol } from '@/lib/utils/currency';
+import { Feather } from '@expo/vector-icons';
+import { useMutation, useQuery } from 'convex/react';
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 export default function TransactionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -20,17 +30,28 @@ export default function TransactionDetailScreen() {
 
   const tx = useQuery(
     api.transactions.getById,
-    id ? { id: id as any } : 'skip',
+    id ? { id: id as any } : 'skip'
   );
-  const categories = useQuery(api.categories.list, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
-  const accounts = useQuery(api.accounts.list, authenticatedUserId ? { userId: authenticatedUserId, activeOnly: true } : 'skip');
-  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const categories = useQuery(
+    api.categories.list,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
+  const accounts = useQuery(
+    api.accounts.list,
+    authenticatedUserId
+      ? { userId: authenticatedUserId, activeOnly: true }
+      : 'skip'
+  );
+  const prefs = useQuery(
+    api.preferences.get,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
 
   const updateTransaction = useMutation(api.transactions.update);
   const removeTransaction = useMutation(api.transactions.remove);
   const toggleBookmark = useMutation(api.transactions.toggleBookmark);
 
-  const currency = prefs?.currency ?? 'INR';
+  const currency = useCachedCurrency();
   const trackIncome = prefs?.trackIncome ?? true;
 
   // Form state
@@ -61,22 +82,32 @@ export default function TransactionDetailScreen() {
   }, [tx, initialized]);
 
   const filteredCategories = (categories ?? []).filter((c) =>
-    isExpense ? c.type === 'expense' : c.type === 'income',
+    isExpense ? c.type === 'expense' : c.type === 'income'
   );
 
   const effectiveCategoryId =
-    selectedCategoryId && filteredCategories.find((c) => c._id === selectedCategoryId)
+    selectedCategoryId &&
+    filteredCategories.find((c) => c._id === selectedCategoryId)
       ? selectedCategoryId
-      : filteredCategories[0]?._id ?? '';
+      : (filteredCategories[0]?._id ?? '');
 
   const effectiveAccountId =
-    selectedAccountId && (accounts ?? []).find((a) => a._id === selectedAccountId)
+    selectedAccountId &&
+    (accounts ?? []).find((a) => a._id === selectedAccountId)
       ? selectedAccountId
-      : (accounts ?? [])[0]?._id ?? '';
+      : ((accounts ?? [])[0]?._id ?? '');
 
   const handleSave = async () => {
     const numAmount = parseFloat(amount);
-    if (!title.trim() || isNaN(numAmount) || numAmount <= 0 || !effectiveCategoryId || !effectiveAccountId || !date) return;
+    if (
+      !title.trim() ||
+      isNaN(numAmount) ||
+      numAmount <= 0 ||
+      !effectiveCategoryId ||
+      !effectiveAccountId ||
+      !date
+    )
+      return;
 
     setIsSaving(true);
     try {
@@ -114,7 +145,7 @@ export default function TransactionDetailScreen() {
             }
           },
         },
-      ],
+      ]
     );
   };
 
@@ -129,7 +160,9 @@ export default function TransactionDetailScreen() {
   if (tx === null) {
     return (
       <View className='flex-1 bg-neutral-50 items-center justify-center'>
-        <Text className='text-neutral-400 text-[15px]'>Transaction not found.</Text>
+        <Text className='text-neutral-400 text-[15px]'>
+          Transaction not found.
+        </Text>
         <Pressable onPress={() => router.back()} className='mt-4'>
           <Text className='text-black font-semibold'>Go back</Text>
         </Pressable>
@@ -137,7 +170,12 @@ export default function TransactionDetailScreen() {
     );
   }
 
-  const canSave = title.trim() && amount && !isSaving && effectiveCategoryId && effectiveAccountId;
+  const canSave =
+    title.trim() &&
+    amount &&
+    !isSaving &&
+    effectiveCategoryId &&
+    effectiveAccountId;
 
   return (
     <KeyboardAvoidingView
@@ -164,7 +202,11 @@ export default function TransactionDetailScreen() {
               onPress={() => void toggleBookmark({ id: id as any })}
               className='w-10 h-10 rounded-full bg-white items-center justify-center'
             >
-              <Feather name='bookmark' size={18} color={tx?.isBookmarked ? '#000' : '#A3A3A3'} />
+              <Feather
+                name='bookmark'
+                size={18}
+                color={tx?.isBookmarked ? '#000' : '#A3A3A3'}
+              />
             </Pressable>
             <Pressable
               onPress={handleDelete}
@@ -187,8 +229,12 @@ export default function TransactionDetailScreen() {
               contentFit='cover'
             />
             <View className='flex-1'>
-              <Text className='text-[13px] font-semibold text-black'>Receipt</Text>
-              <Text className='text-[11px] text-neutral-400 mt-0.5'>Tap to view full image</Text>
+              <Text className='text-[13px] font-semibold text-black'>
+                Receipt
+              </Text>
+              <Text className='text-[11px] text-neutral-400 mt-0.5'>
+                Tap to view full image
+              </Text>
             </View>
             <Feather name='maximize-2' size={16} color='#A3A3A3' />
           </Pressable>
@@ -203,7 +249,14 @@ export default function TransactionDetailScreen() {
             onRequestClose={() => setReceiptVisible(false)}
           >
             <StatusBar backgroundColor='#000' barStyle='light-content' />
-            <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: '#000',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
               <Image
                 source={{ uri: tx.receiptUrl }}
                 style={{ width: '100%', height: '85%' }}
@@ -233,18 +286,28 @@ export default function TransactionDetailScreen() {
         {trackIncome ? (
           <View className='flex-row mx-6 mt-5 bg-white rounded-xl p-1'>
             <Pressable
-              onPress={() => { setIsExpense(true); setSelectedCategoryId(''); }}
+              onPress={() => {
+                setIsExpense(true);
+                setSelectedCategoryId('');
+              }}
               className={`flex-1 py-3 rounded-lg items-center ${isExpense ? 'bg-black' : ''}`}
             >
-              <Text className={`text-[14px] font-semibold ${isExpense ? 'text-white' : 'text-neutral-400'}`}>
+              <Text
+                className={`text-[14px] font-semibold ${isExpense ? 'text-white' : 'text-neutral-400'}`}
+              >
                 Expense
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => { setIsExpense(false); setSelectedCategoryId(''); }}
+              onPress={() => {
+                setIsExpense(false);
+                setSelectedCategoryId('');
+              }}
               className={`flex-1 py-3 rounded-lg items-center ${!isExpense ? 'bg-black' : ''}`}
             >
-              <Text className={`text-[14px] font-semibold ${!isExpense ? 'text-white' : 'text-neutral-400'}`}>
+              <Text
+                className={`text-[14px] font-semibold ${!isExpense ? 'text-white' : 'text-neutral-400'}`}
+              >
                 Income
               </Text>
             </Pressable>
@@ -253,9 +316,13 @@ export default function TransactionDetailScreen() {
 
         {/* Amount */}
         <View className='mx-6 mt-6 bg-white rounded-2xl p-5'>
-          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>Amount</Text>
+          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+            Amount
+          </Text>
           <View className='flex-row items-center'>
-            <Text className='text-[32px] font-bold text-black mr-1'>{getCurrencySymbol(currency)}</Text>
+            <Text className='text-[32px] font-bold text-black mr-1'>
+              {getCurrencySymbol(currency)}
+            </Text>
             <TextInput
               value={amount}
               onChangeText={setAmount}
@@ -269,7 +336,9 @@ export default function TransactionDetailScreen() {
 
         {/* Title */}
         <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
-          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>Title</Text>
+          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+            Title
+          </Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
@@ -281,27 +350,42 @@ export default function TransactionDetailScreen() {
 
         {/* Category — tappable row */}
         {(() => {
-          const selectedCat = filteredCategories.find((c) => c._id === effectiveCategoryId);
+          const selectedCat = filteredCategories.find(
+            (c) => c._id === effectiveCategoryId
+          );
           return (
             <Pressable
               onPress={() => setShowCategoryPicker(true)}
               className='mx-6 mt-4 bg-white rounded-2xl p-5 flex-row items-center'
             >
-              <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider flex-1'>Category</Text>
+              <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider flex-1'>
+                Category
+              </Text>
               {selectedCat ? (
                 <View className='flex-row items-center gap-2'>
                   <View
                     className='w-7 h-7 rounded-lg items-center justify-center'
                     style={{ backgroundColor: `${selectedCat.color}20` }}
                   >
-                    <Feather name={selectedCat.icon as any} size={13} color={selectedCat.color} />
+                    <Feather
+                      name={selectedCat.icon as any}
+                      size={13}
+                      color={selectedCat.color}
+                    />
                   </View>
-                  <Text className='text-[14px] font-medium text-black'>{selectedCat.name}</Text>
+                  <Text className='text-[14px] font-medium text-black'>
+                    {selectedCat.name}
+                  </Text>
                 </View>
               ) : (
                 <Text className='text-[14px] text-neutral-400'>Select</Text>
               )}
-              <Feather name='chevron-right' size={16} color='#A3A3A3' style={{ marginLeft: 8 }} />
+              <Feather
+                name='chevron-right'
+                size={16}
+                color='#A3A3A3'
+                style={{ marginLeft: 8 }}
+              />
             </Pressable>
           );
         })()}
@@ -323,12 +407,18 @@ export default function TransactionDetailScreen() {
             <ScrollView showsVerticalScrollIndicator={false}>
               <View className='px-6 pt-4 pb-16'>
                 {Object.entries(
-                  filteredCategories.reduce((groups: Record<string, typeof filteredCategories>, cat) => {
-                    const key = (cat as any).parentCategoryName ?? 'Other';
-                    if (!groups[key]) groups[key] = [];
-                    groups[key].push(cat);
-                    return groups;
-                  }, {})
+                  filteredCategories.reduce(
+                    (
+                      groups: Record<string, typeof filteredCategories>,
+                      cat
+                    ) => {
+                      const key = (cat as any).parentCategoryName ?? 'Other';
+                      if (!groups[key]) groups[key] = [];
+                      groups[key].push(cat);
+                      return groups;
+                    },
+                    {}
+                  )
                 ).map(([parent, cats]) => (
                   <View key={parent} className='mt-5'>
                     <Text className='text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-2 ml-1'>
@@ -348,9 +438,15 @@ export default function TransactionDetailScreen() {
                             className='w-8 h-8 rounded-lg items-center justify-center'
                             style={{ backgroundColor: `${cat.color}18` }}
                           >
-                            <Feather name={cat.icon as any} size={14} color={cat.color} />
+                            <Feather
+                              name={cat.icon as any}
+                              size={14}
+                              color={cat.color}
+                            />
                           </View>
-                          <Text className='flex-1 text-[14px] font-medium text-black ml-3'>{cat.name}</Text>
+                          <Text className='flex-1 text-[14px] font-medium text-black ml-3'>
+                            {cat.name}
+                          </Text>
                           {effectiveCategoryId === cat._id && (
                             <Feather name='check' size={16} color='#000' />
                           )}
@@ -366,7 +462,9 @@ export default function TransactionDetailScreen() {
 
         {/* Account Picker */}
         <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
-          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>Account</Text>
+          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+            Account
+          </Text>
           <View className='flex-row flex-wrap gap-2'>
             {(accounts ?? []).map((acc) => (
               <Pressable
@@ -395,7 +493,9 @@ export default function TransactionDetailScreen() {
 
         {/* Date */}
         <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
-          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>Date</Text>
+          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+            Date
+          </Text>
           <TextInput
             value={date}
             onChangeText={setDate}
@@ -408,7 +508,9 @@ export default function TransactionDetailScreen() {
 
         {/* Note */}
         <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
-          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>Note</Text>
+          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+            Note
+          </Text>
           <TextInput
             value={note}
             onChangeText={setNote}
@@ -429,7 +531,9 @@ export default function TransactionDetailScreen() {
             {isSaving ? (
               <ActivityIndicator size='small' color='#fff' />
             ) : (
-              <Text className='text-white font-bold text-[16px]'>Save Changes</Text>
+              <Text className='text-white font-bold text-[16px]'>
+                Save Changes
+              </Text>
             )}
           </Pressable>
         </View>

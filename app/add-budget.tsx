@@ -1,14 +1,24 @@
-import { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
-import { getCurrencySymbol } from '@/lib/utils/currency';
 import { useCachedParentCategories } from '@/lib/hooks/useCachedParentCategories';
+import { useCachedCurrency } from '@/lib/hooks/useCachedCurrency';
 import type { FeatherIcon } from '@/lib/models/types';
+import { getCurrencySymbol } from '@/lib/utils/currency';
+import { Feather } from '@expo/vector-icons';
+import { useMutation, useQuery } from 'convex/react';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 export default function AddBudgetScreen() {
   const { data: session } = authClient.useSession();
@@ -16,10 +26,13 @@ export default function AddBudgetScreen() {
   const authenticatedUserId = useAuthenticatedUserId();
 
   const parentCategories = useCachedParentCategories();
-  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const prefs = useQuery(
+    api.preferences.get,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
   const createBudget = useMutation(api.budgets.create);
 
-  const currency = prefs?.currency ?? 'INR';
+  const currency = useCachedCurrency();
 
   const [limit, setLimit] = useState('');
   const [selectedParentId, setSelectedParentId] = useState('');
@@ -28,7 +41,7 @@ export default function AddBudgetScreen() {
   const effectiveParentId =
     selectedParentId && parentCategories.find((p) => p._id === selectedParentId)
       ? selectedParentId
-      : parentCategories[0]?._id ?? '';
+      : (parentCategories[0]?._id ?? '');
 
   const handleSave = async () => {
     const numLimit = parseFloat(limit);
@@ -53,45 +66,54 @@ export default function AddBudgetScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-neutral-50"
+      className='flex-1 bg-neutral-50'
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
-        className="flex-1"
+        className='flex-1'
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps='handled'
       >
         {/* Header */}
-        <View className="px-6 pt-4 pb-2 flex-row justify-between items-center">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full bg-white items-center justify-center">
-            <Feather name="x" size={20} color="#000" />
+        <View className='px-6 pt-4 pb-2 flex-row justify-between items-center'>
+          <Pressable
+            onPress={() => router.back()}
+            className='w-10 h-10 rounded-full bg-white items-center justify-center'
+          >
+            <Feather name='x' size={20} color='#000' />
           </Pressable>
-          <Text className="text-[18px] font-bold text-black">Add Budget</Text>
-          <View className="w-10" />
+          <Text className='text-[18px] font-bold text-black'>Add Budget</Text>
+          <View className='w-10' />
         </View>
 
         {/* Limit Amount */}
-        <View className="mx-6 mt-6 bg-white rounded-2xl p-5">
-          <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Monthly Limit</Text>
-          <View className="flex-row items-center">
-            <Text className="text-[32px] font-bold text-black mr-1">{getCurrencySymbol(currency)}</Text>
+        <View className='mx-6 mt-6 bg-white rounded-2xl p-5'>
+          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+            Monthly Limit
+          </Text>
+          <View className='flex-row items-center'>
+            <Text className='text-[32px] font-bold text-black mr-1'>
+              {getCurrencySymbol(currency)}
+            </Text>
             <TextInput
               value={limit}
               onChangeText={setLimit}
-              placeholder="0"
-              placeholderTextColor="#D4D4D4"
-              keyboardType="decimal-pad"
-              className="flex-1 text-[32px] font-bold text-black"
+              placeholder='0'
+              placeholderTextColor='#D4D4D4'
+              keyboardType='decimal-pad'
+              className='flex-1 text-[32px] font-bold text-black'
               autoFocus
             />
           </View>
         </View>
 
         {/* Category Group Picker */}
-        <View className="mx-6 mt-4 bg-white rounded-2xl p-5">
-          <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3">Category Group</Text>
-          <View className="flex-row flex-wrap gap-2">
+        <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
+          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+            Category Group
+          </Text>
+          <View className='flex-row flex-wrap gap-2'>
             {parentCategories.map((parent) => {
               const selected = effectiveParentId === parent._id;
               return (
@@ -105,7 +127,9 @@ export default function AddBudgetScreen() {
                     size={13}
                     color={selected ? '#fff' : parent.color}
                   />
-                  <Text className={`text-[13px] font-medium ${selected ? 'text-white' : 'text-black'}`}>
+                  <Text
+                    className={`text-[13px] font-medium ${selected ? 'text-white' : 'text-black'}`}
+                  >
                     {parent.name}
                   </Text>
                 </Pressable>
@@ -115,7 +139,7 @@ export default function AddBudgetScreen() {
         </View>
 
         {/* Save Button */}
-        <View className="mx-6 mt-6">
+        <View className='mx-6 mt-6'>
           <Pressable
             onPress={handleSave}
             disabled={isSaving || !limit}
@@ -124,9 +148,11 @@ export default function AddBudgetScreen() {
             }`}
           >
             {isSaving ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size='small' color='#fff' />
             ) : (
-              <Text className="text-white font-bold text-[16px]">Save Budget</Text>
+              <Text className='text-white font-bold text-[16px]'>
+                Save Budget
+              </Text>
             )}
           </Pressable>
         </View>

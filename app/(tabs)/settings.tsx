@@ -3,6 +3,7 @@ import { api } from '@/convex/_generated/api';
 import { deleteAccount } from '@/lib/account/deleteAccount';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
+import { useCachedCurrency } from '@/lib/hooks/useCachedCurrency';
 import { getOfferings } from '@/lib/revenuecat';
 import { CURRENCIES } from '@/lib/utils/currency';
 import {
@@ -133,7 +134,7 @@ export default function SettingsScreen() {
   const updateTrackIncome = useMutation(api.preferences.updateTrackIncome);
   const updateNotifications = useMutation(api.preferences.updateNotifications);
 
-  const currency = prefs?.currency ?? 'INR';
+  const currency = useCachedCurrency();
   const trackIncome = prefs?.trackIncome ?? true;
   const notificationsOn = prefs?.notificationsEnabled ?? false;
 

@@ -1,7 +1,9 @@
 import { api } from '@/convex/_generated/api';
+import { getLastReadId, markAnnouncementsRead } from '@/lib/announcementRead';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
-import { getLastReadId, markAnnouncementsRead } from '@/lib/announcementRead';
+import { useCachedCurrency } from '@/lib/hooks/useCachedCurrency';
+import { useWidgetSync } from '@/lib/hooks/useWidgetSync';
 import { usePendingStore } from '@/lib/stores/usePendingStore';
 import { formatCurrency } from '@/lib/utils/currency';
 import { currentMonth, formatMonthLabel, prevMonth } from '@/lib/utils/date';
@@ -93,25 +95,36 @@ export default function HomeScreen() {
 
   const transactions = useQuery(
     api.transactions.listByMonth,
-    authenticatedUserId ? { userId: authenticatedUserId, month: currentMonth() } : 'skip'
+    authenticatedUserId
+      ? { userId: authenticatedUserId, month: currentMonth() }
+      : 'skip'
   );
   const monthlyStats = useQuery(
     api.transactions.getMonthlyStats,
-    authenticatedUserId ? { userId: authenticatedUserId, month: currentMonth() } : 'skip'
+    authenticatedUserId
+      ? { userId: authenticatedUserId, month: currentMonth() }
+      : 'skip'
   );
   const monthlyBudgetData = useQuery(
     api.monthlyBudgets.getByMonth,
-    authenticatedUserId ? { userId: authenticatedUserId, month: currentMonth() } : 'skip'
+    authenticatedUserId
+      ? { userId: authenticatedUserId, month: currentMonth() }
+      : 'skip'
   );
   const lastMonthStats = useQuery(
     api.transactions.getMonthlyStats,
-    authenticatedUserId ? { userId: authenticatedUserId, month: prevMonth(currentMonth()) } : 'skip'
+    authenticatedUserId
+      ? { userId: authenticatedUserId, month: prevMonth(currentMonth()) }
+      : 'skip'
   );
   const totalBalance = useQuery(
     api.accounts.getTotalBalance,
     authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
   );
-  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const prefs = useQuery(
+    api.preferences.get,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
   const pendingTxs = usePendingStore((s) => s.transactions);
 
   const [showProfile, setShowProfile] = useState(false);
@@ -176,9 +189,16 @@ export default function HomeScreen() {
     void updateHideBalance({ userId, hideBalance: next });
   }
 
-  const currency = prefs?.currency ?? 'INR';
+  const currency = useCachedCurrency();
   const income = monthlyStats?.income ?? 0;
   const expenses = monthlyStats?.expenses ?? 0;
+
+  useWidgetSync({
+    transactions: transactions as any,
+    monthlySpent: expenses,
+    monthlyBudget: monthlyBudgetData?.budget ?? 0,
+    currency,
+  });
 
   const now = new Date();
   const todayFormatted = now.toLocaleDateString('en-US', {
@@ -239,8 +259,11 @@ export default function HomeScreen() {
                 onPress={() => {
                   setShowNotifications(true);
                   if (announcements && announcements.length > 0) {
-                    const latestId = announcements[announcements.length - 1]._id;
-                    markAnnouncementsRead(latestId).then(() => setHasUnreadAnnouncement(false));
+                    const latestId =
+                      announcements[announcements.length - 1]._id;
+                    markAnnouncementsRead(latestId).then(() =>
+                      setHasUnreadAnnouncement(false)
+                    );
                   }
                 }}
                 className='w-12 h-12 rounded-full bg-white/15 items-center justify-center'
@@ -256,7 +279,9 @@ export default function HomeScreen() {
           {/* Balance */}
           {(() => {
             const isBudgetMode =
-              prefs !== undefined && prefs !== null && prefs.overallBalance == null;
+              prefs !== undefined &&
+              prefs !== null &&
+              prefs.overallBalance == null;
             const budgetRemaining = (monthlyBudgetData?.budget ?? 0) - expenses;
             const displayValue = isBudgetMode ? budgetRemaining : totalBalance;
             const isLoading = isBudgetMode
@@ -828,7 +853,11 @@ export default function HomeScreen() {
                             <Text className='text-white text-[12px] font-semibold'>
                               {a.linkLabel ?? 'View'}
                             </Text>
-                            <Feather name='arrow-right' size={11} color='#fff' />
+                            <Feather
+                              name='arrow-right'
+                              size={11}
+                              color='#fff'
+                            />
                           </Pressable>
                         )}
                       </View>
@@ -841,7 +870,8 @@ export default function HomeScreen() {
               <View className='items-center py-12'>
                 <Feather name='loader' size={24} color='#D4D4D4' />
               </View>
-            ) : notifications.length === 0 && (!announcements || announcements.length === 0) ? (
+            ) : notifications.length === 0 &&
+              (!announcements || announcements.length === 0) ? (
               <View className='bg-white rounded-2xl p-10 items-center mt-2'>
                 <Feather name='check-circle' size={32} color='#D4D4D4' />
                 <Text className='text-neutral-400 text-[14px] font-medium mt-3'>

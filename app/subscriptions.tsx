@@ -1,13 +1,18 @@
+import { BillingDayPicker } from '@/components/BillingDayPicker';
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
+import { useCachedCurrency } from '@/lib/hooks/useCachedCurrency';
+import type { FeatherIcon } from '@/lib/models/types';
 import { formatCurrency } from '@/lib/utils/currency';
 import { formatDateShort } from '@/lib/utils/date';
-import { scheduleRecurringReminder, cancelRecurringReminder } from '@/lib/utils/notifications';
-import { BillingDayPicker } from '@/components/BillingDayPicker';
+import {
+  cancelRecurringReminder,
+  scheduleRecurringReminder,
+} from '@/lib/utils/notifications';
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { useAction, useMutation, useQuery } from 'convex/react';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import {
   Alert,
@@ -20,7 +25,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { FeatherIcon } from '@/lib/models/types';
 
 const GOAL_ICONS: { icon: FeatherIcon; label: string }[] = [
   { icon: 'shield', label: 'Emergency' },
@@ -33,7 +37,14 @@ const GOAL_ICONS: { icon: FeatherIcon; label: string }[] = [
   { icon: 'target', label: 'Other' },
 ];
 
-const GOAL_COLORS = ['#000000', '#525252', '#A3A3A3', '#059669', '#2563EB', '#DC2626'];
+const GOAL_COLORS = [
+  '#000000',
+  '#525252',
+  '#A3A3A3',
+  '#059669',
+  '#2563EB',
+  '#DC2626',
+];
 
 export default function SubscriptionsScreen() {
   const insets = useSafeAreaInsets();
@@ -51,22 +62,38 @@ export default function SubscriptionsScreen() {
   const [isSinkingFund, setIsSinkingFund] = useState(false);
   const [goalIcon, setGoalIcon] = useState<FeatherIcon>('target');
   const [goalColor, setGoalColor] = useState('#000000');
-  const payments = useQuery(api.recurring.list, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const payments = useQuery(
+    api.recurring.list,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
 
   // Category picker — store ID only, derive live object from query to avoid stale ref crash
-  const [editingCategoryPaymentId, setEditingCategoryPaymentId] = useState<string | null>(null);
-  const editingCategoryFor = (payments ?? []).find((p) => p._id === editingCategoryPaymentId) ?? null;
-  const categories = useQuery(api.categories.list, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
-  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const [editingCategoryPaymentId, setEditingCategoryPaymentId] = useState<
+    string | null
+  >(null);
+  const editingCategoryFor =
+    (payments ?? []).find((p) => p._id === editingCategoryPaymentId) ?? null;
+  const categories = useQuery(
+    api.categories.list,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
+  const prefs = useQuery(
+    api.preferences.get,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
 
   const createPayment = useMutation(api.recurring.create);
-  const categorizePayment = useAction(api.categorize.categorizeRecurringPayment);
-  const createLinkedSinkingFund = useMutation(api.recurring.createLinkedSinkingFund);
+  const categorizePayment = useAction(
+    api.categorize.categorizeRecurringPayment
+  );
+  const createLinkedSinkingFund = useMutation(
+    api.recurring.createLinkedSinkingFund
+  );
   const togglePause = useMutation(api.recurring.togglePause);
   const removePayment = useMutation(api.recurring.remove);
   const updateCategory = useMutation(api.recurring.updateCategory);
 
-  const currency = prefs?.currency ?? 'INR';
+  const currency = useCachedCurrency();
 
   const active = (payments ?? []).filter((p) => !p.isPaused);
   const paused = (payments ?? []).filter((p) => p.isPaused);
@@ -88,18 +115,42 @@ export default function SubscriptionsScreen() {
     const amount = parseFloat(newAmount);
     if (!amount || amount <= 0) return;
 
-    const billingDay = selectedDate ? Number(selectedDate.slice(8, 10)) : undefined;
+    const billingDay = selectedDate
+      ? Number(selectedDate.slice(8, 10))
+      : undefined;
     const purchasedAt = selectedDate ?? undefined;
 
     if (newFreq === 'yearly' && isSinkingFund) {
-      await createLinkedSinkingFund({ userId, name: newName.trim(), amount, goalIcon, goalColor });
+      await createLinkedSinkingFund({
+        userId,
+        name: newName.trim(),
+        amount,
+        goalIcon,
+        goalColor,
+      });
     } else {
-      const id = await createPayment({ userId, name: newName.trim(), amount, frequency: newFreq, billingDay, purchasedAt });
+      const id = await createPayment({
+        userId,
+        name: newName.trim(),
+        amount,
+        frequency: newFreq,
+        billingDay,
+        purchasedAt,
+      });
       if (id) {
         // Schedule local reminder notification 1 day before billing day
-        if (billingDay) void scheduleRecurringReminder(String(id), newName.trim(), billingDay);
+        if (billingDay)
+          void scheduleRecurringReminder(
+            String(id),
+            newName.trim(),
+            billingDay
+          );
         // Auto-categorize in background — Convex reactivity updates the card when done
-        void categorizePayment({ userId, recurringPaymentId: String(id), name: newName.trim() });
+        void categorizePayment({
+          userId,
+          recurringPaymentId: String(id),
+          name: newName.trim(),
+        });
       }
     }
     resetModal();
@@ -130,12 +181,18 @@ export default function SubscriptionsScreen() {
   function renderCard(payment: any) {
     const isPaused = payment.isPaused === true;
     const isSinkingFundLinked = !!payment.linkedGoalId;
-    const category = payment.categoryId ? catMap.get(payment.categoryId) : undefined;
+    const category = payment.categoryId
+      ? catMap.get(payment.categoryId)
+      : undefined;
     return (
       <View key={payment._id} className='bg-white rounded-2xl p-4 mb-3'>
         <View className='flex-row items-center gap-3'>
           <View className='w-11 h-11 rounded-2xl bg-neutral-100 items-center justify-center'>
-            <Feather name={isSinkingFundLinked ? 'target' : 'repeat'} size={18} color='#000' />
+            <Feather
+              name={isSinkingFundLinked ? 'target' : 'repeat'}
+              size={18}
+              color='#000'
+            />
           </View>
 
           <View className='flex-1'>
@@ -145,18 +202,24 @@ export default function SubscriptionsScreen() {
               </Text>
               {isPaused && (
                 <View className='bg-neutral-100 px-2 py-0.5 rounded-full'>
-                  <Text className='text-[10px] font-medium text-neutral-400'>Paused</Text>
+                  <Text className='text-[10px] font-medium text-neutral-400'>
+                    Paused
+                  </Text>
                 </View>
               )}
               {isSinkingFundLinked && (
                 <View className='bg-emerald-50 px-2 py-0.5 rounded-full'>
-                  <Text className='text-[10px] font-medium text-emerald-600'>Sinking Fund</Text>
+                  <Text className='text-[10px] font-medium text-emerald-600'>
+                    Sinking Fund
+                  </Text>
                 </View>
               )}
             </View>
             <Text className='text-[12px] text-neutral-400 mt-0.5'>
               {payment.frequency === 'monthly' ? 'Monthly' : 'Yearly'} ·{' '}
-              {isPaused ? 'Paused' : `Next: ${formatDateShort(payment.nextDue)}`}
+              {isPaused
+                ? 'Paused'
+                : `Next: ${formatDateShort(payment.nextDue)}`}
               {payment.billingDay ? ` · renews ${payment.billingDay}th` : ''}
             </Text>
             {/* Category chip — tappable to edit */}
@@ -170,15 +233,27 @@ export default function SubscriptionsScreen() {
                     className='flex-row items-center gap-1 px-2 py-0.5 rounded-full'
                     style={{ backgroundColor: `${category.color}20` }}
                   >
-                    <View className='w-1.5 h-1.5 rounded-full' style={{ backgroundColor: category.color }} />
-                    <Text className='text-[11px] font-medium' style={{ color: category.color }}>
+                    <View
+                      className='w-1.5 h-1.5 rounded-full'
+                      style={{ backgroundColor: category.color }}
+                    />
+                    <Text
+                      className='text-[11px] font-medium'
+                      style={{ color: category.color }}
+                    >
                       {category.name}
                     </Text>
-                    <Feather name='chevron-down' size={9} color={category.color} />
+                    <Feather
+                      name='chevron-down'
+                      size={9}
+                      color={category.color}
+                    />
                   </View>
                 ) : (
                   <View className='flex-row items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-100'>
-                    <Text className='text-[11px] text-neutral-400'>Categorizing…</Text>
+                    <Text className='text-[11px] text-neutral-400'>
+                      Categorizing…
+                    </Text>
                     <Feather name='chevron-down' size={9} color='#A3A3A3' />
                   </View>
                 )}
@@ -205,7 +280,11 @@ export default function SubscriptionsScreen() {
               onPress={() => togglePause({ id: payment._id })}
               className='flex-1 flex-row items-center justify-center rounded-xl py-2.5 gap-1.5 bg-neutral-100'
             >
-              <Feather name={isPaused ? 'play' : 'pause'} size={13} color='#525252' />
+              <Feather
+                name={isPaused ? 'play' : 'pause'}
+                size={13}
+                color='#525252'
+              />
               <Text className='text-[13px] font-medium text-neutral-600'>
                 {isPaused ? 'Resume' : 'Pause'}
               </Text>
@@ -275,7 +354,9 @@ export default function SubscriptionsScreen() {
               <Text className='text-neutral-400 text-[14px] mt-3 font-medium'>
                 No subscriptions yet
               </Text>
-              <Text className='text-neutral-300 text-[12px] mt-1'>Tap + to add one</Text>
+              <Text className='text-neutral-300 text-[12px] mt-1'>
+                Tap + to add one
+              </Text>
             </View>
           ) : (
             <>
@@ -316,7 +397,9 @@ export default function SubscriptionsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View className='px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100'>
-            <Text className='text-[18px] font-bold text-black'>Add Subscription</Text>
+            <Text className='text-[18px] font-bold text-black'>
+              Add Subscription
+            </Text>
             <Pressable onPress={resetModal}>
               <Feather name='x' size={20} color='#000' />
             </Pressable>
@@ -324,7 +407,9 @@ export default function SubscriptionsScreen() {
 
           <View className='px-6 pt-6'>
             {/* Name */}
-            <Text className='text-[13px] font-medium text-neutral-500 mb-2'>Name</Text>
+            <Text className='text-[13px] font-medium text-neutral-500 mb-2'>
+              Name
+            </Text>
             <View className='bg-white rounded-2xl px-4 py-3.5 mb-5'>
               <TextInput
                 value={newName}
@@ -337,9 +422,13 @@ export default function SubscriptionsScreen() {
             </View>
 
             {/* Amount */}
-            <Text className='text-[13px] font-medium text-neutral-500 mb-2'>Amount</Text>
+            <Text className='text-[13px] font-medium text-neutral-500 mb-2'>
+              Amount
+            </Text>
             <View className='bg-white rounded-2xl px-4 py-3 flex-row items-center gap-2 mb-5'>
-              <Text className='text-[18px] text-neutral-300 font-medium'>{currency}</Text>
+              <Text className='text-[18px] text-neutral-300 font-medium'>
+                {currency}
+              </Text>
               <TextInput
                 value={newAmount}
                 onChangeText={setNewAmount}
@@ -351,13 +440,20 @@ export default function SubscriptionsScreen() {
             </View>
 
             {/* Frequency */}
-            <Text className='text-[13px] font-medium text-neutral-500 mb-2'>Frequency</Text>
+            <Text className='text-[13px] font-medium text-neutral-500 mb-2'>
+              Frequency
+            </Text>
             <View className='flex-row gap-3 mb-5'>
               <Pressable
-                onPress={() => { setNewFreq('monthly'); setIsSinkingFund(false); }}
+                onPress={() => {
+                  setNewFreq('monthly');
+                  setIsSinkingFund(false);
+                }}
                 className={`flex-1 py-3 rounded-xl items-center ${newFreq === 'monthly' ? 'bg-black' : 'bg-white'}`}
               >
-                <Text className={`text-[14px] font-semibold ${newFreq === 'monthly' ? 'text-white' : 'text-black'}`}>
+                <Text
+                  className={`text-[14px] font-semibold ${newFreq === 'monthly' ? 'text-white' : 'text-black'}`}
+                >
                   Monthly
                 </Text>
               </Pressable>
@@ -365,33 +461,51 @@ export default function SubscriptionsScreen() {
                 onPress={() => setNewFreq('yearly')}
                 className={`flex-1 py-3 rounded-xl items-center ${newFreq === 'yearly' ? 'bg-black' : 'bg-white'}`}
               >
-                <Text className={`text-[14px] font-semibold ${newFreq === 'yearly' ? 'text-white' : 'text-black'}`}>
+                <Text
+                  className={`text-[14px] font-semibold ${newFreq === 'yearly' ? 'text-white' : 'text-black'}`}
+                >
                   Yearly
                 </Text>
               </Pressable>
             </View>
 
             {/* Billing date */}
-            <Text className='text-[13px] font-medium text-neutral-500 mb-1'>Billing date</Text>
+            <Text className='text-[13px] font-medium text-neutral-500 mb-1'>
+              Billing date
+            </Text>
             <Text className='text-[11px] text-neutral-400 mb-3'>
-              Pick when you purchased it or just the day it renews — we only use the day number for reminders
+              Pick when you purchased it or just the day it renews — we only use
+              the day number for reminders
             </Text>
             <Pressable
               onPress={() => setShowCalendar(!showCalendar)}
               className='bg-white rounded-2xl px-4 py-3.5 mb-2 flex-row items-center justify-between'
             >
-              <Text className={selectedDate ? 'text-[15px] text-black font-medium' : 'text-[15px] text-neutral-300'}>
+              <Text
+                className={
+                  selectedDate
+                    ? 'text-[15px] text-black font-medium'
+                    : 'text-[15px] text-neutral-300'
+                }
+              >
                 {selectedDate
                   ? `${selectedDate.slice(8, 10)}/${selectedDate.slice(5, 7)}/${selectedDate.slice(0, 4)}`
                   : 'Select date (optional)'}
               </Text>
-              <Feather name={showCalendar ? 'chevron-up' : 'calendar'} size={16} color='#A3A3A3' />
+              <Feather
+                name={showCalendar ? 'chevron-up' : 'calendar'}
+                size={16}
+                color='#A3A3A3'
+              />
             </Pressable>
             {showCalendar && (
               <View className='mb-5'>
                 <BillingDayPicker
                   selectedDate={selectedDate}
-                  onSelect={(d) => { setSelectedDate(d); setShowCalendar(false); }}
+                  onSelect={(d) => {
+                    setSelectedDate(d);
+                    setShowCalendar(false);
+                  }}
                   onClear={() => setSelectedDate(null)}
                 />
               </View>
@@ -403,9 +517,12 @@ export default function SubscriptionsScreen() {
               <View className='bg-white rounded-2xl p-4 mb-5'>
                 <View className='flex-row items-center justify-between'>
                   <View className='flex-1 mr-3'>
-                    <Text className='text-[14px] font-semibold text-black'>Save up with a goal</Text>
+                    <Text className='text-[14px] font-semibold text-black'>
+                      Save up with a goal
+                    </Text>
                     <Text className='text-[12px] text-neutral-400 mt-0.5'>
-                      Set aside money each month so you're ready when the bill hits
+                      Set aside money each month so you're ready when the bill
+                      hits
                     </Text>
                   </View>
                   <Switch
@@ -428,7 +545,9 @@ export default function SubscriptionsScreen() {
                           key={item.icon}
                           onPress={() => setGoalIcon(item.icon)}
                           className={`w-11 h-11 rounded-xl items-center justify-center ${
-                            goalIcon === item.icon ? 'bg-black' : 'bg-neutral-100'
+                            goalIcon === item.icon
+                              ? 'bg-black'
+                              : 'bg-neutral-100'
                           }`}
                         >
                           <Feather
@@ -482,13 +601,19 @@ export default function SubscriptionsScreen() {
 
             <Pressable
               onPress={handleAdd}
-              disabled={!newName.trim() || !newAmount || parseFloat(newAmount) <= 0}
+              disabled={
+                !newName.trim() || !newAmount || parseFloat(newAmount) <= 0
+              }
               className={`rounded-2xl py-4 items-center ${
-                newName.trim() && newAmount && parseFloat(newAmount) > 0 ? 'bg-black' : 'bg-neutral-300'
+                newName.trim() && newAmount && parseFloat(newAmount) > 0
+                  ? 'bg-black'
+                  : 'bg-neutral-300'
               }`}
             >
               <Text className='text-white text-[15px] font-bold'>
-                {newFreq === 'yearly' && isSinkingFund ? 'Add & Create Goal' : 'Add'}
+                {newFreq === 'yearly' && isSinkingFund
+                  ? 'Add & Create Goal'
+                  : 'Add'}
               </Text>
             </Pressable>
           </View>
@@ -505,8 +630,12 @@ export default function SubscriptionsScreen() {
         <View className='flex-1 bg-neutral-50'>
           <View className='px-6 pt-5 pb-4 flex-row justify-between items-center border-b border-neutral-100'>
             <View>
-              <Text className='text-[18px] font-bold text-black'>Change Category</Text>
-              <Text className='text-[12px] text-neutral-400 mt-0.5'>{editingCategoryFor?.name}</Text>
+              <Text className='text-[18px] font-bold text-black'>
+                Change Category
+              </Text>
+              <Text className='text-[12px] text-neutral-400 mt-0.5'>
+                {editingCategoryFor?.name}
+              </Text>
             </View>
             <Pressable onPress={() => setEditingCategoryPaymentId(null)}>
               <Feather name='x' size={20} color='#000' />
@@ -520,14 +649,20 @@ export default function SubscriptionsScreen() {
                 onPress={() => {
                   const id = editingCategoryPaymentId;
                   setEditingCategoryPaymentId(null);
-                  if (id) void updateCategory({ id: id as any, categoryId: undefined });
+                  if (id)
+                    void updateCategory({
+                      id: id as any,
+                      categoryId: undefined,
+                    });
                 }}
                 className='flex-row items-center py-3.5 border-b border-neutral-100'
               >
                 <View className='w-8 h-8 rounded-lg bg-neutral-100 items-center justify-center'>
                   <Feather name='slash' size={14} color='#A3A3A3' />
                 </View>
-                <Text className='flex-1 text-[14px] text-neutral-400 ml-3'>No category</Text>
+                <Text className='flex-1 text-[14px] text-neutral-400 ml-3'>
+                  No category
+                </Text>
                 {!editingCategoryFor?.categoryId && (
                   <Feather name='check' size={16} color='#000' />
                 )}
@@ -555,7 +690,11 @@ export default function SubscriptionsScreen() {
                         onPress={() => {
                           const id = editingCategoryPaymentId;
                           setEditingCategoryPaymentId(null);
-                          if (id) void updateCategory({ id: id as any, categoryId: cat._id });
+                          if (id)
+                            void updateCategory({
+                              id: id as any,
+                              categoryId: cat._id,
+                            });
                         }}
                         className={`flex-row items-center py-3.5 ${i < cats.length - 1 ? 'border-b border-neutral-100' : ''}`}
                       >
@@ -563,9 +702,15 @@ export default function SubscriptionsScreen() {
                           className='w-8 h-8 rounded-lg items-center justify-center'
                           style={{ backgroundColor: `${cat.color}18` }}
                         >
-                          <Feather name={cat.icon as any} size={14} color={cat.color} />
+                          <Feather
+                            name={cat.icon as any}
+                            size={14}
+                            color={cat.color}
+                          />
                         </View>
-                        <Text className='flex-1 text-[14px] font-medium text-black ml-3'>{cat.name}</Text>
+                        <Text className='flex-1 text-[14px] font-medium text-black ml-3'>
+                          {cat.name}
+                        </Text>
                         {editingCategoryFor?.categoryId === cat._id && (
                           <Feather name='check' size={16} color='#000' />
                         )}

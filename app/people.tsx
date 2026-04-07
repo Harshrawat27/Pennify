@@ -1,6 +1,7 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
+import { useCachedCurrency } from '@/lib/hooks/useCachedCurrency';
 import { getCurrencySymbol } from '@/lib/utils/currency';
 import { localDateString } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
@@ -43,7 +44,8 @@ export default function PeopleScreen() {
   const debts = useQuery(api.peopleDebts.list, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
   const createDebt = useMutation(api.peopleDebts.create);
   const addPaymentMutation = useMutation(api.peopleDebts.addPayment);
-  const currencySymbol = getCurrencySymbol(prefs?.currency ?? 'INR');
+  const currency = useCachedCurrency();
+  const currencySymbol = getCurrencySymbol(currency);
 
   // Quick pay modal
   const [payTarget, setPayTarget] = useState<{ debtId: string; name: string } | null>(null);

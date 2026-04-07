@@ -1,6 +1,7 @@
 import { api } from '@/convex/_generated/api';
 import { authClient } from '@/lib/auth-client';
 import { useAuthenticatedUserId } from '@/lib/hooks/useAuthenticatedUserId';
+import { useCachedCurrency } from '@/lib/hooks/useCachedCurrency';
 import { getCurrencySymbol } from '@/lib/utils/currency';
 import { localDateString } from '@/lib/utils/date';
 import { Feather } from '@expo/vector-icons';
@@ -52,7 +53,8 @@ export default function PersonDetailScreen() {
   const settleDebtMutation = useMutation(api.peopleDebts.settle);
   const unsettleDebtMutation = useMutation(api.peopleDebts.unsettle);
 
-  const currencySymbol = getCurrencySymbol(prefs?.currency ?? 'INR');
+  const currency = useCachedCurrency();
+  const currencySymbol = getCurrencySymbol(currency);
 
   const [showModal, setShowModal] = useState(false);
   const [payAmount, setPayAmount] = useState('');
