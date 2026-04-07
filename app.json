@@ -11,6 +11,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.spendler",
+      "appleTeamId": "J3RGAGCSMN",
       "usesAppleSignIn": true,
       "buildNumber": "15",
       "entitlements": {
@@ -52,9 +53,9 @@
         }
       ],
       "expo-secure-store",
+      "@bacons/apple-targets",
       [
-        "@bacons/apple-targets",
-      "expo-notifications",
+        "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
           "color": "#FAFAFA",

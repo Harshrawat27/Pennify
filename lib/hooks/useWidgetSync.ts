@@ -18,18 +18,17 @@ interface WidgetSyncParams {
 
 const SUITE_NAME = 'group.app.spendler';
 
-async function writeToSharedStorage(data: Record<string, string>) {
+function writeToSharedStorage(data: Record<string, string>) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require('@bacons/apple-targets');
-    const ExpoAppleTargets = mod.default ?? mod;
-    await Promise.all(
-      Object.entries(data).map(([key, value]) =>
-        ExpoAppleTargets.setItemAsync(SUITE_NAME, key, value)
-      )
-    );
+    const { ExtensionStorage } = require('@bacons/apple-targets');
+    const storage = new ExtensionStorage(SUITE_NAME);
+    for (const [key, value] of Object.entries(data)) {
+      storage.set(key, value);
+    }
+    ExtensionStorage.reloadWidget();
   } catch {
-    // Native module unavailable (Android / dev without prebuild)
+    // Native module unavailable (Android / simulator without prebuild)
   }
 }
 
@@ -64,7 +63,7 @@ export function useWidgetSync({
       ? `${symbol}${lastExpense.amount.toFixed(0)}`
       : '';
 
-    void writeToSharedStorage({
+    writeToSharedStorage({
       spendler_today_spent: String(todaySpent),
       spendler_monthly_spent: String(monthlySpent),
       spendler_monthly_budget: String(monthlyBudget),
