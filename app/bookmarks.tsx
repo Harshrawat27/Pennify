@@ -30,18 +30,14 @@ export default function BookmarksScreen() {
   const currency = useCachedCurrency();
 
   // Group by date descending
-  const grouped = (bookmarks ?? [])
-    .slice()
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .reduce(
-      (acc: Record<string, typeof bookmarks>, tx) => {
-        if (!acc) return acc;
-        if (!acc[tx!.date]) acc[tx!.date] = [];
-        acc[tx!.date]!.push(tx!);
-        return acc;
-      },
-      {} as Record<string, typeof bookmarks>
-    );
+  const bookmarkList = bookmarks ?? [];
+  const grouped: Record<string, typeof bookmarkList> = {};
+  for (const tx of [...bookmarkList].sort((a, b) =>
+    b.date.localeCompare(a.date)
+  )) {
+    if (!grouped[tx.date]) grouped[tx.date] = [];
+    grouped[tx.date].push(tx);
+  }
 
   function formatDate(dateStr: string) {
     const d = new Date(dateStr + 'T00:00:00');

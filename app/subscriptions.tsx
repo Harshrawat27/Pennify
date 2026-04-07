@@ -182,7 +182,7 @@ export default function SubscriptionsScreen() {
     const isPaused = payment.isPaused === true;
     const isSinkingFundLinked = !!payment.linkedGoalId;
     const category = payment.categoryId
-      ? catMap.get(payment.categoryId)
+      ? (catMap.get(payment.categoryId) as any)
       : undefined;
     return (
       <View key={payment._id} className='bg-white rounded-2xl p-4 mb-3'>
@@ -672,12 +672,15 @@ export default function SubscriptionsScreen() {
               {Object.entries(
                 (categories ?? [])
                   .filter((c) => c.type === 'expense')
-                  .reduce((groups: Record<string, any[]>, cat) => {
-                    const key = (cat as any).parentCategoryName ?? 'Other';
-                    if (!groups[key]) groups[key] = [];
-                    groups[key].push(cat);
-                    return groups;
-                  }, {})
+                  .reduce(
+                    (groups: Record<string, any[]>, cat: any) => {
+                      const key = cat.parentCategoryName ?? 'Other';
+                      if (!groups[key]) groups[key] = [];
+                      groups[key].push(cat);
+                      return groups;
+                    },
+                    {} as Record<string, any[]>
+                  )
               ).map(([parent, cats]) => (
                 <View key={parent} className='mt-5'>
                   <Text className='text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-2 ml-1'>
@@ -696,7 +699,7 @@ export default function SubscriptionsScreen() {
                               categoryId: cat._id,
                             });
                         }}
-                        className={`flex-row items-center py-3.5 ${i < cats.length - 1 ? 'border-b border-neutral-100' : ''}`}
+                        className={`flex-row items-center py-3.5 ${i < (cats as any[]).length - 1 ? 'border-b border-neutral-100' : ''}`}
                       >
                         <View
                           className='w-8 h-8 rounded-lg items-center justify-center'

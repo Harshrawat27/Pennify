@@ -459,6 +459,7 @@ export default function ReportScreen() {
                 onPress={() =>
                   setSelectedParent({
                     id: (cat as any).id ?? cat.name,
+                    icon: (cat as any).icon ?? '',
                     ...cat,
                     startDate,
                     endDate,

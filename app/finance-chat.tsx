@@ -148,11 +148,21 @@ export default function FinanceChatScreen() {
     api.transactions.listSixMonths,
     authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
   );
-  const prefs = useQuery(api.preferences.get, authenticatedUserId ? { userId: authenticatedUserId } : 'skip');
+  const prefs = useQuery(
+    api.preferences.get,
+    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
+  );
   const monthlyBudgetData = useQuery(
     api.monthlyBudgets.getByMonth,
-    authenticatedUserId ? { userId: authenticatedUserId, month: new Date().toISOString().slice(0, 7) } : 'skip'
+    authenticatedUserId
+      ? {
+          userId: authenticatedUserId,
+          month: new Date().toISOString().slice(0, 7),
+        }
+      : 'skip'
   );
+
+  const currency = useCachedCurrency();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -187,7 +197,6 @@ export default function FinanceChatScreen() {
       question: text.trim(),
       transactions,
       preferences: {
-        const currency = useCachedCurrency();
         currency: currency,
         monthlyBudget: monthlyBudgetData?.budget ?? null,
       },

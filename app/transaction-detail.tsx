@@ -408,16 +408,13 @@ export default function TransactionDetailScreen() {
               <View className='px-6 pt-4 pb-16'>
                 {Object.entries(
                   filteredCategories.reduce(
-                    (
-                      groups: Record<string, typeof filteredCategories>,
-                      cat
-                    ) => {
-                      const key = (cat as any).parentCategoryName ?? 'Other';
+                    (groups: Record<string, any[]>, cat: any) => {
+                      const key = cat.parentCategoryName ?? 'Other';
                       if (!groups[key]) groups[key] = [];
                       groups[key].push(cat);
                       return groups;
                     },
-                    {}
+                    {} as Record<string, any[]>
                   )
                 ).map(([parent, cats]) => (
                   <View key={parent} className='mt-5'>
@@ -425,14 +422,14 @@ export default function TransactionDetailScreen() {
                       {parent}
                     </Text>
                     <View className='bg-white rounded-2xl px-4'>
-                      {cats.map((cat, i) => (
+                      {(cats as any[]).map((cat, i) => (
                         <Pressable
                           key={cat._id}
                           onPress={() => {
                             setSelectedCategoryId(cat._id);
                             setShowCategoryPicker(false);
                           }}
-                          className={`flex-row items-center py-3.5 ${i < cats.length - 1 ? 'border-b border-neutral-100' : ''}`}
+                          className={`flex-row items-center py-3.5 ${i < (cats as any[]).length - 1 ? 'border-b border-neutral-100' : ''}`}
                         >
                           <View
                             className='w-8 h-8 rounded-lg items-center justify-center'
