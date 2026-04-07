@@ -14,7 +14,7 @@ import { useQuery } from 'convex/react';
 import * as Crypto from 'expo-crypto';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import * as StoreReview from 'expo-store-review';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -41,6 +41,15 @@ export default function AddTransactionScreen() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id ?? '';
   const authenticatedUserId = useAuthenticatedUserId();
+  const navigation = useNavigation();
+
+  function goBack() {
+    if (navigation.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  }
 
   const accounts = useCachedAccounts();
 
@@ -224,7 +233,7 @@ export default function AddTransactionScreen() {
 
     addPending(pending);
     await enqueue(pending);
-    router.back();
+    goBack();
     requestSync();
 
     const alreadyRequested = await AsyncStorage.getItem(RATING_REQUESTED_KEY);
@@ -250,7 +259,7 @@ export default function AddTransactionScreen() {
       {/* Header */}
       <View className='px-5 pt-4 pb-3 flex-row justify-between items-center'>
         <Pressable
-          onPress={() => router.back()}
+          onPress={goBack}
           className='w-9 h-9 rounded-full bg-white items-center justify-center'
         >
           <Feather name='x' size={18} color='#000' />

@@ -4,6 +4,7 @@ import { ConvexAuthSetup } from '@/lib/auth/ConvexAuthSetup';
 import { initializePurchases } from '@/lib/revenuecat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import * as Linking from 'expo-linking';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { Stack, router, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -46,9 +47,19 @@ function RootLayoutNav() {
   useEffect(() => {
     AsyncStorage.getItem(WAS_AUTHENTICATED_KEY).then((wasAuth) => {
       if (wasAuth === 'true' && !splashHidden.current) {
-        splashHidden.current = true;
-        router.replace('/(tabs)');
-        SplashScreen.hideAsync();
+        // If app was opened via a deep link (e.g. widget + button), let Expo
+        // Router handle navigation — don't override with /(tabs).
+        Linking.getInitialURL().then((url) => {
+          if (url && !url.endsWith('://') && !url.endsWith(':///')) {
+            // Deep link present — just hide splash, don't redirect
+            splashHidden.current = true;
+            SplashScreen.hideAsync();
+          } else {
+            splashHidden.current = true;
+            router.replace('/(tabs)');
+            SplashScreen.hideAsync();
+          }
+        });
       }
     });
   }, []);

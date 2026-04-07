@@ -48,7 +48,6 @@ struct SpendlerProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SpendlerEntry>) -> Void) {
         let entry = readData()
-        // Refresh every 30 minutes
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
@@ -64,6 +63,8 @@ private func formatAmount(_ value: Double, symbol: String) -> String {
     return "\(symbol)\(String(format: "%.0f", value))"
 }
 
+private let addURL = URL(string: "spendler://add-transaction")!
+
 // MARK: - Small Widget View
 
 struct SmallWidgetView: View {
@@ -71,23 +72,23 @@ struct SmallWidgetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
-            HStack(spacing: 4) {
-                Image(systemName: "bolt.fill")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.white)
-                Text("Spendler")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.white.opacity(0.7))
+            // Top row: Today label + add button
+            HStack {
+                Text("Today")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.white.opacity(0.6))
+                Spacer()
+                Link(destination: addURL) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white.opacity(0.2))
+                        .clipShape(Circle())
+                }
             }
 
             Spacer()
-
-            // Today's spending
-            Text("Today")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.white.opacity(0.6))
-                .padding(.bottom, 2)
 
             Text(formatAmount(entry.todaySpent, symbol: entry.currencySymbol))
                 .font(.system(size: 28, weight: .bold, design: .rounded))
@@ -132,21 +133,22 @@ struct MediumWidgetView: View {
         HStack(spacing: 0) {
             // Left: today's spending
             VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 4) {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.white)
-                    Text("Spendler")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.white.opacity(0.7))
+                HStack {
+                    Text("Today")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.6))
+                    Spacer()
+                    Link(destination: addURL) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 52, height: 52)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Circle())
+                    }
                 }
 
                 Spacer()
-
-                Text("Today")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white.opacity(0.6))
-                    .padding(.bottom, 2)
 
                 Text(formatAmount(entry.todaySpent, symbol: entry.currencySymbol))
                     .font(.system(size: 30, weight: .bold, design: .rounded))
@@ -165,7 +167,6 @@ struct MediumWidgetView: View {
 
             // Right: monthly budget + last transaction
             VStack(alignment: .leading, spacing: 0) {
-                // Monthly
                 Text("This Month")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.white.opacity(0.5))

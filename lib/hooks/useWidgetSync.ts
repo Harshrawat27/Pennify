@@ -4,7 +4,6 @@ import { Platform } from 'react-native';
 
 interface Transaction {
   amount: number;
-  type: string;
   title: string;
   date: string;
 }
@@ -48,19 +47,18 @@ export function useWidgetSync({
 
     const symbol = getCurrencySymbol(currency);
 
-    // Today's spending: sum all expense transactions dated today
-    const todayStr = new Date().toISOString().slice(0, 10);
+    // Today's spending: expenses are stored as negative amounts
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const todaySpent = transactions
-      .filter(
-        (tx) => tx.type === 'expense' && tx.date.slice(0, 10) === todayStr
-      )
-      .reduce((sum, tx) => sum + tx.amount, 0);
+      .filter((tx) => tx.amount < 0 && tx.date.slice(0, 10) === todayStr)
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
     // Most recent expense for "last transaction"
-    const lastExpense = transactions.find((tx) => tx.type === 'expense');
+    const lastExpense = transactions.find((tx) => tx.amount < 0);
     const lastTitle = lastExpense?.title ?? '';
     const lastAmount = lastExpense
-      ? `${symbol}${lastExpense.amount.toFixed(0)}`
+      ? `${symbol}${Math.abs(lastExpense.amount).toFixed(0)}`
       : '';
 
     writeToSharedStorage({
