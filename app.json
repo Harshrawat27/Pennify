@@ -15,11 +15,15 @@
       "usesAppleSignIn": true,
       "buildNumber": "15",
       "entitlements": {
-        "com.apple.security.application-groups": ["group.app.spendler"]
+        "com.apple.security.application-groups": [
+          "group.app.spendler"
+        ]
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["fetch", "remote-notification"]
+        "UIBackgroundModes": ["fetch", "remote-notification"],
+        "NSSpeechRecognitionUsageDescription": "Used to add transactions by voice",
+        "NSMicrophoneUsageDescription": "Used to record your voice for adding transactions"
       }
     },
     "android": {
@@ -61,7 +65,8 @@
           "color": "#FAFAFA",
           "defaultChannel": "reminders"
         }
-      ]
+      ],
+      "expo-speech-recognition"
     ],
     "experiments": {
       "typedRoutes": true,

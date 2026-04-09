@@ -64,6 +64,7 @@ private func formatAmount(_ value: Double, symbol: String) -> String {
 }
 
 private let addURL = URL(string: "spendler://add-transaction")!
+private let voiceURL = URL(string: "spendler://voice-transaction")!
 
 // MARK: - Small Widget View
 
@@ -78,8 +79,8 @@ struct SmallWidgetView: View {
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.white.opacity(0.6))
                 Spacer()
-                Link(destination: addURL) {
-                    Image(systemName: "plus")
+                Link(destination: voiceURL) {
+                    Image(systemName: "mic.fill")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 44, height: 44)
@@ -138,11 +139,19 @@ struct MediumWidgetView: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
                     Spacer()
+                    Link(destination: voiceURL) {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Circle())
+                    }
                     Link(destination: addURL) {
                         Image(systemName: "plus")
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
-                            .frame(width: 52, height: 52)
+                            .frame(width: 44, height: 44)
                             .background(Color.white.opacity(0.2))
                             .clipShape(Circle())
                     }

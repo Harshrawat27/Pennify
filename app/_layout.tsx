@@ -236,6 +236,7 @@ function RootLayoutNav() {
         <Stack.Screen name='finance-chat' options={{ headerShown: false }} />
         <Stack.Screen name='people' />
         <Stack.Screen name='person-detail' />
+        <Stack.Screen name='voice-transaction' options={{ presentation: 'modal' }} />
       </Stack>
       <StatusBar style={statusStyle} />
     </SafeAreaView>
