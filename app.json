@@ -2,7 +2,7 @@
   "expo": {
     "name": "Spendler",
     "slug": "Spendler",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "spendler",
@@ -15,9 +15,7 @@
       "usesAppleSignIn": true,
       "buildNumber": "15",
       "entitlements": {
-        "com.apple.security.application-groups": [
-          "group.app.spendler"
-        ]
+        "com.apple.security.application-groups": ["group.app.spendler"]
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
