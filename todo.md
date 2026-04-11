@@ -42,3 +42,7 @@ Which ones I'd prioritize:
 4. Custom date ranges in reports — power users want this
 5. Receipt attachment on any transaction — you already have scan, just let
    attach too
+
+--------- BUG FIXING ----------
+
+1. in budgeting we can set budget for category 2-3 as many times as possible and no way to edit budget for any pre-existing category?
