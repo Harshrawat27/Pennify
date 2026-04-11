@@ -220,13 +220,30 @@ export default function PlanScreen() {
                         </View>
                       )}
                     </View>
-                    <View className='items-end'>
-                      <Text className='text-[14px] font-bold text-black'>
-                        {formatCurrencyCompact(b.spent, currency)}
-                      </Text>
-                      <Text className='text-[11px] text-neutral-400'>
-                        of {formatCurrencyCompact(b.limitAmount, currency)}
-                      </Text>
+                    <View className='items-end flex-row gap-2'>
+                      <View className='items-end'>
+                        <Text className='text-[14px] font-bold text-black'>
+                          {formatCurrencyCompact(b.spent, currency)}
+                        </Text>
+                        <Text className='text-[11px] text-neutral-400'>
+                          of {formatCurrencyCompact(b.limitAmount, currency)}
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() =>
+                          router.push({
+                            pathname: '/add-budget',
+                            params: {
+                              budgetId: b._id,
+                              currentLimit: String(b.limitAmount),
+                              parentCategoryId: b.parentCategoryId as string,
+                            },
+                          })
+                        }
+                        className='w-8 h-8 rounded-full bg-neutral-100 items-center justify-center'
+                      >
+                        <Feather name='edit-2' size={13} color='#A3A3A3' />
+                      </Pressable>
                     </View>
                   </View>
                   <View className='h-1.5 bg-neutral-100 rounded-full'>

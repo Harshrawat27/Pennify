@@ -7,7 +7,7 @@ import type { FeatherIcon } from '@/lib/models/types';
 import { getCurrencySymbol } from '@/lib/utils/currency';
 import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,23 +25,41 @@ export default function AddBudgetScreen() {
   const userId = session?.user?.id ?? '';
   const authenticatedUserId = useAuthenticatedUserId();
 
+  // Edit mode params
+  const params = useLocalSearchParams<{ budgetId?: string; currentLimit?: string; parentCategoryId?: string }>();
+  const editBudgetId = params.budgetId ?? null;
+  const isEditMode = !!editBudgetId;
+
   const parentCategories = useCachedParentCategories();
-  const prefs = useQuery(
-    api.preferences.get,
-    authenticatedUserId ? { userId: authenticatedUserId } : 'skip'
-  );
   const createBudget = useMutation(api.budgets.create);
+  const updateBudget = useMutation(api.budgets.update);
 
   const currency = useCachedCurrency();
 
-  const [limit, setLimit] = useState('');
-  const [selectedParentId, setSelectedParentId] = useState('');
+  const d = new Date();
+  const currentMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+  // Fetch existing budgets to prevent duplicates
+  const existingBudgets = useQuery(
+    api.budgets.listByMonth,
+    authenticatedUserId ? { userId: authenticatedUserId, month: currentMonth } : 'skip'
+  );
+
+  const [limit, setLimit] = useState(params.currentLimit ?? '');
+  const [selectedParentId, setSelectedParentId] = useState(params.parentCategoryId ?? '');
   const [isSaving, setIsSaving] = useState(false);
+
+  // IDs of parent categories that already have a budget this month
+  const budgetedParentIds = new Set(
+    (existingBudgets ?? [])
+      .filter((b) => b._id !== editBudgetId)
+      .map((b) => b.parentCategoryId as string)
+  );
 
   const effectiveParentId =
     selectedParentId && parentCategories.find((p) => p._id === selectedParentId)
       ? selectedParentId
-      : (parentCategories[0]?._id ?? '');
+      : (parentCategories.find((p) => !budgetedParentIds.has(p._id))?._id ?? parentCategories[0]?._id ?? '');
 
   const handleSave = async () => {
     const numLimit = parseFloat(limit);
@@ -49,14 +67,19 @@ export default function AddBudgetScreen() {
 
     setIsSaving(true);
     try {
-      const d = new Date();
-      const currentMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      await createBudget({
-        userId,
-        parentCategoryId: effectiveParentId as any,
-        limitAmount: numLimit,
-        month: currentMonth,
-      });
+      if (isEditMode && editBudgetId) {
+        await updateBudget({
+          id: editBudgetId as any,
+          limitAmount: numLimit,
+        });
+      } else {
+        await createBudget({
+          userId,
+          parentCategoryId: effectiveParentId as any,
+          limitAmount: numLimit,
+          month: currentMonth,
+        });
+      }
       router.back();
     } catch (e) {
       console.error('[AddBudget] save failed:', e);
@@ -83,7 +106,9 @@ export default function AddBudgetScreen() {
           >
             <Feather name='x' size={20} color='#000' />
           </Pressable>
-          <Text className='text-[18px] font-bold text-black'>Add Budget</Text>
+          <Text className='text-[18px] font-bold text-black'>
+            {isEditMode ? 'Edit Budget' : 'Add Budget'}
+          </Text>
           <View className='w-10' />
         </View>
 
@@ -108,35 +133,46 @@ export default function AddBudgetScreen() {
           </View>
         </View>
 
-        {/* Category Group Picker */}
-        <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
-          <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
-            Category Group
-          </Text>
-          <View className='flex-row flex-wrap gap-2'>
-            {parentCategories.map((parent) => {
-              const selected = effectiveParentId === parent._id;
-              return (
-                <Pressable
-                  key={parent._id}
-                  onPress={() => setSelectedParentId(parent._id)}
-                  className={`flex-row items-center gap-2 px-3 py-2.5 rounded-xl ${selected ? 'bg-black' : 'bg-neutral-100'}`}
-                >
-                  <Feather
-                    name={parent.icon as FeatherIcon}
-                    size={13}
-                    color={selected ? '#fff' : parent.color}
-                  />
-                  <Text
-                    className={`text-[13px] font-medium ${selected ? 'text-white' : 'text-black'}`}
+        {/* Category Group Picker — hidden in edit mode since category can't change */}
+        {!isEditMode && (
+          <View className='mx-6 mt-4 bg-white rounded-2xl p-5'>
+            <Text className='text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-3'>
+              Category Group
+            </Text>
+            <View className='flex-row flex-wrap gap-2'>
+              {parentCategories.map((parent) => {
+                const selected = effectiveParentId === parent._id;
+                const alreadyBudgeted = budgetedParentIds.has(parent._id);
+                return (
+                  <Pressable
+                    key={parent._id}
+                    onPress={() => !alreadyBudgeted && setSelectedParentId(parent._id)}
+                    disabled={alreadyBudgeted}
+                    className={`flex-row items-center gap-2 px-3 py-2.5 rounded-xl ${
+                      selected ? 'bg-black' : alreadyBudgeted ? 'bg-neutral-50' : 'bg-neutral-100'
+                    }`}
                   >
-                    {parent.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
+                    <Feather
+                      name={parent.icon as FeatherIcon}
+                      size={13}
+                      color={selected ? '#fff' : alreadyBudgeted ? '#D4D4D4' : parent.color}
+                    />
+                    <Text
+                      className={`text-[13px] font-medium ${
+                        selected ? 'text-white' : alreadyBudgeted ? 'text-neutral-300' : 'text-black'
+                      }`}
+                    >
+                      {parent.name}
+                    </Text>
+                    {alreadyBudgeted && (
+                      <Feather name='check' size={11} color='#D4D4D4' />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Save Button */}
         <View className='mx-6 mt-6'>
@@ -151,7 +187,7 @@ export default function AddBudgetScreen() {
               <ActivityIndicator size='small' color='#fff' />
             ) : (
               <Text className='text-white font-bold text-[16px]'>
-                Save Budget
+                {isEditMode ? 'Update Budget' : 'Save Budget'}
               </Text>
             )}
           </Pressable>
