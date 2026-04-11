@@ -199,8 +199,7 @@ Apple ID again.
 Before running Step 4 — check in expo.dev:
 
 - Go to expo.dev → your project → Secrets — no action needed since env vars are in  
-  eas.json directly.  
-
+  eas.json directly.
 
 One thing to change before building:  
  The EXPO_PUBLIC_REVENUECAT_IOS_KEY in eas.json is your sandbox/test key. Do you have
