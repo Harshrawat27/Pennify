@@ -1,3 +1,4 @@
+import * as StoreReview from 'expo-store-review';
 import { AddAccounts } from '@/components/onboarding/AddAccounts';
 import { AddBalance } from '@/components/onboarding/AddBalance';
 import { CategoryBudgets } from '@/components/onboarding/CategoryBudgets';
@@ -129,6 +130,10 @@ export default function OnboardingScreen() {
 
       // Reset onboarding store
       useOnboardingStore.getState().reset();
+
+      if (await StoreReview.hasAction()) {
+        await StoreReview.requestReview();
+      }
 
       router.replace('/paywall');
     } catch (e) {
