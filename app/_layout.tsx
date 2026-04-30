@@ -160,6 +160,8 @@ function RootLayoutNav() {
 
     if (prefs === null) {
       console.log('[Layout] No prefs (new user) → /onboarding');
+      // Route to onboarding — if user already completed it before signing up,
+      // onboarding.tsx will detect the pending flag and auto-commit + go to paywall
       router.replace('/onboarding');
       return;
     }

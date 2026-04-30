@@ -1,21 +1,21 @@
 import * as SecureStore from 'expo-secure-store';
 
-const KEY = 'spendler_sub_status';
+const getKey = (userId: string) => `spendler_sub_status_${userId}`;
 
-export async function getLocalSubscriptionStatus(): Promise<string | null> {
+export async function getLocalSubscriptionStatus(userId: string): Promise<string | null> {
   try {
-    return await SecureStore.getItemAsync(KEY);
+    return await SecureStore.getItemAsync(getKey(userId));
   } catch {
     return null;
   }
 }
 
-export async function setLocalSubscriptionStatus(status: string | null): Promise<void> {
+export async function setLocalSubscriptionStatus(userId: string, status: string | null): Promise<void> {
   try {
     if (status == null) {
-      await SecureStore.deleteItemAsync(KEY);
+      await SecureStore.deleteItemAsync(getKey(userId));
     } else {
-      await SecureStore.setItemAsync(KEY, status);
+      await SecureStore.setItemAsync(getKey(userId), status);
     }
   } catch {
     // SecureStore unavailable (simulator without keychain) — fail silently

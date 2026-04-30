@@ -22,11 +22,14 @@ import {
   scheduleDailyReminder,
   scheduleWeeklyReport,
 } from '@/lib/utils/notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAction, useMutation } from 'convex/react';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
+
+const ONBOARDING_PENDING_KEY = 'spendler_onboarding_pending';
 
 const TOTAL_STEPS = 12;
 
@@ -58,11 +61,14 @@ export default function OnboardingScreen() {
 
   const finish = useCallback(async () => {
     if (!session?.user?.id) {
-      // Not signed in yet — shouldn't happen in new flow (sign-in first)
-      // but handle gracefully by going to sign-in
+      // User hasn't signed in yet — save flag so we auto-commit after sign-up
+      await AsyncStorage.setItem(ONBOARDING_PENDING_KEY, 'true');
       router.replace('/sign-in');
       return;
     }
+
+    // Clear pending flag now that we're committing
+    await AsyncStorage.removeItem(ONBOARDING_PENDING_KEY);
 
     const state = useOnboardingStore.getState();
     const overallNum = parseFloat(state.overallBalance);
@@ -141,6 +147,17 @@ export default function OnboardingScreen() {
       setIsCommitting(false);
     }
   }, [session, commitAll, categorizePayment]);
+
+  // Auto-finish: user completed onboarding before signing up.
+  // After sign-up the layout routes here — detect the flag and commit immediately.
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    AsyncStorage.getItem(ONBOARDING_PENDING_KEY).then((val) => {
+      if (val === 'true') {
+        finish();
+      }
+    });
+  }, [session?.user?.id, finish]);
 
   if (isCommitting) {
     return (

@@ -22,20 +22,24 @@ export function useSubscription() {
 
   const prefs = useQuery(api.preferences.get, userId && isAuthenticated ? { userId } : 'skip');
 
-  // Seed from local cache on mount (instant on returning opens)
+  // Seed from user-specific cache when userId is known.
+  // Each user has their own key so a different user on the same device
+  // (or a reinstall) gets no stale data — Convex becomes the source of truth.
   useEffect(() => {
-    getLocalSubscriptionStatus().then((cached) => {
+    if (!userId) return;
+    getLocalSubscriptionStatus(userId).then((cached) => {
       setLocalStatus(cached ?? null);
     });
-  }, []);
+  }, [userId]);
 
-  // When Convex resolves, write through to cache and update state
+  // When Convex resolves, write through to user-specific cache and update state
   useEffect(() => {
     if (prefs === undefined) return; // still loading
+    if (!userId) return;
     const status = prefs?.subscriptionStatus ?? null;
     setLocalStatus(status);
-    void setLocalSubscriptionStatus(status);
-  }, [prefs?.subscriptionStatus]);
+    void setLocalSubscriptionStatus(userId, status);
+  }, [userId, prefs?.subscriptionStatus]);
 
   const isPremium = localStatus === 'monthly' || localStatus === 'yearly';
   const isLoading = localStatus === undefined;
