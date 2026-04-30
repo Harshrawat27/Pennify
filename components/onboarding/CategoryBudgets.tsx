@@ -27,16 +27,26 @@ interface CategoryBudgetsProps {
   onBack: () => void;
 }
 
+type ParentOption = { name: string; icon: string; color: string };
+
 export function CategoryBudgets({ onNext, onBack }: CategoryBudgetsProps) {
   const categoryBudgets = useOnboardingStore((s) => s.categoryBudgets);
   const setCategoryBudgets = useOnboardingStore((s) => s.setCategoryBudgets);
   const currency = useOnboardingStore((s) => s.currency);
   const monthlyBudget = useOnboardingStore((s) => s.monthlyBudget);
+  const customCategories = useOnboardingStore((s) => s.customCategories);
+
+  const standaloneOptions: ParentOption[] = customCategories
+    .filter((c) => !c.parentCategory)
+    .map((c) => ({ name: c.name, icon: 'tag', color: '#6B7280' }));
+
+  const allParentOptions: ParentOption[] = [
+    ...(DEFAULT_PARENT_CATEGORIES as ParentOption[]),
+    ...standaloneOptions,
+  ];
 
   const [showForm, setShowForm] = useState(false);
-  const [selectedParent, setSelectedParent] = useState<
-    (typeof DEFAULT_PARENT_CATEGORIES)[0] | null
-  >(null);
+  const [selectedParent, setSelectedParent] = useState<ParentOption | null>(null);
   const [amount, setAmount] = useState('');
 
   const currencySymbol = getCurrencySymbol(currency);
@@ -77,7 +87,7 @@ export function CategoryBudgets({ onNext, onBack }: CategoryBudgetsProps) {
   };
 
   const getParentMeta = (name: string) =>
-    DEFAULT_PARENT_CATEGORIES.find((p) => p.name === name);
+    allParentOptions.find((p) => p.name === name);
 
   const closeForm = () => {
     setShowForm(false);
@@ -256,37 +266,44 @@ export function CategoryBudgets({ onNext, onBack }: CategoryBudgetsProps) {
                 Category Group
               </Text>
               <View className='flex-row flex-wrap gap-2 mb-5'>
-                {DEFAULT_PARENT_CATEGORIES.map((parent) => {
+                {allParentOptions.map((parent, idx) => {
                   const selected = selectedParent?.name === parent.name;
                   const alreadySet =
                     !selected &&
                     categoryBudgets.some(
                       (b) => b.parentCategoryName === parent.name
                     );
+                  const isFirstStandalone = idx === DEFAULT_PARENT_CATEGORIES.length && standaloneOptions.length > 0;
                   return (
-                    <Pressable
-                      key={parent.name}
-                      onPress={() => setSelectedParent(parent)}
-                      className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl ${selected ? 'bg-black' : 'bg-white'}`}
-                    >
-                      <Feather
-                        name={parent.icon as FeatherIcon}
-                        size={11}
-                        color={selected ? '#fff' : parent.color}
-                      />
-                      <Text
-                        className={`text-[12px] font-medium ${selected ? 'text-white' : 'text-black'}`}
-                      >
-                        {parent.name}
-                      </Text>
-                      {alreadySet && (
-                        <Feather
-                          name='check'
-                          size={10}
-                          color={selected ? '#fff' : '#A3A3A3'}
-                        />
+                    <View key={parent.name} className={isFirstStandalone ? 'w-full' : undefined}>
+                      {isFirstStandalone && (
+                        <Text className='text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-2 mt-1'>
+                          My Categories
+                        </Text>
                       )}
-                    </Pressable>
+                      <Pressable
+                        onPress={() => setSelectedParent(parent)}
+                        className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl ${selected ? 'bg-black' : 'bg-white'}`}
+                      >
+                        <Feather
+                          name={parent.icon as FeatherIcon}
+                          size={11}
+                          color={selected ? '#fff' : parent.color}
+                        />
+                        <Text
+                          className={`text-[12px] font-medium ${selected ? 'text-white' : 'text-black'}`}
+                        >
+                          {parent.name}
+                        </Text>
+                        {alreadySet && (
+                          <Feather
+                            name='check'
+                            size={10}
+                            color={selected ? '#fff' : '#A3A3A3'}
+                          />
+                        )}
+                      </Pressable>
+                    </View>
                   );
                 })}
               </View>
