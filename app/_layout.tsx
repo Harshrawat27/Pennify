@@ -159,8 +159,8 @@ function RootLayoutNav() {
     hasRouted.current = true;
 
     if (prefs === null) {
-      console.log('[Layout] No prefs (new user) → /welcome');
-      router.replace('/welcome');
+      console.log('[Layout] No prefs (new user) → /onboarding');
+      router.replace('/onboarding');
       return;
     }
 
