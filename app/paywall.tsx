@@ -26,6 +26,11 @@ import Purchases, {
 } from 'react-native-purchases';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// Master switch for the 3-day free trial. Set to `true` to bring the trial back
+// (also re-add the Introductory Offer to the products in App Store Connect).
+// When `false`, the paywall never shows or grants a trial regardless of Apple eligibility.
+const TRIAL_ENABLED = false;
+
 const TIMELINE_STEPS = [
   {
     icon: 'unlock',
@@ -69,7 +74,7 @@ export default function PaywallScreen() {
   const [yearlyPackage, setYearlyPackage] = useState<PurchasesPackage | null>(
     null
   );
-  const [trialEligible, setTrialEligible] = useState(true); // optimistic default
+  const [trialEligible, setTrialEligible] = useState(TRIAL_ENABLED); // gated by master switch
   const updateSubscription = useMutation(api.preferences.updateSubscription);
   const userId = session?.user?.id;
   const authenticatedUserId = useAuthenticatedUserId();
@@ -121,7 +126,7 @@ export default function PaywallScreen() {
           yPkg = pkg;
         }
       }
-      if (yPkg) {
+      if (TRIAL_ENABLED && yPkg) {
         try {
           const result =
             await Purchases.checkTrialOrIntroductoryPriceEligibility([

@@ -15,11 +15,11 @@ export function TryFree({ onNext }: TryFreeProps) {
         </View>
 
         <Text className="text-[28px] font-bold text-black text-center">
-          Try Spendler Free
+          Unlock Spendler Pro
         </Text>
 
         <Text className="text-neutral-400 text-[15px] mt-3 text-center leading-6">
-          Enjoy full access for 7 days.{'\n'}No credit card required.
+          Everything you need to take control{'\n'}of your money.
         </Text>
 
         <View className="mt-10 gap-5 w-full">
@@ -72,7 +72,7 @@ export function TryFree({ onNext }: TryFreeProps) {
           className="py-4 rounded-2xl items-center bg-black"
           style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
         >
-          <Text className="text-white font-bold text-[16px]">Start Free Trial</Text>
+          <Text className="text-white font-bold text-[16px]">Get Started</Text>
         </Pressable>
 
         <Pressable onPress={onNext}>

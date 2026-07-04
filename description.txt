@@ -34,7 +34,7 @@ MORE FEATURES
 • Sign in with Google or Apple — your data is always backed up
 
 SUBSCRIPTION
-Spendler offers a 3-day free trial. After the trial, a subscription is required to continue using premium features. Subscriptions are available monthly or yearly and auto-renew unless cancelled at least 24 hours before the renewal date. Manage or cancel your subscription anytime in iOS Settings → Apple ID → Subscriptions.
+A subscription is required to use premium features. Subscriptions are available monthly or yearly and auto-renew unless cancelled at least 24 hours before the renewal date. Manage or cancel your subscription anytime in iOS Settings → Apple ID → Subscriptions.
 
 Privacy Policy: https://spendler.app/privacy
 Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/

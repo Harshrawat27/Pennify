@@ -156,13 +156,13 @@ export function SubscriptionPlans({ onFinish }: SubscriptionPlansProps) {
           style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
         >
           <Text className='text-white font-bold text-[16px]'>
-            {selected === 'free' ? 'Continue with Free' : 'Start Free Trial'}
+            {selected === 'free' ? 'Continue with Free' : 'Subscribe'}
           </Text>
         </Pressable>
 
         <Text className='text-neutral-400 text-[12px] text-center mt-3'>
           {selected !== 'free'
-            ? '7-day free trial · Cancel anytime'
+            ? 'Cancel anytime'
             : 'You can upgrade anytime from settings'}
         </Text>
       </View>

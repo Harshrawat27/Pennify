@@ -49,11 +49,8 @@ You must be at least 13 years old to use Spendler. By creating an account, you r
 
 ## 4. Subscription & Payments
 
-### Free Trial
-New accounts receive a **3-day free trial** with full access to all premium features. No charge is made during the trial period. You can use all features and delete your account before the trial ends without being charged.
-
-### After the Trial
-After the trial ends, access to premium features requires an active paid subscription:
+### Premium Subscription
+Access to premium features requires an active paid subscription:
 
 - **Monthly plan** — charged monthly
 - **Yearly plan** — charged annually (lower effective monthly rate)

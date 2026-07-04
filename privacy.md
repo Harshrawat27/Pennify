@@ -48,7 +48,7 @@ All financial data is **manually entered by you**. We never connect to your bank
 - Notification preferences (daily reminder on/off, weekly report on/off)
 - Income tracking toggle
 - Hide balance toggle
-- Subscription status (free trial, monthly, or yearly)
+- Subscription status (monthly or yearly)
 
 ### Device & Session Data
 
@@ -111,7 +111,7 @@ We use a small number of trusted services to operate the app. Here is what each 
 
 ### RevenueCat (Subscription Management)
 **What they receive:** An anonymized user ID and in-app purchase events from Apple.
-**Why:** To validate your subscription, restore purchases, and manage trial status.
+**Why:** To validate your subscription and restore purchases.
 **Their privacy policy:** revenuecat.com/privacy
 **Note:** RevenueCat does not receive your financial data or email address.
 
